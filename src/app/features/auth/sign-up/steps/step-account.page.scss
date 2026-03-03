@@ -1,0 +1,51 @@
+/* =========================
+   Account step form
+   ========================= */
+
+   .account-form-div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* a bit more like Tailwind spacing */
+  }
+  
+  /* Labels */
+  .account-form-div label {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500;    /* font-medium */
+    color: var(--color-text);
+    margin-top: 0.25rem;
+  }
+  
+  /* Inputs (apply class="form-input") */
+  .account-form-div .form-input {
+    width: 100%;
+    height: 3rem; /* closer to Tailwind py-3 feel */
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid var(--color-border);
+  
+    background: var(--color-bg-input, transparent);
+    color: var(--color-text);
+  
+    padding: 0 1rem; /* px-4 */
+  }
+  
+  .account-form-div .form-input::placeholder {
+    color: var(--color-muted);
+  }
+  
+  /* Focus ring-ish effect */
+  .account-form-div .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  
+    /* Tailwind-like ring (works well if --color-primary is a valid color) */
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  
+  /* Error text */
+  .account-form-div small,
+  .account-form-div [role="alert"] {
+    font-size: 0.875rem;
+    color: var(--color-destructive, #dc2626);
+  }
+  

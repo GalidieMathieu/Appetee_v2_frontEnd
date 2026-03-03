@@ -1,0 +1,40 @@
+.diet-form {
+    margin-top: 1rem;
+  }
+  
+  .diet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* grid-cols-2 */
+    gap: 0.75rem; /* gap-3 */
+  }
+  
+  .diet-tile {
+    padding: 1rem;                /* p-4 */
+    border-radius: 0.5rem;        /* rounded-lg */
+    border: 2px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+  
+    font-weight: 600;             /* font-medium-ish */
+    text-align: center;
+  
+    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease,
+      transform 150ms ease;
+    cursor: pointer;
+  }
+  
+  .diet-tile:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 50%, transparent); /* hover:border-primary/50 */
+  }
+  
+  .diet-tile.is-selected {
+    border-color: var(--color-primary);
+    background: var(--color-secondary, color-mix(in srgb, var(--color-primary) 10%, white));
+    color: var(--color-primary);
+  }
+  
+  .diet-tile:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+  

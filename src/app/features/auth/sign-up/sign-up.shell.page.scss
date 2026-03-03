@@ -1,0 +1,155 @@
+/* =========================
+   Sign-up shell (page)
+   ========================= */
+
+   .sign-up-shell {
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    padding: 3rem 1rem;
+    min-height: calc(100vh - 72px);
+  
+    background: var(--color-bg, transparent);
+  
+    overflow: visible;
+    max-height: none;
+  }
+  
+  .page_step_div {
+    width: 100%;
+    max-width: 42rem; /* ~ max-w-2xl */
+  }
+  
+  .header_shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  
+    margin-bottom: 3rem; /* mb-12 */
+  }
+  
+  .progress_bar_div {
+    display: flex;
+    gap: 0.5rem; /* gap-2 */
+    margin: 0;
+  }
+  
+  .bar {
+    flex: 1;
+    height: 0.25rem;     
+    border-radius: 9999px; /* rounded-full */
+    background-color: var(--color-muted-light);
+    transition: background-color 150ms ease;
+  }
+  
+  .bar.isActive {
+    background-color: var(--color-primary);
+  }
+  
+  /* Step text */
+  .header_shell h4 {
+    margin: 0;
+    font-size: 0.875rem; /* text-sm */
+    color: var(--color-muted);
+    font-weight: 400;
+  }
+  
+  /* Card */
+  .sign-up-shell_main {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem; /* rounded-2xl */
+  
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.10),
+      0 4px 6px -4px rgba(0, 0, 0, 0.10);
+  }
+  
+  .sign-up-shell__content {
+    padding: 2rem; /* p-8 */
+  }
+  
+  /* sm:p-10 */
+  @media (min-width: 640px) {
+    .sign-up-shell__content {
+      padding: 2.5rem;
+    }
+  }
+  
+  /* Typography scoped to this page */
+  .sign-up-shell__content h2 {
+    font-size: 1.875rem; /* text-3xl */
+    line-height: 2.25rem;
+    font-weight: 700;    /* font-bold */
+    margin: 0 0 0.35rem 0;
+    color: var(--color-text);
+  }
+  
+  .sign-up-shell__content p {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 1rem;
+    margin: 0 0 1rem 0;
+  }
+  
+  /* Bottom buttons row */
+  .bottom_button_div {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .button_nav {
+    flex: 1;
+    height: 3rem;
+    font-weight: 600;  
+    border-radius: var(--radius); 
+    border: none;
+  }
+  
+  .is-not-active {
+    display: none; 
+  }
+  
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5; 
+  }
+  
+
+  .signin-cta {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  
+  .signin-cta__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  
+    color: var(--color-muted);
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 600;
+  
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+  
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  
+  .signin-cta__link:hover {
+    background: color-mix(in srgb, var(--color-muted) 12%, transparent);
+    color: var(--color-text);
+  }
+  
+  .signin-cta__icon {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.8;
+  }
+  

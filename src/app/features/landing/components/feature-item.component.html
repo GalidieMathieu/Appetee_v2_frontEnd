@@ -1,0 +1,15 @@
+<div class = "container-feature-item">
+    <div class = "icon-container">
+        <img class="feature__icon"
+            [src]="iconSrc()"
+            [alt]="iconAlt()"
+            width="28"
+            height="28" 
+       />
+
+    </div>
+    <div class = "text-container">
+        <h3>{{title()}}</h3>
+        <p class="subtitle">{{description()}}</p>
+    </div>
+</div>

@@ -1,0 +1,26 @@
+/* Global styles – partials loaded with @use (Sass module system) */
+@use "./styles/_theme.scss";
+@use "./styles/_button.scss";
+
+/* Prevent horizontal overflow: padding/margin count inside width */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--color-text);
+
+  background:
+  linear-gradient(
+    to right,
+    var(--color-bg) 0%,
+    #ffffff 100%);
+}

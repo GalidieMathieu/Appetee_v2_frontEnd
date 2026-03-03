@@ -1,0 +1,186 @@
+.login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    padding: 3rem 1rem;
+    min-height: calc(100vh - 72px);
+  
+    background: var(--color-bg, transparent);
+  
+    overflow: visible;
+    max-height: none;
+  }
+
+  .login-shell_div {
+    width: 100%;
+    max-width: 32rem; 
+  }
+  
+
+  .Login-shell_main {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 1rem; /* rounded-2xl */
+  
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.10),
+      0 4px 6px -4px rgba(0, 0, 0, 0.10);
+
+      padding: 2rem; /* p-8 */
+  }
+  
+  /* Typography scoped to this page */
+  .Login-shell_main h2 {
+    font-size: 1.875rem; /* text-3xl */
+    line-height: 2.25rem;
+    font-weight: 700;    /* font-bold */
+    margin: 0 0 0.35rem 0;
+    color: var(--color-text);
+  }
+  
+  .Login-shell_main p {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 1rem;
+    margin: 0 0 1rem 0;
+  }
+
+    /* ===== form div===== */
+
+
+  .account-form-div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem; /* a bit more like Tailwind spacing */
+  }
+  
+  /* Labels */
+  .account-form-div label {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500;    /* font-medium */
+    color: var(--color-text);
+    margin-top: 0.25rem;
+  }
+  
+  /* Inputs (apply class="form-input") */
+  .account-form-div .form-input {
+    width: 100%;
+    height: 3rem; /* closer to Tailwind py-3 feel */
+    border-radius: 0.5rem; /* rounded-lg */
+    border: 1px solid var(--color-border);
+  
+    background: var(--color-bg-input, transparent);
+    color: var(--color-text);
+  
+    padding: 0 1rem; /* px-4 */
+  }
+  
+  .account-form-div .form-input::placeholder {
+    color: var(--color-muted);
+  }
+  
+  /* Focus ring-ish effect */
+  .account-form-div .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  
+    /* Tailwind-like ring (works well if --color-primary is a valid color) */
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+  
+  /* Error text */
+  .account-form-div small,
+  .account-form-div [role="alert"] {
+    font-size: 0.875rem;
+    color: var(--color-destructive, #dc2626);
+  }
+
+
+  /* ===== Bottom button Div ===== */
+  .bottom_button_div {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .button_nav {
+    flex: 1;
+    height: 3rem;
+    font-weight: 600;  
+    border-radius: var(--radius); 
+    border: none;
+  }
+  
+  .is-not-active {
+    display: none; 
+  }
+  
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5; 
+  }
+
+
+  /* ===== CTA (centered, link primary) ===== */
+  .signUp-cta {
+    margin-top: 1.5rem; /* mt-6 */
+    text-align: center;
+  }
+  
+  .signUp-cta p {
+    margin: 0;
+    color: var(--color-muted, #6b7280);
+    font-size: 0.95rem;
+  }
+  
+
+  .signUp-cta_link {
+    color: var(--color-primary, #f97316);
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 0.35rem;
+    transition: opacity 150ms ease;
+  }
+  
+
+  .signUp-cta_link:hover {
+    opacity: 0.85;
+    text-decoration: underline;
+  }
+
+
+  /* ===== Home Page CTA ===== */
+  .HomePage-cta {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  
+  .HomePage-cta__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  
+    color: var(--color-muted);
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 600;
+  
+    text-decoration: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 9999px;
+  
+    transition: background-color 150ms ease, color 150ms ease;
+  }
+  
+  .HomePage-cta__link:hover {
+    background: color-mix(in srgb, var(--color-muted) 12%, transparent);
+    color: var(--color-text);
+  }
+  
+  .HomePage-cta__icon {
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.8;
+  }

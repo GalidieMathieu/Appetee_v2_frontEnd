@@ -1,0 +1,54 @@
+<section class="sign-up-shell">
+    <div class ="page_step_div">
+        <header class="header_shell">
+            <div class = "progress_bar_div">
+                <div class="bar"    [class.isActive] = "currentIndex >= 0"></div>
+                <div class="bar"    [class.isActive] = "currentIndex >= 1"></div>
+                <div class="bar"    [class.isActive] = "currentIndex >= 2"></div>
+            </div>
+            <h4>Step {{currentIndex +1}} of 3</h4>
+          </header>
+        
+        <main class="sign-up-shell_main">
+            <div class = "sign-up-shell__content">
+                <h2>{{title}}</h2>
+                <p>{{subTitle}}</p>
+                <router-outlet></router-outlet>
+                <div class = "bottom_button_div">
+                    <button 
+                        type="button" 
+                        class = "btn-link-secondary button_nav"   
+                        [class.is-not-active]="!canGoBack"
+                        [disabled]="!canGoBack"
+                        (click)="goBack()"
+                    >
+                        {{back_str}}
+                    </button>
+                    <button 
+                        type="button" 
+                        class = "btn-link--primary button_nav" 
+                        [class.is-not-active] = "!isNextAvailable" 
+                        [disabled]="!canGoNext"
+                        (click)="goNext()"
+                    >
+                        {{next_str}}
+                    </button>
+                    <button type="button" 
+                        class = "btn-link--primary button_nav" 
+                        [class.is-not-active] = "!isLast" 
+                        [disabled]="!isLast"
+                        (click)="goFinishSignUp()"
+                    >
+                        {{account_creation_str}}</button>
+                </div>
+            </div>
+        </main>
+        <div class="signin-cta">
+            <a class="signin-cta__link" [routerLink]="['/login']">
+              <span class="signin-cta__icon" aria-hidden="true">←</span>
+              <span>Log In</span>
+            </a>
+          </div>
+    </div>
+    <!-- optional: shared footer nav (Back/Next/Cancel) -->
+</section>

@@ -1,0 +1,65 @@
+<form class = "account-form-div" [formGroup]="wizard.account" novalidate>
+
+    <label for="email">{{email_Label}}</label>
+    <input id="email"
+    class="form-input"
+    formControlName="email"
+    aria-describedby="email-error"
+    [attr.aria-invalid]="email.invalid && email.touched"
+    placeholder="you@example.com"
+    />
+    @if (email.touched && email.hasError('email')) {
+      <small role="alert">{{ inv_email_error_label }}</small>
+    }
+    
+    @if (email.touched && email.hasError('emailTaken')) {
+      <small role="alert">{{ email_taken_error_label }}</small>
+    }
+    
+
+    <label for="username">
+        {{username_Label}}
+    </label>
+        <input
+          id = "username"
+          class="form-input"
+          formControlName="username"
+          aria-describedby="username-error"
+          placeholder="your username"
+          [attr.aria-invalid]="username.touched && username.invalid"
+        />
+
+    
+      @if (username.touched && username.errors) {
+        @if (username.errors['required']) {
+            <small>Username is required</small>
+          }
+          @if (username.errors['minlength']) {
+            <small>
+              Username must be at least
+              {{ username.errors['minlength'].requiredLength }}
+              characters
+            </small>
+          }
+      }
+  
+        <label for="password" >{{ password_title }}</label>
+        <input  id="password" 
+                class="form-input" 
+                type="password" 
+                formControlName="password"  
+        />
+      
+        @if (password.touched && password.errors && password.errors['minlength']) {
+          <div role="alert">{{inv_pass_error_label}}</div>
+        }
+      
+        <label for="confirmPassword">{{ confirm_password_title }}</label>
+        <input id="confirmPassword" class="form-input" type="password" formControlName="confirmPassword" />
+      
+        @if (confirmPassword.touched && wizard.account.errors?.['passwordMismatch']) {
+          <div role="alert">Passwords do not match</div>
+        }
+  
+  </form>
+  

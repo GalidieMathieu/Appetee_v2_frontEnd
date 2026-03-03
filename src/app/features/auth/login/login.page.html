@@ -1,0 +1,60 @@
+<section class="login-page">
+    <div class = login-shell_div>
+        <main class="Login-shell_main">
+            <div class = "logIn-shell_content">
+                <h2>{{title}}</h2>
+                <p>{{subTitle}}</p>
+            </div>
+            <form [formGroup]="loginForm" novalidate class = "account-form-div">
+                <div class = "email-input-div">
+                    <label for="email">{{email_Label}}</label>
+                    <input id="email"
+                    class="form-input"
+                    formControlName="email"
+                    placeholder="you@example.com"
+                    [attr.aria-invalid]="email.invalid && email.touched"
+                    />
+                    @if (email.touched && email.hasError('required')) {
+                        <small role="alert">{{ required_email_error_label }}</small>
+                    }
+                    @if (email.touched && email.hasError('email')) {
+                        <small role="alert">{{ inv_email_error_label }}</small>
+                    }
+                </div>
+                <div class = "password-input-div">
+                    <label for="password">{{password_Label}}</label>
+                    <input id="password"
+                    class="form-input"
+                    formControlName="password"
+                    placeholder="********"
+                    type="password"
+                    />
+                    @if (password.touched && password.hasError('required')) {
+                        <small role="alert">{{ required_password_error_label }}</small>
+                    }
+                </div>
+            </form>
+            <div class = "bottom_button_div">
+                <button 
+                    type="button" 
+                    class = "btn-link--primary button_nav"
+                    [disabled]="!loginForm.valid"
+                    (click)="SignIn()"
+                >
+                    {{SignIn_str}}
+                </button>
+            </div>
+            <div class="signUp-cta">
+                <p> {{signUp_cta_text}}<a class="signUp-cta_link" [routerLink]="['/sign-up']">{{signUp_cta_link_text}}</a></p>
+            </div>
+        </main>
+
+        <div class="HomePage-cta">
+            <a class="HomePage-cta__link" [routerLink]="['/']">
+            <span class="HomePage-cta__icon" aria-hidden="true">←</span>
+            <span>Home Page</span>
+            </a>
+        </div>
+    </div>
+
+</section>

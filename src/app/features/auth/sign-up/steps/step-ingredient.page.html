@@ -1,0 +1,65 @@
+<form [formGroup]="wizard.avoid" class="ingredients-form" novalidate>
+  
+    @if (error$ | async) {
+        <div class="form-error" role="alert">
+          {{ error$ | async }}
+        </div>
+      }
+
+    <div>
+        <label class="field_label" for="ingredientSearch">Search</label>
+        <input
+        id="ingredientSearch"
+        class="form-input"
+        type="text"
+        [formControl]="searchCtrl"
+        placeholder="Search ingredients..."
+        />
+    </div>
+
+
+    <!-- ingredients present in our recipes -->
+    <div class="field">
+      <label class="field__label">Common Allergens & Ingredients</label>
+  
+      <div class="tile-grid">
+        @for (ing of (ingredients$ | async) ?? []; track ing.id) {
+          <button
+            type="button"
+            class="tile"
+            [class.is-selected]="isSelected(ing.id)"
+            (click)="toggleIngredient(ing.id)"
+            role="checkbox"
+            [attr.aria-checked]="isSelected(ing.id)"
+          >
+            {{ ing.name }}
+          </button>
+        }
+      </div>
+    </div>
+  
+    @if (selectedCount() > 0) {
+      <div class="field">
+        <label class="field__label">
+          Selected Ingredients ({{ selectedCount() }})
+        </label>
+  
+        <div class="chips">
+          @for (ing of (selectedIngredients$ | async) ?? []; track ing.id) {
+            <div class="chip">
+              <span>{{ ing.name }}</span>
+              <button
+                type="button"
+                class="chip__x"
+                (click)="toggleIngredient(ing.id)"
+                aria-label="Remove {{ ing.name }}"
+              >
+                ×
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </form>
+  

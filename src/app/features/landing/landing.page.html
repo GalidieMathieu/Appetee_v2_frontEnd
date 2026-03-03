@@ -1,0 +1,69 @@
+<div class="landing-page">
+    <section class="descrition-landing-page">
+        <div class="text-description-lp">
+            <h1>{{title}}
+                <span>{{title_p2}}</span>
+            </h1>
+            <p class="subtitle">
+                {{subtitle}}
+            </p>
+            <div class="image_description-lp">
+                @for (f of features; track f.title) {
+                    <app-feature-item
+                        [iconSrc]="f.iconSrc"
+                        [iconAlt]="f.iconAlt"
+                        [title]="f.title"
+                        [description]="f.description">
+                    </app-feature-item>
+                }
+            </div>
+            <div class="signIn-SignOut-Buttons">
+                <a class = "btn-link--primary" routerLink="/sign-up">
+                    {{buttonSignUpTitle}}
+                </a>
+                <a class="btn-link-secondary" routerLink="/login">
+                    {{buttonLoginTitle}}
+                </a>
+            </div>
+        </div>
+        <div class="diagram-visual-example">
+            <div class="box-card-example">
+                <div class="personalized-recipes-icons">
+                    <div class = "padding-personalized">
+                        <img class="logo-icon" src="/assets/icons/chef-hat.png" alt="Appetee Logo" aria-hidden="true" />
+                        <h4 class="h4-card">{{title_card}} </h4>
+                    </div>
+                </div>
+                <div class="text-grey-block-div"> <!--TODO Use @for and component -->
+                    <div class = "grey-block block-1"></div>
+                    <div class = "grey-block block-2"></div>
+                    <div class = "grey-block block-3"></div>
+                </div>
+                <div class = "diet-in-card-example">
+                    <div class = "diet-label">
+                        <h4 class = "h4-card padding4">{{diet_1}}</h4>
+                    </div>
+                    <div class = "diet-label">
+                        <h4 class = "h4-card padding4">{{diet_2}}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+    </section>
+    <section class = "steps-landing-page">
+        <div class="steps-container-header">
+            <h2 class="h2-steps-landing-page">{{StepsTitle}}</h2>
+        </div>
+        <div class="steps-container">
+            @for (s of steps; track s.title) {   
+                <app-step-item
+                    [step_number]="s.step_number"
+                    [title]="s.title"
+                    [description]="s.description">
+                </app-step-item>
+            }
+        </div>
+    </section>  <!-- Landing page content will be added here -->
+</div>

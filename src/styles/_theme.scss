@@ -1,0 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+
+:root {
+  --color-primary-hsl: 24 100% 54%; /*#FF7214*/
+  --color-secondary-hsl: 24 89% 88%;
+
+  --color-bg: #FEF8F4;
+  --color-bg-tint: #fff1e8;
+  --color-bg-secondary: #FDF3EC;
+  --color-text: #111827;
+  --color-muted: #64748b;
+
+  --color-surface: #ffffff;
+  --color-border: rgba(17, 24, 39, 0.10);
+
+  --color-primary: hsl(var(--color-primary-hsl));
+  --color-secondary: hsl(var(--color-secondary-hsl));
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #111827;
+
+  --color-primary-hover: #FF802B;
+  --color-secondary-hover: #FCE2D0;
+
+  --color-muted-light : #E5E7EB;
+
+  --radius: 12px;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.10);
+}
+
+:root.dark {
+  --color-bg: #0f0f10;
+  --color-bg-tint: #1a1a1c;
+  --color-text: #f5f5f5;
+  --color-muted: #a1a1aa;
+  --color-surface: #141416;
+  --color-border: rgba(255, 255, 255, 0.10);
+  --color-on-secondary: #0f0f10;
+}

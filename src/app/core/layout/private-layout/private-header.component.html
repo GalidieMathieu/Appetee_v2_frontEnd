@@ -1,0 +1,80 @@
+<header class="hdr">
+  <div class="hdr__inner">
+
+    <!-- Brand -->
+    <a class="hdr__brand" routerLink="/home">
+      <span class="hdr__logo">🍳</span>
+      <span class="hdr__name">Appetee</span>
+    </a>
+
+    <!-- Desktop Nav -->
+    <nav class="hdr__nav" aria-label="Primary navigation">
+      @for (item of nav; track item.path) {
+        <a
+          class="hdr__link"
+          [routerLink]="item.path"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+        >
+          {{ item.label }}
+        </a>
+      }
+    </nav>
+
+    <!-- Right Actions -->
+    <div class="hdr__actions">
+
+      <div class="hdr__user">
+        <span class="hdr__avatar">
+          D <!--{{ userInitial$ | async }}-->
+        </span>
+        <span class="hdr__username">
+           David <!--  {{ username$ | async }}-->
+        </span>
+      </div>
+
+      <button class="hdr__logout" type="button" (click)="logout()">
+        ⎋ Logout
+      </button>
+
+      <!-- Burger (mobile only) -->
+      <button
+        class="hdr__burger"
+        type="button"
+        (click)="toggleMenu()"
+        aria-label="Menu"
+      >
+        <span class="hdr__burgerLines"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Panel -->
+  <div class="hdr__panel" [class.is-open]="isMenuOpen">
+    <nav class="hdr__panelNav" aria-label="Mobile navigation">
+      @for (item of nav; track item.path) {
+        <a
+          class="hdr__panelLink"
+          [routerLink]="item.path"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+          (click)="closeMenu()"
+        >
+          {{ item.label }}
+        </a>
+      }
+
+      <button
+        class="hdr__panelLink hdr__panelLogout"
+        type="button"
+        (click)="logout(); closeMenu()"
+      >
+        Logout
+      </button>
+    </nav>
+  </div>
+
+  @if (isMenuOpen) {
+    <button class="hdr__overlay" (click)="closeMenu()"></button>
+  }
+</header>

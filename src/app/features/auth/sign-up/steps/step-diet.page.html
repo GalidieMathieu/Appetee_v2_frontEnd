@@ -1,0 +1,17 @@
+<form [formGroup]="wizard.diet" class="diet-form" novalidate>
+    <div class="diet-grid" role="list">
+      @for (d of (diets$ | async) ?? []; track d.id) {
+        <button
+          type="button"
+          class="diet-tile"
+          [class.is-selected]="isSelected(d.id)"
+          (click)="toggleDiet(d.id)"
+          role="checkbox"
+          [attr.aria-checked]="isSelected(d.id)"
+        >
+          {{ d.name }}
+        </button>
+      }
+    </div>
+  </form>
+  
