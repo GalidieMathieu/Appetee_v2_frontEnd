@@ -4,14 +4,13 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 
 import { SignUpWizard } from '../sign-up.wizard';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
-import { IngredientsStore } from '@app/core/shared/data-access/ingredients/ingredients.store';
 import { combineLatest, filter, map, startWith } from 'rxjs';
-import { Ingredient } from '@app/core/shared/data-access/ingredients/ingredient.model';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-step-ingredient',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule],
   templateUrl: './step-ingredient.page.html',
   styleUrl:'./step-ingredient.page.scss',
 })

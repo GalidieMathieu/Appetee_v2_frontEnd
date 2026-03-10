@@ -115,7 +115,7 @@ export class SignUpShellPage implements OnDestroy, OnInit{
         return {
           username: account.username.trim(),    // default choice if you don’t collect it
           email: account.email.trim(),
-          password: account.password,                        // or omit it
+          password: account.password,                       
           dietIds: diet.dietIds?.length ? diet.dietIds : null,
           ingredientRestrictionIds: avoid.ingredientIds?.length ? avoid.ingredientIds : null
         };

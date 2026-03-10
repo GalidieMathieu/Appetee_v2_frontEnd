@@ -6,12 +6,12 @@
 // custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
 
-/* Global styles – partials loaded with @use (Sass module system) */
+/* Global styles */
 @use "./styles/_theme.scss";
 @use "./styles/_button.scss";
 @use "./styles/input.scss";
 
-/* Prevent horizontal overflow: padding/margin count inside width */
+
 *, *::before, *::after {
   box-sizing: border-box;
 }

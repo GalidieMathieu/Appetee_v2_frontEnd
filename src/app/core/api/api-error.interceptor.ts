@@ -9,19 +9,12 @@ export const apiErrorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse) {
-        // Example global policies:
+        // only 401 is handle with this, all other error is handle by the facade
         if (err.status === 401) {
           // Session expired / not authorized
           auth.logout().subscribe();
         }
-
-        if (err.status >= 500) {
-          // Optionally trigger a global “server down” message
-          console.error('Server error', err.status, req.url);
-        }
       }
-
-      // IMPORTANT: rethrow so feature code can still show local messages
       return throwError(() => err);
     })
   );

@@ -2,7 +2,7 @@
 
     <label for="email">{{email_Label}}</label>
     <input id="email"
-    class="form-input"
+    class="input--primary"
     formControlName="email"
     aria-describedby="email-error"
     [attr.aria-invalid]="email.invalid && email.touched"
@@ -22,7 +22,7 @@
     </label>
         <input
           id = "username"
-          class="form-input"
+          class="input--primary"
           formControlName="username"
           aria-describedby="username-error"
           placeholder="your username"
@@ -45,7 +45,7 @@
   
         <label for="password" >{{ password_title }}</label>
         <input  id="password" 
-                class="form-input" 
+                class="input--primary" 
                 type="password" 
                 formControlName="password"  
         />
@@ -55,7 +55,7 @@
         }
       
         <label for="confirmPassword">{{ confirm_password_title }}</label>
-        <input id="confirmPassword" class="form-input" type="password" formControlName="confirmPassword" />
+        <input id="confirmPassword" class="input--primary" type="password" formControlName="confirmPassword" />
       
         @if (confirmPassword.touched && wizard.account.errors?.['passwordMismatch']) {
           <div role="alert">Passwords do not match</div>

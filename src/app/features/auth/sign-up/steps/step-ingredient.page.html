@@ -6,16 +6,16 @@
         </div>
       }
 
-    <div>
-        <label class="field_label" for="ingredientSearch">Search</label>
-        <input
-        id="ingredientSearch"
-        class="form-input"
-        type="text"
-        [formControl]="searchCtrl"
-        placeholder="Search ingredients..."
-        />
-    </div>
+      <div class="input_with_icon--primary">
+        <mat-icon>search</mat-icon>
+         <input
+         id="ingredientSearch"
+           type="text"
+           placeholder="Search ingredients..."
+           [formControl]="searchCtrl"
+         />
+       </div>
+       
 
 
     <!-- ingredients present in our recipes -->

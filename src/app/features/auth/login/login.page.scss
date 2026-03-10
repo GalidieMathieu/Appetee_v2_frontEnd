@@ -21,20 +21,20 @@
   .Login-shell_main {
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 1rem; /* rounded-2xl */
+    border-radius: 1rem;
   
     box-shadow:
       0 10px 15px -3px rgba(0, 0, 0, 0.10),
       0 4px 6px -4px rgba(0, 0, 0, 0.10);
 
-      padding: 2rem; /* p-8 */
+      padding: 2rem;
   }
   
-  /* Typography scoped to this page */
+
   .Login-shell_main h2 {
-    font-size: 1.875rem; /* text-3xl */
+    font-size: 1.875rem; 
     line-height: 2.25rem;
-    font-weight: 700;    /* font-bold */
+    font-weight: 700;   
     margin: 0 0 0.35rem 0;
     color: var(--color-text);
   }
@@ -52,13 +52,13 @@
   .account-form-div {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem; /* a bit more like Tailwind spacing */
+    gap: 0.75rem; 
   }
   
   /* Labels */
   .account-form-div label {
-    font-size: 0.875rem; /* text-sm */
-    font-weight: 500;    /* font-medium */
+    font-size: 0.875rem; 
+    font-weight: 500;    
     color: var(--color-text);
     margin-top: 0.25rem;
   }
