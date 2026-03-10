@@ -1,0 +1,83 @@
+/* ------- Input without icon ------- */
+/* 
+    if you change anything in that input, apply the correction to  input with icon.
+*/
+
+.input--primary {
+    width: 100%;
+    height: 3rem; 
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+  
+    background: var(--color-bg-input, transparent);
+    color: var(--color-text);
+  
+    padding: 0 1rem;
+  }
+  
+  .input--primary::placeholder {
+    color: var(--color-muted);
+  }
+  
+  .input--primary:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+
+/* ------- Input with icon ------- */
+/* 
+    if you change anything in that input, apply the correction to  input without icon.
+    this as to be used as follow : 
+    <div class="input_with_icon--primary"> 
+        <mat-icon>search</mat-icon>
+        <input placeholder="Search ingredients..." />
+    </div>
+
+    the input_with_icon--primary will handle the css of the icon and input
+*/
+
+.input_with_icon--primary {
+    /* general css for in,put (same as input)*/
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-bg-input, transparent);
+    color: var(--color-text);
+
+    /* this is specific to inputwith icon*/
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 2vh;
+    gap: 0.75rem;
+    height: 2rem; 
+  }
+  
+  .input_with_icon--primary input::placeholder {
+    color: var(--color-muted);
+  }
+  
+  .input_with_icon--primary:focus-within {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
+  }
+
+  .input_with_icon--primary input {
+    flex: 1;
+    min-width: 0;
+
+    border: none;
+    outline: none;
+    box-shadow: none;
+    background: transparent;
+
+    padding: 0;
+    margin: 0;
+
+    font: inherit;
+    color: inherit; 
+  }
+  

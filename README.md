@@ -1,59 +1,73 @@
-# AppeteeFront
+# Appetee
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.0.
+Appetee is a web application that tailors recipes based on:
+- Diet preferences
+- Personal taste
+- Student-athlete budget constraints
 
-## Development server
+## Current State
 
-To start a local development server, run:
+The platform currently includes:
+- Frontend and backend architecture in place
+- SQL database architecture in place
+- Authentication using cookies and sessions
+- Error and loading handling integrated into the architecture
+
+## In Development
+
+### Admin Recipe Creation
+- Admins can create recipes
+- Ingredients will be linked to Walmart items
+- Item prices will be fetched and stored in the database
+- Walmart stores will be clustered to calculate average cluster pricing
+
+### Deployment
+- Planned deployment on Azure, including backend services
+
+## Target Timeline
+
+- Expected delivery: April
+
+## Local Development (Frontend)
+
+Use HTTPS locally so the frontend can communicate with the backend (HTTPS-only).
+
+1. Install `mkcert` (one-time on your machine), then install the local CA:
 
 ```bash
-ng serve
+mkcert -install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+2. From the project root, generate local HTTPS certificates:
 
 ```bash
-ng generate component component-name
+mkcert localhost 127.0.0.1 ::1
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+This creates:
+- `./localhost+2.pem`
+- `./localhost+2-key.pem`
+
+3. Start the frontend with SSL enabled:
 
 ```bash
-ng generate --help
+ng serve --ssl true --ssl-cert "./localhost+2.pem" --ssl-key "./localhost+2-key.pem"
 ```
 
-## Building
+Then open:
 
-To build the project run:
+```text
+https://localhost:4200/
+```
+
+## Build
 
 ```bash
 ng build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+## Test
 
 ```bash
 ng test
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.

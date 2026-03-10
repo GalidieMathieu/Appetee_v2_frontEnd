@@ -3,3 +3,8 @@ export interface Ingredient {
     name: string;
   }
   
+  export interface IngredientDialogResult {
+    ingredientId: number | null;
+    ingredientName: string;
+    walmartProductId: string | null;
+  }

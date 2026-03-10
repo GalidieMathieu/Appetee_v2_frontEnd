@@ -9,7 +9,7 @@
                 <div class = "email-input-div">
                     <label for="email">{{email_Label}}</label>
                     <input id="email"
-                    class="form-input"
+                    class="input--primary"
                     formControlName="email"
                     placeholder="you@example.com"
                     [attr.aria-invalid]="email.invalid && email.touched"
@@ -24,7 +24,7 @@
                 <div class = "password-input-div">
                     <label for="password">{{password_Label}}</label>
                     <input id="password"
-                    class="form-input"
+                    class="input--primary"
                     formControlName="password"
                     placeholder="********"
                     type="password"
@@ -45,7 +45,7 @@
                 </button>
             </div>
             <div class="signUp-cta">
-                <p> {{signUp_cta_text}}<a class="signUp-cta_link" [routerLink]="['/sign-up']">{{signUp_cta_link_text}}</a></p>
+                <p> {{signUp_cta_text}}<a class="signUp-cta_link" [routerLink]="['/auth/sign-up']">{{signUp_cta_link_text}}</a></p>
             </div>
         </main>
 

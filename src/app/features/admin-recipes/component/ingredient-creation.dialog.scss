@@ -1,0 +1,51 @@
+.dialog_main{
+    display: flex;
+    flex-direction: column;
+}
+
+.header_dialog{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 0.2vh;
+    align-items: center;
+}
+
+.header_dialog h2{
+    padding: 0;
+    margin-left: 2vh;
+}
+
+
+.button_header_dialog{
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--color-muted-light);
+}
+
+.button_header_dialog:hover{
+    color: var(--color-on-secondary);
+}
+
+/*------------- search for existing ingredient ----------------*/
+.search-bar {
+    height: 34px;
+    padding: 0 10px;
+    border: 1px solid #ea7d2b;
+    border-radius: 8px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-bar_input {
+    font-size: 14px;
+  }
+  
+  .search-bar_icon,
+  .search-bar_input::placeholder {
+    color: #8d8d8d;
+  }

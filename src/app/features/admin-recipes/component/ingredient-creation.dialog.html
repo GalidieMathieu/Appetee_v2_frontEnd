@@ -1,0 +1,31 @@
+
+<div class="dialog_main">
+  <div class="header_dialog">
+    <h2 mat-dialog-title>Create {{dialog_Title}}</h2>
+    <button class="button_header_dialog" type="button" (click)="cancel()">x</button>
+  </div>
+  <form [formGroup]="ingredientForm" novalidate class = "account-form-div">
+    @if(isNewIngredient){
+
+    }
+    @else {
+     <div class="input_with_icon--primary">
+      <mat-icon>search</mat-icon>
+       <input
+         type="text"
+         placeholder="Search ingredients..."
+       />
+     </div>
+    }
+  </form>
+
+
+  
+</div>
+
+
+<mat-dialog-actions align="end">
+      <button  class = "btn-link--primary" type="button" [disabled]="ingredientForm.invalid" (click)="submit()">
+        Save
+      </button>
+</mat-dialog-actions>
