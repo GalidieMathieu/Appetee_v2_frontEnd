@@ -12,6 +12,7 @@ The platform currently includes:
 - SQL database architecture in place
 - Authentication using cookies and sessions
 - Error and loading handling integrated into the architecture
+- Frontend deployed on Azure: https://appetee-awhsgkeqamfqh0dg.eastus-01.azurewebsites.net/
 
 ## In Development
 
@@ -19,10 +20,10 @@ The platform currently includes:
 - Admins can create recipes
 - Ingredients will be linked to Walmart items
 - Item prices will be fetched and stored in the database
-- Walmart stores will be clustered to calculate average cluster pricing
 
 ### Deployment
-- Planned deployment on Azure, including backend services
+- Frontend is live on Azure: https://appetee-awhsgkeqamfqh0dg.eastus-01.azurewebsites.net/
+- Backend is not yet deployed and is planned for the next few weeks
 
 ## Target Timeline
 
