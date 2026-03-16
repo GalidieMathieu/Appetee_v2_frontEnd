@@ -23,7 +23,7 @@ The platform currently includes:
 
 ### Deployment
 - Frontend is live on Azure: https://appetee-awhsgkeqamfqh0dg.eastus-01.azurewebsites.net/
-- Backend is not yet deployed and is planned for the next few weeks
+- Backend is not yet deployed and is planned for the next week
 
 ## Target Timeline
 
