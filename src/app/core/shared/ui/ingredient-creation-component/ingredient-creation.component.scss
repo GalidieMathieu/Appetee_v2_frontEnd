@@ -1,0 +1,59 @@
+:host {
+  display: block;
+}
+
+.ingredient-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.form-field--full {
+  width: 100%;
+}
+
+.form-label {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--color-on-secondary);
+}
+
+.nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 2rem;
+}
+
+.form-input {
+  display: block;
+  box-sizing: border-box;
+  height: 2rem;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.form-input::placeholder {
+  color: #8a8f98;
+}
+
+.form-input:disabled {
+  background-color: #f5f6f8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .nutrition-grid {
+    grid-template-columns: 1fr;
+  }
+}

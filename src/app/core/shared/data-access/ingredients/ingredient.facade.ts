@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { catchError, EMPTY, map, Observable, timeout } from 'rxjs';
+import { catchError, EMPTY, map, Observable, of, switchMap, tap, timeout } from 'rxjs';
 
 import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
-import { Ingredient } from './ingredient.model';
+import { Ingredient, IngredientAdminDetailDto, IngredientAdminDetailRequest } from './ingredient.model';
 import { IngredientsApi } from './ingredient.api';
 import { IngredientsStore } from './ingredients.store';
 
@@ -20,13 +20,6 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
       readonly ingredients$ = this.data$.pipe(
         map(ingredients => ingredients as readonly Ingredient[])
       );
-    
-      //Common Fucntion to all Facade
-      protected isLoaded(): boolean { return this.store.isLoaded(); }
-      protected setLoading(): void { this.store.setLoading(); }
-      protected setError(message: string): void { this.store.setError(message); }
-      protected setSuccess(data: Ingredient[]): void { this.store.setSuccess(data); }
-      protected override reset(): void { this.store.reset(); }
 
 
       //function Common to only the general store one that dont change, like ingredient or diet.
@@ -42,6 +35,9 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
       }
 
       load(): void {
+        if(this.store.isLoading()) {
+          return ;
+        }
         this.setLoading();
     
         this.api.getAll().pipe(
@@ -53,4 +49,45 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
         ).subscribe(data => this.setSuccess(data));
       }
 
+
+      createIngredientWithDetails(ingredientAdminDetail : IngredientAdminDetailRequest) : Observable<IngredientAdminDetailDto>
+      {
+        //this can be loading for two resons : 
+        // 1: we already trying to create an ingredient and clicked twice on create ingredient
+        // 2 : we still fetching some ingredients.
+        if(this.store.isLoading()) {
+          return EMPTY;
+        }
+
+        this.setLoading();
+        return this.api.createIngredientWithDetails(ingredientAdminDetail).pipe(
+          tap((ingredient : IngredientAdminDetailDto)=>this.store.setIngredientDetails(ingredient)),
+          catchError(err => {
+            this.setError(this.toUserMessage(err));
+            return EMPTY;
+          })
+        );
+      }
+
+      getIngredientWithDetails(id: number): Observable<IngredientAdminDetailDto> {
+
+        if(this.store.isLoading()) {
+          return EMPTY;
+        }
+
+        const cached = this.store.getIngredientDetailsById(id);
+        if (cached) {
+          return of(cached);
+        }
+
+        this.setLoading();
+
+        return this.api.getIngredientWithDetails(id).pipe(
+          tap((ingredient : IngredientAdminDetailDto)=>this.store.setIngredientDetails(ingredient)),
+          catchError(err => {
+            this.setError(this.toUserMessage(err));
+            return EMPTY;
+          })
+        );
+      }
     }

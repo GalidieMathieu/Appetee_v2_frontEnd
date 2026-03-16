@@ -38,7 +38,7 @@ export class PrivateHeaderComponent {
     { label: 'Recipes', path: '/recipes' },
     { label: 'Diet & Needs', path: '/diet-needs' },
     { label: 'Profile', path: '/profile' },
-    { label: 'Create Recipes', path: '/admin-recipes' },
+    { label: 'Create Recipes', path: '/admin-recipes/create' },
 
   ];
 

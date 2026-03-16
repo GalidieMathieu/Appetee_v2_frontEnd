@@ -20,12 +20,6 @@ export class DietsFacade extends AbstractLoadFacade<Diet[] , DietsStore> {
     map(diets => diets as readonly Diet[])
   );
 
-  protected isLoaded(): boolean { return this.store.isLoaded(); }
-  protected setLoading(): void { this.store.setLoading(); }
-  protected setError(message: string): void { this.store.setError(message); }
-  protected setSuccess(data: Diet[]): void { this.store.setSuccess(data); }
-  protected override reset(): void { this.store.reset(); }
-
   loadIfNeeded(): void {
     if (this.isLoaded()) return;
     this.load();

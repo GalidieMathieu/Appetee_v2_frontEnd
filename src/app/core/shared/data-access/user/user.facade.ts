@@ -26,13 +26,6 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
       distinctUntilChanged()
     );
 
-  //Common Fucntion to all Facade
-  protected isLoaded(): boolean { return this.store.isLoaded(); }
-  protected setLoading(): void { this.store.setLoading(); }
-  protected setError(message: string): void { this.store.setError(message); }
-  protected setSuccess(data: User): void { this.store.setSuccess(data); }
-  protected override reset(): void { this.store.reset(); }
-
   //Function for UserData manipulation : 
 
     /**
@@ -55,7 +48,7 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
     return this.api.checkUserExist(email).pipe(
       take(1),
       map(res => {
-        this.store.setSucess();
+        this.store.setSucessWithoutData();
         return !res.exists;
       }),
       catchError(err => {

@@ -1,0 +1,133 @@
+<form class="ingredient-form" [formGroup]="form">
+  <div class="form-field form-field--full">
+    <label class="form-label" for="ingredient-name">Ingredient Name</label>
+    <input
+      id="ingredient-name"
+      class="input--primary form-input"
+      type="text"
+      formControlName="name"
+      placeholder=""
+    />
+  </div>
+
+  <div class="nutrition-grid">
+    <div class="form-field">
+      <label class="form-label" for="basis">Basis in g</label>
+      <input
+        id="basis"
+        class="input--primary form-input"
+        type="text"
+        formControlName="basis"
+        placeholder="100g"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="caloriesKcal">Calories (kcal)</label>
+      <input
+        id="caloriesKcal"
+        class="input--primary form-input"
+        type="number"
+        formControlName="caloriesKcal"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="proteinG">Protein (g)</label>
+      <input
+        id="proteinG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="proteinG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="fatG">Fat (g)</label>
+      <input
+        id="fatG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="fatG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="carbsG">Carbs (g)</label>
+      <input
+        id="carbsG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="carbsG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="sugarG">Sugar (g)</label>
+      <input
+        id="sugarG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="sugarG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="fiberG">Fiber (g)</label>
+      <input
+        id="fiberG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="fiberG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="sodiumMg">Sodium (mg)</label>
+      <input
+        id="sodiumMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="sodiumMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="vitaminCMg">Vitamin C (mg)</label>
+      <input
+        id="vitaminCMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="vitaminCMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="ironMg">Iron (mg)</label>
+      <input
+        id="ironMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="ironMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+  </div>
+</form>

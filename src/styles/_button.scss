@@ -9,7 +9,6 @@
   }
 
   .btn-link--primary:hover {
-    /* Tailwind /90 is ~0.9 opacity; easiest is a separate token */
     background: var(--color-primary-hover, hsl(var(--color-primary-hsl)));
     box-shadow:
       0 20px 25px -5px rgba(0, 0, 0, 0.14),

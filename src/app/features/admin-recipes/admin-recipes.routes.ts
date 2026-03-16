@@ -2,5 +2,24 @@ import { Routes } from '@angular/router';
 import { AdminRecipesPageComponent } from './admin-recipes.page';
 
 export const ADMINRECIPES_ROUTES: Routes = [
-  { path: '', component: AdminRecipesPageComponent }
+  {
+    path: 'create',
+    component: AdminRecipesPageComponent,
+  },
+  {
+    path: ':id/edit',
+    component: AdminRecipesPageComponent,
+  },
 ];
+
+/*
+
+how to use it : 
+  goToEditRecipe(recipeId: number): void {
+    void this.router.navigate(['/admin-recipes', recipeId, 'edit']);
+  }
+
+  <button [routerLink]="['/admin-recipes', recipe.id, 'edit']">
+    Edit
+  </button>
+*/

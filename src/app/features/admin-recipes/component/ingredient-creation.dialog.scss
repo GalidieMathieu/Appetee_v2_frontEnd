@@ -1,19 +1,25 @@
 .dialog_main{
     display: flex;
     flex-direction: column;
+    padding:  0 2vh;
+    max-height: 70vh;
+    overflow-y: auto;
+    max-width: 50vh;
 }
 
 .header_dialog{
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    margin: 0.2vh;
     align-items: center;
 }
 
 .header_dialog h2{
     padding: 0;
-    margin-left: 2vh;
+}
+
+.subTitle_dialog{
+    margin: 0px 0px 16px 0px ;
 }
 
 
@@ -29,6 +35,12 @@
 .button_header_dialog:hover{
     color: var(--color-on-secondary);
 }
+
+
+
+//##############################################################
+//###################       search bar       ###################
+//##############################################################
 
 /*------------- search for existing ingredient ----------------*/
 .search-bar {
@@ -48,4 +60,172 @@
   .search-bar_icon,
   .search-bar_input::placeholder {
     color: #8d8d8d;
+  }
+
+/*------------- result of  for existing ingredient ----------------*/
+.search-results{
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    padding: 0.25rem;
+    gap : 0.25rem;
+    align-items: stretch;
+}
+
+.search-result-item{
+    width: 100%;
+    background: var(--color-surface);
+    height: 2rem;
+    border: none;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    text-align: left;
+}
+
+.search-result-item:hover{
+    background: var(--color-secondary-hover);
+}
+
+.search-results_empty{
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+.search-results_empty p{
+    margin-top: 0;
+}
+.manual_entry__button{
+    text-align: center;
+    color: var(--color-primary);
+    background-color: var(--color-on-primary);
+    border: none;
+}
+
+.manual_entry__button:hover{
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 1px;
+}
+
+
+/*----------------- LINK with recepies ----------------*/
+.ingredient-form-div {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  // Ingredient summary card (salmon/peach background)
+  .ingredient-summary-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: var(--color-secondary-hover);
+    border-radius: 12px;
+  }
+  
+  .ingredient-summary-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .ingredient-summary-card__name {
+    font-size: 1rem;
+    font-weight: 550;
+    color: var(--color-on-secondary);
+  }
+  
+  .ingredient-summary-card__nutrition {
+    margin: 0;
+  }
+  
+  .ingredient-summary-card_change {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-on-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+  }
+  
+  .ingredient-summary-card_change:hover {
+    background: var(--color-primary-hover);
+    color: var(--color-on-primary);
+  }
+  
+
+  .form-input {
+    display: block;
+    box-sizing: border-box;
+    height: 2rem;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease,
+      background-color 150ms ease;
+  }
+
+  // Quantity and unit inputs
+  .ingredient-form-fields {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .ingredient-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
+  }
+  
+  .ingredient-form-field label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a1a1a;
+  }
+  
+  .ingredient-form-input {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    border: 1px solid #d1d1d1;
+    border-radius: 8px;
+    background: #fff;
+    color: #1a1a1a;
+  }
+  
+  .ingredient-form-input::placeholder {
+    color: #9a9a9a;
+  }
+  
+  .ingredient-form-input:focus {
+    outline: none;
+    border-color: var(--color-primary, #ea7d2b);
+  }
+
+
+
+  //--------------- footer ----------------
+
+  .footer{
+    margin-top: 1rem;
+    gap : 0.75rem;
+  }
+
+  .button_nav {
+    height: 2rem;
+    font-size: 0.75rem;
+    font-weight: 550;  
+    border-radius: 8px; 
+    border: none;
+    padding: 0.5rem 1rem;
   }
