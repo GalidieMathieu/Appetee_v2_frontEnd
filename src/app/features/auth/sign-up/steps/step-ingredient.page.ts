@@ -21,8 +21,6 @@ export class StepIngredientPage implements OnInit {
   private readonly facade = inject(IngredientsFacade);
 
   readonly ingredients$ = this.facade.ingredients$;
-  readonly loadstate$ = this.facade.state$;
-  readonly error$ = this.facade.error$;
   
 
   //we use this for the search purpose

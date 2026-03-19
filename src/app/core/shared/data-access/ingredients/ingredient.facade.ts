@@ -60,7 +60,7 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
         }
 
         this.setLoading();
-        return this.api.createIngredientWithDetails(ingredientAdminDetail).pipe(
+        return this.api.createIngredientWithDetails(this.toIngredientCreateFormData(ingredientAdminDetail)).pipe(
           tap((ingredient : IngredientAdminDetailDto)=>this.store.setIngredientDetails(ingredient)),
           catchError(err => {
             this.setError(this.toUserMessage(err));
@@ -89,5 +89,53 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
             return EMPTY;
           })
         );
+      }
+
+      private toIngredientCreateFormData(ingredient: IngredientAdminDetailRequest): FormData {
+        const formData = new FormData();
+
+        formData.append('name', ingredient.name);
+        formData.append('basis', ingredient.basis.toString());
+
+        if (ingredient.price !== null) {
+          formData.append('price', ingredient.price.toString());
+        }
+
+        formData.append('caloriesKcal', ingredient.caloriesKcal.toString());
+        formData.append('image', ingredient.image);
+
+        if (ingredient.proteinG !== null) {
+          formData.append('proteinG', ingredient.proteinG.toString());
+        }
+
+        if (ingredient.fatG !== null) {
+          formData.append('fatG', ingredient.fatG.toString());
+        }
+
+        if (ingredient.carbsG !== null) {
+          formData.append('carbsG', ingredient.carbsG.toString());
+        }
+
+        if (ingredient.sugarG !== null) {
+          formData.append('sugarG', ingredient.sugarG.toString());
+        }
+
+        if (ingredient.fiberG !== null) {
+          formData.append('fiberG', ingredient.fiberG.toString());
+        }
+
+        if (ingredient.sodiumMg !== null) {
+          formData.append('sodiumMg', ingredient.sodiumMg.toString());
+        }
+
+        if (ingredient.vitaminCMg !== null) {
+          formData.append('vitaminCMg', ingredient.vitaminCMg.toString());
+        }
+
+        if (ingredient.ironMg !== null) {
+          formData.append('ironMg', ingredient.ironMg.toString());
+        }
+
+        return formData;
       }
     }

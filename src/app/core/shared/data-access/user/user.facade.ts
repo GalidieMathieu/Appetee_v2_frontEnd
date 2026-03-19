@@ -4,8 +4,7 @@ import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
 import { UserApi } from './user_auth.api';
 import { User } from './user.model';
 import { UserStore } from './user.store';
-import { catchError, distinctUntilChanged, EMPTY, map, Observable, of, take, tap } from 'rxjs';
-import { EntityStore } from '../generic-template/entityStore';
+import { catchError, distinctUntilChanged, map, Observable, of, take, tap } from 'rxjs';
 
 
 @Injectable({ providedIn: 'root' })
@@ -42,18 +41,18 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
   /*
     Check the current email, need to be subscribe to handle data
   */
-  checkEmailAndProceed$(email: string): Observable<boolean> 
+  checkEmailAndProceed$(email: string): Observable<'available' | 'taken' | 'error'> 
   {
     this.store.setLoading();
     return this.api.checkUserExist(email).pipe(
       take(1),
       map(res => {
-        this.store.setSucessWithoutData();
-        return !res.exists;
+        this.setSuccessWithNoData();
+        return res.exists ? 'taken' : 'available';
       }),
       catchError(err => {
-        this.store.setError(this.toUserMessage(err));
-        return of(false);
+        this.setError(this.toUserMessage(err));
+        return of<'error'>('error');
       })
     );
 

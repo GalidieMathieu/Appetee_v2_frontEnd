@@ -1,6 +1,6 @@
 import { Component, effect, inject, input, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Ingredient, IngredientAdminDetailDto, IngredientAdminDetailRequest } from '../../data-access/ingredients/ingredient.model';
+import { IngredientAdminDetailDto, IngredientAdminDetailRequest } from '../../data-access/ingredients/ingredient.model';
 import { IngredientsFacade } from '../../data-access/ingredients/ingredient.facade';
 
 @Component({
@@ -18,7 +18,8 @@ export class IngredientCreateFormComponent {
   readonly created = output<IngredientAdminDetailDto>();
   readonly cancelled = output<void>();
   readonly validityChanged = output<boolean>();
-  readonly ingredientFacade = inject(IngredientsFacade)
+  readonly ingredientFacade = inject(IngredientsFacade);
+  selectedImageName = '';
 
   readonly form = new FormGroup({
     name: new FormControl('', {
@@ -29,6 +30,10 @@ export class IngredientCreateFormComponent {
       validators: [Validators.required],
     }),
     caloriesKcal:new FormControl<number>(100,{nonNullable: true,
+      validators: [Validators.required],
+    }),
+    price: new FormControl<number | null>(null),
+    image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
     proteinG: new FormControl<number | null>(null),
@@ -57,7 +62,30 @@ export class IngredientCreateFormComponent {
       this.validityChanged.emit(this.form.valid);
     });
   }
-  
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+
+    if (!file) {
+      this.selectedImageName = '';
+      this.form.controls.image.setValue(null);
+      return;
+    }
+
+    if (!this.isAvifFile(file)) {
+      this.selectedImageName = '';
+      this.form.controls.image.setValue(null);
+      this.form.controls.image.setErrors({ invalidFileType: true });
+      input.value = '';
+      return;
+    }
+
+    this.selectedImageName = file.name;
+    this.form.controls.image.setValue(file);
+    this.form.controls.image.markAsDirty();
+    this.form.controls.image.updateValueAndValidity();
+  }
 
   createIngredient(): void {
     if (this.form.invalid) {
@@ -66,19 +94,33 @@ export class IngredientCreateFormComponent {
     }
 
     const formValue = this.form.getRawValue();
-    const ingredientAdminDetail: IngredientAdminDetailRequest = formValue;
+    const image = formValue.image;
+
+    if (!image) {
+      this.form.controls.image.setErrors({ required: true });
+      this.form.controls.image.markAsTouched();
+      return;
+    }
+
+    const ingredientAdminDetail: IngredientAdminDetailRequest = {
+      name: formValue.name,
+      basis: formValue.basis,
+      price: formValue.price,
+      caloriesKcal: formValue.caloriesKcal,
+      image,
+      proteinG: formValue.proteinG,
+      fatG: formValue.fatG,
+      carbsG: formValue.carbsG,
+      sugarG: formValue.sugarG,
+      fiberG: formValue.fiberG,
+      sodiumMg: formValue.sodiumMg,
+      vitaminCMg: formValue.vitaminCMg,
+      ironMg: formValue.ironMg,
+    };
 
     this.ingredientFacade.createIngredientWithDetails(ingredientAdminDetail).subscribe({
       next: (data: IngredientAdminDetailDto) => {
-        // Merge API response with form values so name and other fields are always present
-        // (backend may return only id on create)
-        const fullDto: IngredientAdminDetailDto = {
-          ...formValue,
-          ...data,
-          id: data.id,
-          name: data.name ?? formValue.name,
-        };
-        this.created.emit(fullDto);
+        this.created.emit(data);
       }
     });
 
@@ -92,5 +134,9 @@ export class IngredientCreateFormComponent {
 
   cancel(): void {
     this.cancelled.emit();
+  }
+
+  private isAvifFile(file: File): boolean {
+    return file.type === 'image/avif' || file.name.toLowerCase().endsWith('.avif');
   }
 }

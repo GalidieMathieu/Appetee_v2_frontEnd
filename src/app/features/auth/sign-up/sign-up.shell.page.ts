@@ -1,11 +1,13 @@
 import { Component, DestroyRef, inject, OnDestroy , OnInit} from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet, RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { SignUpWizard } from './sign-up.wizard';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { SignUpRequest } from '@app/core/auth/data-access/auth.model';
+import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
+import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
 
 @Component({
   standalone: true,
@@ -42,7 +44,13 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     readonly wizard = inject(SignUpWizard);
     private readonly user_authFacace = inject(UserFacade);
     private readonly authFacade = inject(AuthFacade);
+    private readonly dietsFacade = inject(DietsFacade);
+    private readonly ingredientsFacade = inject(IngredientsFacade);
     private readonly destroyRef = inject(DestroyRef);
+    private readonly authError = toSignal(this.authFacade.error$, { initialValue: null });
+    private readonly userError = toSignal(this.user_authFacace.error$, { initialValue: null });
+    private readonly dietsError = toSignal(this.dietsFacade.error$, { initialValue: null });
+    private readonly ingredientsError = toSignal(this.ingredientsFacade.error$, { initialValue: null });
 
     ngOnDestroy(): void {
         this.wizard.reset();
@@ -132,14 +140,26 @@ export class SignUpShellPage implements OnDestroy, OnInit{
 
         // clear previous
         this.wizard.removeError(emailCtrl, 'emailTaken');
-        this.user_authFacace.checkEmailAndProceed$(email).subscribe(canProceed =>{
-            if (canProceed) this.router.navigate([this.steps[this.currentIndex +1]], { relativeTo: this.route});
-            else{
+        this.user_authFacace.checkEmailAndProceed$(email).subscribe(result =>{
+            if (result === 'available') {
+                this.router.navigate([this.steps[this.currentIndex +1]], { relativeTo: this.route});
+            } else if (result === 'taken') {
                 this.wizard.addError(emailCtrl, 'emailTaken'); // validation feedback
                 emailCtrl.markAsTouched();
-                return;
             }
         });
+    }
+
+    errorMessage(): string | null {
+        if (this.currentIndex === 1) {
+            return this.dietsError();
+        }
+
+        if (this.currentIndex === 2) {
+            return this.authError() ?? this.ingredientsError();
+        }
+
+        return this.authError() ?? this.userError();
     }
 
 }

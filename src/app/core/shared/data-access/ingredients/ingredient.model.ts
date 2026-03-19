@@ -13,7 +13,9 @@ export interface Ingredient {
     id: number;
     name: string;
     basis: number;
+    price: number | null;
     caloriesKcal: number;
+    imageUrl: string | null;
     proteinG: number | null;
     fatG: number | null;
     carbsG: number | null;
@@ -28,7 +30,9 @@ export interface Ingredient {
   export type IngredientAdminDetailRequest = {
     name: string;
     basis: number;
+    price: number | null;
     caloriesKcal: number;
+    image: File;
     proteinG: number | null;
     fatG: number | null;
     carbsG: number | null;

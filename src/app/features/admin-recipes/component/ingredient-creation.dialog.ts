@@ -36,6 +36,7 @@ export class IngredientDialogComponent implements OnInit {
       dialog_subTitle : string = "Search for an existing ingredient or create a new one.";
 
       readonly facade = inject(IngredientsFacade);
+      readonly errorMessage = toSignal(this.facade.error$, { initialValue: null });
 
 
       //##################### General State #################

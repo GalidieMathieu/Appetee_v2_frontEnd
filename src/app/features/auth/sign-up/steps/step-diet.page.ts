@@ -19,8 +19,6 @@ export class StepDietPage implements OnInit {
   private readonly facade = inject(DietsFacade);
 
   readonly diets$ = this.facade.diets$;
-  readonly loadstate$ = this.facade.state$; // if you have it
-  readonly error$ = this.facade.error$;     // if you have it
 
   ngOnInit(): void {
     this.facade.loadIfNeeded();

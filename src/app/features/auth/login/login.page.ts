@@ -1,6 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 
@@ -13,6 +14,8 @@ import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 })
 export class LoginPage {
     private readonly authFacade = inject(AuthFacade);
+    readonly errorMessage = toSignal(this.authFacade.error$, { initialValue: null });
+
     constructor(private router: Router) {}
 
     email_Label : string = "Email";

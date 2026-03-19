@@ -7,6 +7,9 @@
     <button class="button_header_dialog" type="button" (click)="cancel()">x</button>
   </div>
   <p class="text-small subTitle_dialog">{{dialog_subTitle}}</p>
+  @if (errorMessage(); as errorMessage) {
+    <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
+  }
 
   <!--  
     Search mode, to handle the possibility of creating a new ingredient  
@@ -165,4 +168,3 @@
     </button>
   }
 </mat-dialog-actions>
-

@@ -35,6 +35,37 @@
     </div>
 
     <div class="form-field">
+      <label class="form-label" for="price">Price</label>
+      <input
+        id="price"
+        class="input--primary form-input"
+        type="number"
+        formControlName="price"
+        placeholder=""
+        step="0.01"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="ingredientImage">Image (.avif)</label>
+      <button
+        id="ingredientImage"
+        class="input--primary form-input"
+        type="button"
+        (click)="imageInput.click()"
+      >
+        {{ selectedImageName || 'Select .avif file' }}
+      </button>
+      <input
+        #imageInput
+        type="file"
+        accept=".avif,image/avif"
+        hidden
+        (change)="onImageSelected($event)"
+      />
+    </div>
+
+    <div class="form-field">
       <label class="form-label" for="proteinG">Protein (g)</label>
       <input
         id="proteinG"

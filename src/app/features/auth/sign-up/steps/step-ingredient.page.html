@@ -1,11 +1,4 @@
 <form [formGroup]="wizard.avoid" class="ingredients-form" novalidate>
-  
-    @if (error$ | async) {
-        <div class="form-error" role="alert">
-          {{ error$ | async }}
-        </div>
-      }
-
       <div class="input_with_icon--primary">
         <mat-icon>search</mat-icon>
          <input

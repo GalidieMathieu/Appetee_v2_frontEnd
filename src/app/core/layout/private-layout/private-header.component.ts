@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
+import { finalize } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 type NavItem = {
@@ -80,7 +81,12 @@ export class PrivateHeaderComponent {
   }
 
   logout(): void {
-    this.authFacade.logout();
-    void this.router.navigateByUrl('/auth/login');
+    this.authFacade.logout()
+      .pipe(
+        finalize(() => {
+          void this.router.navigateByUrl('/auth/login');
+        })
+      )
+      .subscribe();
   }
 }

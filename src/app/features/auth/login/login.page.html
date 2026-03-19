@@ -4,6 +4,9 @@
             <div class = "logIn-shell_content">
                 <h2>{{title}}</h2>
                 <p>{{subTitle}}</p>
+                @if (errorMessage(); as errorMessage) {
+                    <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
+                }
             </div>
             <form [formGroup]="loginForm" novalidate class = "account-form-div">
                 <div class = "email-input-div">
