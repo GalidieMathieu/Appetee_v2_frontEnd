@@ -22,7 +22,7 @@ The platform currently includes:
 - Item prices will be fetched and stored in the database
 
 ### Deployment
-- Frontend is live on Azure: https://appetee-awhsgkeqamfqh0dg.eastus-01.azurewebsites.net/
+- Frontend is live on Azure: https://appetee-awhsgkeqamfqh0dg.eastus-01.azurewebsites.net/ (may take 1 min to wake up and load)
 - Backend is not yet deployed and is planned for the next week
 
 ## Target Timeline
