@@ -1,0 +1,117 @@
+<section class="meal-plan-page">
+  <div class="meal-plan-page__shell">
+    <header class="meal-plan-page__header">
+      <div>
+        <span class="meal-plan-page__eyebrow">Meal Planning</span>
+        <h1>Meal Prep</h1>
+        <p>Create, manage, and update your meal prep plans</p>
+      </div>
+
+      <a class="btn-link--primary meal-plan-page__cta" [routerLink]="['/meal-plan/new']">
+        New Meal Prep
+      </a>
+    </header>
+
+    <section class="meal-plan-page__filters">
+      <div class="input_with_icon--primary meal-plan-page__search">
+        <mat-icon>search</mat-icon>
+        <input type="text" placeholder="Search saved meal prep plans..." [formControl]="searchControl" />
+      </div>
+
+      <div class="meal-plan-page__filter-pills">
+        @for (filter of badgeFilters; track filter.value) {
+          <button
+            type="button"
+            class="meal-plan-page__filter-pill"
+            [class.is-selected]="badgeFilter() === filter.value"
+            (click)="setBadgeFilter(filter.value)"
+          >
+            {{ filter.label }}
+          </button>
+        }
+      </div>
+    </section>
+
+    @if (isLoading()) {
+      <section class="meal-plan-page__grid" aria-busy="true">
+        @for (card of loadingCards; track card) {
+          <article class="meal-plan-card meal-plan-card--loading" aria-hidden="true"></article>
+        }
+      </section>
+    } @else if (!hasSavedMealPlans()) {
+      <section class="meal-plan-empty">
+        <h2>No meal prep plans yet</h2>
+        <p>Build your first rotation, save the shopping list, and keep the whole week organized.</p>
+        <a class="btn-link--primary meal-plan-empty__cta" [routerLink]="['/meal-plan/new']">
+          Create Your First Meal Prep
+        </a>
+      </section>
+    } @else if (filteredMealPlans().length === 0) {
+      <section class="meal-plan-empty meal-plan-empty--soft">
+        <h2>No meal prep plans match these filters</h2>
+        <p>Try another search term or switch back to a wider badge filter.</p>
+      </section>
+    } @else {
+      <section class="meal-plan-page__grid">
+        @for (mealPlan of filteredMealPlans(); track mealPlan.id) {
+          <article class="meal-plan-card">
+            <div class="meal-plan-card__top">
+              <div>
+                <h2>{{ mealPlan.name }}</h2>
+                <p>Updated {{ mealPlan.lastUpdated | date: 'mediumDate' }}</p>
+              </div>
+
+              <div class="meal-plan-card__badges">
+                @for (badge of mealPlan.badges; track badge) {
+                  <span class="meal-plan-card__badge">{{ badge }}</span>
+                }
+              </div>
+            </div>
+
+            <div class="meal-plan-card__stats">
+              <div>
+                <span>Duration</span>
+                <strong>{{ mealPlan.durationDays }} days</strong>
+              </div>
+              <div>
+                <span>Meals / day</span>
+                <strong>{{ mealPlan.mealsPerDay }}</strong>
+              </div>
+              <div>
+                <span>Daily kcal</span>
+                <strong>{{ mealPlan.caloriesPerDay }}</strong>
+              </div>
+              <div>
+                <span>Daily protein</span>
+                <strong>{{ mealPlan.proteinPerDay }}g</strong>
+              </div>
+              <div>
+                <span>Total price</span>
+                <strong>{{ mealPlan.estimatedTotalPrice | currency: 'USD' }}</strong>
+              </div>
+            </div>
+
+            <div class="meal-plan-card__actions">
+              <a class="btn-link-secondary meal-plan-card__button" [routerLink]="['/meal-plan', mealPlan.id]">
+                Open
+              </a>
+              <a
+                class="btn-link-secondary meal-plan-card__button"
+                [routerLink]="['/meal-plan', mealPlan.id, 'edit']"
+              >
+                Edit
+              </a>
+              <button
+                type="button"
+                class="btn-link--primary meal-plan-card__button"
+                (click)="openDeleteDialog(mealPlan)"
+              >
+                Delete
+              </button>
+            </div>
+          </article>
+        }
+      </section>
+    }
+  </div>
+</section>

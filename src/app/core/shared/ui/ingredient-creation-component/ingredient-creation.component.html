@@ -16,9 +16,11 @@
       <input
         id="basis"
         class="input--primary form-input"
-        type="text"
+        type="number"
         formControlName="basis"
         placeholder="100g"
+        step="0.01"
+        min="0.01"
       />
     </div>
 
@@ -31,6 +33,7 @@
         formControlName="caloriesKcal"
         placeholder=""
         step="1"
+        min="0"
       />
     </div>
 
@@ -43,6 +46,7 @@
         formControlName="price"
         placeholder=""
         step="0.01"
+        min="0"
       />
     </div>
 
@@ -50,11 +54,20 @@
       <label class="form-label" for="ingredientImage">Image (.avif)</label>
       <button
         id="ingredientImage"
-        class="input--primary form-input"
+        class="input--primary form-input ingredient-file-button"
         type="button"
         (click)="imageInput.click()"
+        [attr.title]="selectedImageName || 'Select .avif file'"
       >
-        {{ selectedImageName || 'Select .avif file' }}
+        <span
+          class="ingredient-file-button__text"
+          [class.ingredient-file-button__text--placeholder]="!selectedImageName"
+        >
+          {{ selectedImageName || 'Select .avif file' }}
+        </span>
+        <span class="ingredient-file-button__action">
+          {{ selectedImageName ? 'Change' : 'Browse' }}
+        </span>
       </button>
       <input
         #imageInput

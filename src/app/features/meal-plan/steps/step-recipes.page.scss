@@ -1,0 +1,218 @@
+.discover-step {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.discover-step__filters,
+.discover-step__banner,
+.discover-step__suggestions,
+.discover-step__selected {
+  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: 1rem;
+  background: var(--color-bg-secondary);
+}
+
+.discover-step__filters,
+.discover-step__banner,
+.discover-step__suggestions,
+.discover-step__selected {
+  padding: 1rem;
+}
+
+.discover-step__search {
+  height: 3rem;
+}
+
+.discover-step__sorts {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.discover-step__sort {
+  padding: 0.7rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.discover-step__sort.is-selected {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+}
+
+.discover-step__banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.discover-step__banner strong,
+.discover-step__section-header h3,
+.discover-step__card h4,
+.discover-step__empty h4 {
+  color: var(--color-text);
+}
+
+.discover-step__banner p,
+.discover-step__section-header p,
+.discover-step__card p,
+.discover-step__selected-card p,
+.discover-step__empty p {
+  margin: 0.35rem 0 0;
+  color: var(--color-muted);
+}
+
+.discover-step__layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+}
+
+.discover-step__section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.discover-step__section-header h3 {
+  margin: 0;
+}
+
+.discover-step__section-header--stacked {
+  align-items: flex-start;
+}
+
+.discover-step__cards,
+.discover-step__selected-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.discover-step__card,
+.discover-step__selected-card {
+  border-radius: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.discover-step__card {
+  overflow: hidden;
+}
+
+.discover-step__card-image {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+}
+
+.discover-step__card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.discover-step__card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.discover-step__card h4,
+.discover-step__selected-card strong {
+  margin: 0;
+}
+
+.discover-step__badge {
+  align-self: flex-start;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 12%, white);
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.discover-step__stats,
+.discover-step__ingredients {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.discover-step__stats span,
+.discover-step__ingredients span {
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-bg-secondary);
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.discover-step__action,
+.discover-step__shuffle,
+.discover-step__banner-button,
+.discover-step__selected-button {
+  border: none;
+  border-radius: var(--radius);
+  min-height: 2.8rem;
+  font-weight: 700;
+}
+
+.discover-step__selected-card {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.discover-step__selected-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.discover-step__selected-button {
+  min-height: 2.4rem;
+  padding: 0 0.8rem;
+}
+
+.discover-step__empty {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in srgb, var(--color-border) 80%, transparent);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.discover-step__empty--compact {
+  padding: 1.25rem;
+}
+
+@media (max-width: 960px) {
+  .discover-step__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .discover-step__section-header,
+  .discover-step__card-top,
+  .discover-step__selected-card,
+  .discover-step__selected-actions,
+  .discover-step__banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

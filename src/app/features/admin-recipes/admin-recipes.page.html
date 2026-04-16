@@ -1,5 +1,170 @@
-<div class="landing-page">
-    <button class = "btn-link--primary" type="button" (click)="openIngredientDialog()">
-        Create ingredient
-      </button>
-</div>
+<section class="recipe-page">
+  <div class="recipe-page__shell">
+    <header class="recipe-page__header">
+      <div class="recipe-page__title-wrap">
+        <h1 class="text-title">Create New Recipe</h1>
+      </div>
+    </header>
+
+    <form class="recipe-page__content" [formGroup]="form" (ngSubmit)="saveRecipe()" novalidate>
+      <div class="recipe-page__main">
+        <section class="recipe-card">
+          <div class="recipe-card__copy">
+            <h2 class="text-subtitle">Basic Information</h2>
+            <p class="text-body-secondary">Tell us about your recipe</p>
+          </div>
+
+          <div class="recipe-form-field">
+            <label class="text-label recipe-form-field__label" for="recipe-name">Recipe Name</label>
+            <input
+              id="recipe-name"
+              class="input--primary recipe-form-field__input"
+              type="text"
+              formControlName="name"
+              placeholder="e.g. My Special Pasta"
+            />
+          </div>
+
+          <div class="recipe-form-field">
+            <label class="text-label recipe-form-field__label" for="recipe-image">Image (.avif)</label>
+            <div class="recipe-file-field">
+              <button
+                id="recipe-image"
+                class="input--primary recipe-form-field__input recipe-file-button"
+                type="button"
+                (click)="recipeImageInput.click()"
+                [attr.title]="selectedImageName || 'Select .avif file'"
+              >
+                <span
+                  class="recipe-file-button__text"
+                  [class.recipe-file-button__text--placeholder]="!selectedImageName"
+                >
+                  {{ selectedImageName || 'Select .avif file' }}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                class="recipe-file-field__preview"
+                (click)="recipeImageInput.click()"
+                aria-label="Select image"
+              >
+                <mat-icon>image</mat-icon>
+              </button>
+            </div>
+            <input
+              #recipeImageInput
+              type="file"
+              accept=".avif,image/avif"
+              hidden
+              (change)="onImageSelected($event)"
+            />
+          </div>
+        </section>
+
+        <section class="recipe-card">
+          <div class="recipe-card__header">
+            <div class="recipe-card__copy">
+              <h2 class="text-subtitle">Ingredients</h2>
+              <p class="text-body-secondary">Add the ingredients for your recipe</p>
+            </div>
+
+            <button
+              type="button"
+              class="btn-link--primary recipe-card__action"
+              (click)="openIngredientDialog()"
+            >
+              <mat-icon>add</mat-icon>
+              <span>Add Ingredient</span>
+            </button>
+          </div>
+
+          <div class="recipe-ingredients">
+            @if (ingredients.length === 0) {
+              <div class="text-body-secondary recipe-ingredients__empty">
+                No ingredients added yet.
+              </div>
+            } @else {
+              <div class="recipe-ingredients__list">
+                @for (ingredient of ingredients; track ingredient.ingredientId; let index = $index) {
+                  <article class="recipe-ingredients__item">
+                    <div class="recipe-ingredients__item-copy">
+                      <strong>{{ ingredient.ingredient.name }}</strong>
+                      <span>
+                        {{ ingredient.quantity ?? ingredient.ingredient.basis }}
+                        {{ ingredient.unit || 'g' }}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="recipe-ingredients__remove"
+                      (click)="removeIngredient(index)"
+                    >
+                      Remove
+                    </button>
+                  </article>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="recipe-card">
+          <div class="recipe-card__copy">
+            <h2 class="text-subtitle">Instructions</h2>
+            <p class="text-body-secondary">How do you cook this recipe?</p>
+          </div>
+
+          <div class="recipe-form-field">
+            <textarea
+              class="input--primary recipe-form-field__textarea"
+              formControlName="instructions"
+              placeholder="Step 1: Boil water... Step 2: Add pasta... Step 3: Enjoy!"
+            ></textarea>
+          </div>
+        </section>
+      </div>
+
+      <aside class="recipe-card recipe-summary">
+        <h2 class="text-subtitle">Summary</h2>
+
+        <div class="recipe-summary__image">
+          @if (previewImageUrl) {
+            <img [src]="previewImageUrl" [alt]="recipeName" />
+          } @else {
+            <mat-icon>image</mat-icon>
+            <span class="text-body-secondary">No image</span>
+          }
+        </div>
+
+        <div class="recipe-summary__headline">
+          <h3 class="text-heading">{{ recipeName }}</h3>
+          <span class="recipe-summary__chip">{{ ingredientLabel }}</span>
+        </div>
+
+        <div class="recipe-summary__stats">
+          <div class="recipe-summary__stat">
+            <span class="text-body-secondary">Total Calories</span>
+            <strong>{{ totalCalories }} kcal</strong>
+          </div>
+
+          <div class="recipe-summary__stat">
+            <span class="text-body-secondary">Total Protein</span>
+            <strong>{{ totalProtein }} g</strong>
+          </div>
+
+          <div class="recipe-summary__stat">
+            <span class="text-body-secondary">Total Fat</span>
+            <strong>{{ totalFat }} g</strong>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-link--primary recipe-summary__save">
+          <mat-icon>save</mat-icon>
+          <span>Save Recipe</span>
+        </button>
+      </aside>
+    </form>
+  </div>
+</section>

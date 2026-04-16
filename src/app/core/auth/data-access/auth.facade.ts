@@ -75,7 +75,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     return this.api.signUp(user).pipe(
       tap((session: UserSession) => {
         this.setSuccess(session);
-        console.log(session);
+        this.store.isAuthenticated.set(true);
       }),
       switchMap(() => this.userFacade.getMe$()),
       map(() => void 0),

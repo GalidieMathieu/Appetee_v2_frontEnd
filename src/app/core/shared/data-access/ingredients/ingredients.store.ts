@@ -27,10 +27,22 @@ export class IngredientsStore extends EntityStore<Ingredient[]> {
   }
 
   setIngredientDetails(detail: IngredientAdminDetailDto): void {
+    const ingredientSummary: Ingredient = {
+      id: detail.id,
+      name: detail.name,
+    };
+    const currentIngredients = this.dataSubject.value;
+    const nextIngredients = currentIngredients.some(ingredient => ingredient.id === detail.id)
+      ? currentIngredients.map(ingredient =>
+          ingredient.id === detail.id ? ingredientSummary : ingredient
+        )
+      : [...currentIngredients, ingredientSummary];
+
     this.ingredientDetailsByIdSubject.next({
       ...this.ingredientDetailsByIdSubject.value,
       [detail.id]: detail,
     });
+    this.dataSubject.next(nextIngredients);
     this.loadedSubject.next(true);
     this.stateSubject.next('success');
   }
@@ -38,4 +50,4 @@ export class IngredientsStore extends EntityStore<Ingredient[]> {
   protected initialValue(): Ingredient[] {
     return [];
   }
-}
+} 

@@ -27,7 +27,7 @@
     font-size: 0.875rem;
   }
   
-  .field__label {
+.field__label {
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
@@ -40,6 +40,23 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
+    max-height: min(28rem, 55vh);
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    align-content: start;
+  }
+
+  .tile-grid::-webkit-scrollbar {
+    width: 0.45rem;
+  }
+
+  .tile-grid::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-primary) 24%, transparent);
+  }
+
+  .tile-grid::-webkit-scrollbar-track {
+    background: transparent;
   }
   
   .tile {
@@ -70,6 +87,77 @@
   .tile:focus-visible {
     outline: none;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
+  }
+
+  .ingredient-loading {
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 42%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 92%, white), var(--color-surface));
+  }
+
+  .ingredient-loading__copy {
+    margin-bottom: 1rem;
+  }
+
+  .ingredient-loading__eyebrow {
+    display: inline-block;
+    margin-bottom: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+
+  .ingredient-loading__copy p {
+    margin: 0;
+    color: var(--color-muted);
+    font-size: 0.95rem;
+  }
+
+  .tile-grid--loading {
+    overflow: hidden;
+    padding-right: 0;
+  }
+
+  .tile--loading {
+    pointer-events: none;
+    border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-surface) 90%, white) 0%,
+        color-mix(in srgb, var(--color-primary) 12%, white) 50%,
+        color-mix(in srgb, var(--color-surface) 90%, white) 100%
+      );
+    background-size: 220% 100%;
+    animation: ingredient-skeleton 1.25s ease-in-out infinite;
+  }
+
+  .tile--loading__line {
+    display: block;
+    width: 72%;
+    height: 0.9rem;
+    margin: 0.2rem auto;
+    border-radius: 9999px;
+    background: color-mix(in srgb, white 72%, transparent);
+  }
+
+  .search-empty {
+    margin-top: 0.9rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.8rem;
+    border: 1px dashed color-mix(in srgb, var(--color-border) 75%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 92%, white);
+    color: var(--color-muted);
+    text-align: center;
+  }
+
+  .search-empty p {
+    margin: 0;
   }
   
   /* custom input row */
@@ -134,5 +222,14 @@
   
   .chip__x:hover {
     opacity: 1;
+  }
+
+  @keyframes ingredient-skeleton {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
   }
   

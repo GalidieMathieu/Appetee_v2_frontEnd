@@ -4,9 +4,9 @@ export interface Ingredient {
   }
   
   export interface IngredientDialogResult {
-    ingredientId: number | null;
-    ingredientName: string;
-    walmartProductId: string | null;
+    ingredientId: number;
+    quantity: number | null;
+    unit: string | null;
   }
 
   export type IngredientAdminDetailDto = {

@@ -37,6 +37,11 @@ export const routes: Routes = [
                     loadChildren: () =>
                         import('./features/admin-recipes/admin-recipes.routes').then(m => m.ADMINRECIPES_ROUTES),
                   },
+                  {
+                    path: 'meal-plan',
+                    loadChildren: () =>
+                        import('./features/meal-plan/meal-plan.routes').then(m => m.MEALPLAN_ROUTES),
+                  },
                   // recipes, profile, etc.
             ]
     },

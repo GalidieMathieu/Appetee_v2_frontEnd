@@ -1,7 +1,7 @@
-import { Component, effect, inject, input, output } from '@angular/core';
+import { Component, effect, inject, input, OnInit, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { IngredientAdminDetailDto, IngredientAdminDetailRequest } from '../../data-access/ingredients/ingredient.model';
-import { IngredientsFacade } from '../../data-access/ingredients/ingredient.facade';
+import { IngredientAdminDetailRequest } from '../../data-access/ingredients/ingredient.model';
+import { readAvifFileSelection } from '../../utils/avif-file-selection/avif-file-selection';
 
 @Component({
   selector: 'app-ingredient-create-form',
@@ -10,29 +10,31 @@ import { IngredientsFacade } from '../../data-access/ingredients/ingredient.faca
   templateUrl: 'ingredient-creation.component.html',
   styleUrl:'./ingredient-creation.component.scss', 
 })
-export class IngredientCreateFormComponent {
+export class IngredientCreateFormComponent implements OnInit {
+  //##################### Inputs / Outputs #################
   readonly initialName = input('', {
     transform: (value: string | null | undefined) => value?.trim() ?? '',
   });
 
-  readonly created = output<IngredientAdminDetailDto>();
   readonly cancelled = output<void>();
   readonly validityChanged = output<boolean>();
-  readonly ingredientFacade = inject(IngredientsFacade);
   selectedImageName = '';
 
+  //##################### Ingredient Form #################
   readonly form = new FormGroup({
     name: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required],
     }),
     basis: new FormControl<number>(100,{nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.min(0.01)],
     }),
     caloriesKcal:new FormControl<number>(100,{nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, Validators.min(0)],
     }),
-    price: new FormControl<number | null>(null),
+    price: new FormControl<number | null>(10, {
+      validators: [Validators.required, Validators.min(0)],
+    }),
     image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
@@ -46,6 +48,7 @@ export class IngredientCreateFormComponent {
     ironMg: new FormControl<number | null>(null),
   });
 
+  // Seeds the name input and keeps the parent dialog updated on validity.
   constructor() {
     effect(() => {
       const name = this.initialName();
@@ -56,41 +59,51 @@ export class IngredientCreateFormComponent {
       }
     });
 
-    this.validityChanged.emit(this.form.valid);
-
     this.form.statusChanges.subscribe(() => {
-      this.validityChanged.emit(this.form.valid);
+      this.emitValidity();
     });
   }
 
-  onImageSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
+  // Emits the initial validity once the child form is ready.
+  ngOnInit(): void {
+    this.emitValidity();
+  }
 
-    if (!file) {
+  // Accepts only AVIF files and stores the chosen image on the form.
+  onImageSelected(event: Event): void {
+    const selection = readAvifFileSelection(event);
+
+    if (selection.kind === 'empty') {
       this.selectedImageName = '';
       this.form.controls.image.setValue(null);
+      this.form.controls.image.updateValueAndValidity();
+      this.emitValidity();
       return;
     }
 
-    if (!this.isAvifFile(file)) {
+    if (selection.kind === 'invalid-type') {
       this.selectedImageName = '';
       this.form.controls.image.setValue(null);
       this.form.controls.image.setErrors({ invalidFileType: true });
-      input.value = '';
+      this.form.controls.image.markAsTouched();
+      if (selection.input) {
+        selection.input.value = '';
+      }
+      this.emitValidity();
       return;
     }
 
-    this.selectedImageName = file.name;
-    this.form.controls.image.setValue(file);
+    this.selectedImageName = selection.file.name;
+    this.form.controls.image.setValue(selection.file);
     this.form.controls.image.markAsDirty();
     this.form.controls.image.updateValueAndValidity();
   }
 
-  createIngredient(): void {
+  // Builds the ingredient creation request expected by the facade.
+  buildCreateRequest(): IngredientAdminDetailRequest | null {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      return;
+      return null;
     }
 
     const formValue = this.form.getRawValue();
@@ -99,10 +112,10 @@ export class IngredientCreateFormComponent {
     if (!image) {
       this.form.controls.image.setErrors({ required: true });
       this.form.controls.image.markAsTouched();
-      return;
+      return null;
     }
 
-    const ingredientAdminDetail: IngredientAdminDetailRequest = {
+    return {
       name: formValue.name,
       basis: formValue.basis,
       price: formValue.price,
@@ -117,26 +130,15 @@ export class IngredientCreateFormComponent {
       vitaminCMg: formValue.vitaminCMg,
       ironMg: formValue.ironMg,
     };
-
-    this.ingredientFacade.createIngredientWithDetails(ingredientAdminDetail).subscribe({
-      next: (data: IngredientAdminDetailDto) => {
-        this.created.emit(data);
-      }
-    });
-
-    //this.IngredientFacade.createIngredientWithDetails(ingredientAdminDetail).subscribe{
-    // next()=>{
-    //  this.created.emit(createdIngredient);
-    //}}
-    
   }
 
-
+  // Notifies the parent dialog that ingredient creation was cancelled.
   cancel(): void {
     this.cancelled.emit();
   }
 
-  private isAvifFile(file: File): boolean {
-    return file.type === 'image/avif' || file.name.toLowerCase().endsWith('.avif');
+  // Emits the current form validity to the parent dialog.
+  private emitValidity(): void {
+    this.validityChanged.emit(this.form.valid);
   }
 }

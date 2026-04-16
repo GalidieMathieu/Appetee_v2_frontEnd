@@ -1,5 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { EntityStore, LoadState } from './entityStore';
 
 export abstract class AbstractLoadFacade<T,
@@ -8,12 +8,14 @@ export abstract class AbstractLoadFacade<T,
 
   readonly data$: Observable<T>;
   readonly state$: Observable<LoadState>;
+  readonly isLoading$: Observable<boolean>;
   readonly error$: Observable<string | null>;
   readonly loaded$: Observable<boolean>;
 
   protected constructor(protected readonly store: S) {
     this.data$ = store.data$;
     this.state$ = store.state$;
+    this.isLoading$ = this.state$.pipe(map(state => state === 'loading'));
     this.error$ = store.error$;
     this.loaded$ = store.loaded$;
   }
@@ -82,7 +84,7 @@ export abstract class AbstractLoadFacade<T,
         case 409:
           return backendMessage ?? 'This action conflicts with existing data.';
         case 500:
-          return backendMessage ?? 'An internal server error occurred. Please try again.';
+          return 'An internal server error occurred. Please try again.';
         default:
           return backendMessage ?? `Request failed (${err.status}).`;
       }

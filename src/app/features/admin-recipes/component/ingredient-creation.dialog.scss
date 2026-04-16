@@ -7,6 +7,12 @@
     max-width: 50vh;
 }
 
+.dialog-loading {
+    min-height: 16rem;
+    display: flex;
+    align-items: center;
+}
+
 .header_dialog{
     display: flex;
     flex-direction: row;
@@ -38,6 +44,11 @@
 
 .button_header_dialog:hover{
     color: var(--color-on-secondary);
+}
+
+.button_header_dialog:disabled{
+    opacity: 0.45;
+    cursor: wait;
 }
 
 
@@ -232,4 +243,10 @@
     border-radius: 8px; 
     border: none;
     padding: 0.5rem 1rem;
+  }
+
+.button_nav:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    box-shadow: none;
   }

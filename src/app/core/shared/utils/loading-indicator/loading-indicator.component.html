@@ -1,0 +1,15 @@
+<section class="loading-indicator" role="status" aria-live="polite" aria-atomic="true">
+  <div class="loading-indicator__copy">
+    <span class="loading-indicator__eyebrow">{{ eyebrow() }}</span>
+    <h3 class="loading-indicator__title">{{ title() }}</h3>
+    @if (description()) {
+      <p class="loading-indicator__description">{{ description() }}</p>
+    }
+  </div>
+
+  <div class="loading-indicator__skeleton" aria-hidden="true">
+    @for (line of lines(); track line.id) {
+      <span class="loading-indicator__line" [style.inlineSize]="line.width"></span>
+    }
+  </div>
+</section>
