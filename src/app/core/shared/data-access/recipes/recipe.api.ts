@@ -20,4 +20,8 @@ export class RecipesApi {
   getRecipeWithDetails(id: number): Observable<RecipeDetailDto> {
     return this.http.get<RecipeDetailDto>(`${this.apiUrl}/recipes/${id}`);
   }
+
+  createRecipeWithDetails(recipeDetails: FormData): Observable<RecipeSummary> {
+    return this.http.post<RecipeSummary>(`${this.apiUrl}/admin/recipe-details`, recipeDetails);
+  }
 }

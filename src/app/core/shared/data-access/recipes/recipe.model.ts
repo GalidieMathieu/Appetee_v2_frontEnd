@@ -1,15 +1,16 @@
 import { Diet } from '../diets/diet.model';
 import { Ingredient, IngredientAdminDetailDto } from '../ingredients/ingredient.model';
 
+//########## Shared ############
 export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard';
 
 export interface RecipeNutrition {
   caloriesTotal: number;
   proteinTotal: number;
   carbsTotal: number;
-  fatsTotal: number;
 }
 
+//########## DTO ############
 export interface RecipeSummary extends RecipeNutrition {
   id: number;
   name: string;
@@ -23,7 +24,34 @@ export interface RecipeSummary extends RecipeNutrition {
   ingredients: Ingredient[];
 }
 
-export type RecipeDetailDto = Omit<RecipeSummary, 'ingredients'> & {
+export interface RecipeIngredientDetailDto {
+  ingredientId: number;
+  quantity: number | null;
+  unit: string | null;
+  ingredient: IngredientAdminDetailDto;
+}
+
+export interface RecipeDetailDto extends Omit<RecipeSummary, 'ingredients'> {
   instructions: string[];
-  ingredients: IngredientAdminDetailDto[];
-};
+  ingredients: RecipeIngredientDetailDto[];
+}
+
+//########## Request ############
+export interface RecipeIngredientRequest {
+  ingredientId: number;
+  quantity: number | null;
+  unit: string | null;
+}
+
+export interface RecipeDetailRequest extends RecipeNutrition {
+  name: string;
+  image: File;
+  instructions: string[];
+  prepTimeMinutes: number;
+  servings: number;
+  difficulty: RecipeDifficulty;
+  dietIds: number[];
+  freezerFriendly: boolean;
+  estimatedCostPerServing: number | null;
+  ingredients: RecipeIngredientRequest[];
+}

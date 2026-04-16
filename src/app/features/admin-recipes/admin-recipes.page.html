@@ -6,6 +6,10 @@
       </div>
     </header>
 
+    @if (errorMessage(); as errorMessage) {
+      <div class="text-error recipe-page__error" role="alert">{{ errorMessage }}</div>
+    }
+
     <form class="recipe-page__content" [formGroup]="form" (ngSubmit)="saveRecipe()" novalidate>
       <div class="recipe-page__main">
         <section class="recipe-card">
@@ -19,10 +23,18 @@
             <input
               id="recipe-name"
               class="input--primary recipe-form-field__input"
+              [class.recipe-form-field__input--invalid]="shouldShowControlError(nameControl)"
               type="text"
               formControlName="name"
               placeholder="e.g. My Special Pasta"
+              [attr.aria-describedby]="shouldShowControlError(nameControl) ? 'recipe-name-error' : null"
+              [attr.aria-invalid]="shouldShowControlError(nameControl)"
             />
+            @if (shouldShowControlError(nameControl) && nameControl.hasError('requiredTrimmed')) {
+              <small id="recipe-name-error" class="text-error recipe-form-field__error" role="alert">
+                Recipe name is required.
+              </small>
+            }
           </div>
 
           <div class="recipe-form-field">
@@ -31,9 +43,12 @@
               <button
                 id="recipe-image"
                 class="input--primary recipe-form-field__input recipe-file-button"
+                [class.recipe-form-field__input--invalid]="shouldShowControlError(imageControl)"
                 type="button"
                 (click)="recipeImageInput.click()"
                 [attr.title]="selectedImageName || 'Select .avif file'"
+                [attr.aria-describedby]="shouldShowControlError(imageControl) ? 'recipe-image-error' : null"
+                [attr.aria-invalid]="shouldShowControlError(imageControl)"
               >
                 <span
                   class="recipe-file-button__text"
@@ -59,7 +74,147 @@
               hidden
               (change)="onImageSelected($event)"
             />
+            @if (shouldShowControlError(imageControl)) {
+              <small id="recipe-image-error" class="text-error recipe-form-field__error" role="alert">
+                @if (imageControl.hasError('invalidFileType')) {
+                  Please select a .avif image.
+                } @else {
+                  Recipe image is required.
+                }
+              </small>
+            }
           </div>
+        </section>
+
+        <section class="recipe-card">
+          <div class="recipe-card__copy">
+            <h2 class="text-subtitle">Recipe Options</h2>
+            <p class="text-body-secondary">Set the prep details, dietary tags, and storage info.</p>
+          </div>
+
+          <div class="recipe-options__grid">
+            <div class="recipe-form-field">
+              <label class="text-label recipe-form-field__label" for="recipe-servings">Servings</label>
+              <input
+                id="recipe-servings"
+                class="input--primary recipe-form-field__input"
+                [class.recipe-form-field__input--invalid]="shouldShowControlError(servingsControl)"
+                type="number"
+                min="1"
+                step="1"
+                formControlName="servings"
+                [attr.aria-describedby]="shouldShowControlError(servingsControl) ? 'recipe-servings-error' : null"
+                [attr.aria-invalid]="shouldShowControlError(servingsControl)"
+              />
+              @if (shouldShowControlError(servingsControl)) {
+                <small id="recipe-servings-error" class="text-error recipe-form-field__error" role="alert">
+                  Servings must be at least 1.
+                </small>
+              }
+            </div>
+
+            <div class="recipe-form-field">
+              <label class="text-label recipe-form-field__label" for="recipe-prep-time">Prep Time (min)</label>
+              <input
+                id="recipe-prep-time"
+                class="input--primary recipe-form-field__input"
+                [class.recipe-form-field__input--invalid]="shouldShowControlError(prepTimeMinutesControl)"
+                type="number"
+                min="1"
+                step="1"
+                formControlName="prepTimeMinutes"
+                [attr.aria-describedby]="shouldShowControlError(prepTimeMinutesControl) ? 'recipe-prep-time-error' : null"
+                [attr.aria-invalid]="shouldShowControlError(prepTimeMinutesControl)"
+              />
+              @if (shouldShowControlError(prepTimeMinutesControl)) {
+                <small id="recipe-prep-time-error" class="text-error recipe-form-field__error" role="alert">
+                  Prep time must be at least 1 minute.
+                </small>
+              }
+            </div>
+          </div>
+
+          <section class="recipe-options__section">
+            <div class="recipe-options__copy">
+              <h3 class="text-label">Freezer-friendly</h3>
+              <p class="text-body-secondary">
+                Best for batch cooking, freezing, and reheating without losing too much texture.
+              </p>
+            </div>
+
+            <div class="recipe-options__difficulty">
+              <button
+                type="button"
+                class="recipe-option-tile text-label"
+                [class.is-selected]="isFreezerFriendlySelected(true)"
+                (click)="setFreezerFriendly(true)"
+                [attr.aria-pressed]="isFreezerFriendlySelected(true)"
+              >
+                Yes
+              </button>
+
+              <button
+                type="button"
+                class="recipe-option-tile text-label"
+                [class.is-selected]="isFreezerFriendlySelected(false)"
+                (click)="setFreezerFriendly(false)"
+                [attr.aria-pressed]="isFreezerFriendlySelected(false)"
+              >
+                No
+              </button>
+            </div>
+          </section>
+
+          <section class="recipe-options__section">
+            <div class="recipe-options__copy">
+              <h3 class="text-label">Difficulty</h3>
+              <p class="text-body-secondary">Choose the overall cooking difficulty for this recipe.</p>
+            </div>
+
+            <div
+              class="recipe-options__difficulty"
+              [class.recipe-options__difficulty--invalid]="shouldShowControlError(difficultyControl)"
+            >
+              @for (difficulty of difficultyOptions; track difficulty) {
+                <button
+                  type="button"
+                  class="recipe-option-tile text-label"
+                  [class.is-selected]="isDifficultySelected(difficulty)"
+                  (click)="setDifficulty(difficulty)"
+                  [attr.aria-pressed]="isDifficultySelected(difficulty)"
+                >
+                  {{ difficulty }}
+                </button>
+              }
+            </div>
+
+            @if (shouldShowControlError(difficultyControl)) {
+              <small id="recipe-difficulty-error" class="text-error recipe-form-field__error" role="alert">
+                Recipe difficulty is required.
+              </small>
+            }
+          </section>
+
+          <section class="recipe-options__section">
+            <div class="recipe-options__copy">
+              <h3 class="text-label">Diet Tags</h3>
+              <p class="text-body-secondary">Optional labels that help meal-plan filtering and discovery later.</p>
+            </div>
+
+            <div class="recipe-options__chips">
+              @for (diet of diets(); track diet.id) {
+                <button
+                  type="button"
+                  class="recipe-option-tile text-label"
+                  [class.is-selected]="isDietSelected(diet.id)"
+                  (click)="toggleDiet(diet.id)"
+                  [attr.aria-pressed]="isDietSelected(diet.id)"
+                >
+                  {{ diet.name }}
+                </button>
+              }
+            </div>
+          </section>
         </section>
 
         <section class="recipe-card">
@@ -73,20 +228,21 @@
               type="button"
               class="btn-link--primary recipe-card__action"
               (click)="openIngredientDialog()"
+              [attr.aria-describedby]="hasIngredientsError() ? 'recipe-ingredients-error' : null"
             >
               <mat-icon>add</mat-icon>
               <span>Add Ingredient</span>
             </button>
           </div>
 
-          <div class="recipe-ingredients">
-            @if (ingredients.length === 0) {
+          <div class="recipe-ingredients" [class.recipe-ingredients--invalid]="hasIngredientsError()">
+            @if (ingredients().length === 0) {
               <div class="text-body-secondary recipe-ingredients__empty">
                 No ingredients added yet.
               </div>
             } @else {
               <div class="recipe-ingredients__list">
-                @for (ingredient of ingredients; track ingredient.ingredientId; let index = $index) {
+                @for (ingredient of ingredients(); track $index; let index = $index) {
                   <article class="recipe-ingredients__item">
                     <div class="recipe-ingredients__item-copy">
                       <strong>{{ ingredient.ingredient.name }}</strong>
@@ -107,6 +263,12 @@
                 }
               </div>
             }
+
+            @if (hasIngredientsError()) {
+              <small id="recipe-ingredients-error" class="text-error recipe-ingredients__error" role="alert">
+                Add at least one ingredient before saving.
+              </small>
+            }
           </div>
         </section>
 
@@ -119,9 +281,17 @@
           <div class="recipe-form-field">
             <textarea
               class="input--primary recipe-form-field__textarea"
+              [class.recipe-form-field__textarea--invalid]="shouldShowControlError(instructionsControl)"
               formControlName="instructions"
               placeholder="Step 1: Boil water... Step 2: Add pasta... Step 3: Enjoy!"
+              [attr.aria-describedby]="shouldShowControlError(instructionsControl) ? 'recipe-instructions-error' : null"
+              [attr.aria-invalid]="shouldShowControlError(instructionsControl)"
             ></textarea>
+            @if (shouldShowControlError(instructionsControl) && instructionsControl.hasError('requiredTrimmed')) {
+              <small id="recipe-instructions-error" class="text-error recipe-form-field__error" role="alert">
+                Recipe description is required.
+              </small>
+            }
           </div>
         </section>
       </div>
@@ -143,6 +313,23 @@
           <span class="recipe-summary__chip">{{ ingredientLabel }}</span>
         </div>
 
+        <div class="recipe-summary__meta">
+          <span>{{ servingsValue }} serving{{ servingsValue === 1 ? '' : 's' }}</span>
+          <span>{{ prepTimeMinutesValue }} min prep</span>
+          <span>{{ difficultyValue || 'Choose difficulty' }}</span>
+          @if (form.controls.freezerFriendly.value) {
+            <span>Freezer-friendly</span>
+          }
+        </div>
+
+        @if (selectedDiets().length > 0) {
+          <div class="recipe-summary__diets">
+            @for (diet of selectedDiets(); track diet.id) {
+              <span class="recipe-summary__diet-chip">{{ diet.name }}</span>
+            }
+          </div>
+        }
+
         <div class="recipe-summary__stats">
           <div class="recipe-summary__stat">
             <span class="text-body-secondary">Total Calories</span>
@@ -155,14 +342,25 @@
           </div>
 
           <div class="recipe-summary__stat">
-            <span class="text-body-secondary">Total Fat</span>
-            <strong>{{ totalFat }} g</strong>
+            <span class="text-body-secondary">Total Carbs</span>
+            <strong>{{ totalCarbs }} g</strong>
+          </div>
+
+          <div class="recipe-summary__stat">
+            <span class="text-body-secondary">Cost / Serving</span>
+            <strong>
+              @if (estimatedCostPerServing !== null) {
+                {{ estimatedCostPerServing | currency: 'USD' }}
+              } @else {
+                Pending prices
+              }
+            </strong>
           </div>
         </div>
 
-        <button type="submit" class="btn-link--primary recipe-summary__save">
+        <button type="submit" class="btn-link--primary recipe-summary__save" [disabled]="isSaving()">
           <mat-icon>save</mat-icon>
-          <span>Save Recipe</span>
+          <span>{{ isSaving() ? 'Saving Recipe...' : 'Save Recipe' }}</span>
         </button>
       </aside>
     </form>

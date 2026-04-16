@@ -5,8 +5,15 @@ import { EntityStore } from '../generic-template/entityStore';
 import { RecipeDetailDto, RecipeSummary } from './recipe.model';
 
 function toRecipeSummary(detail: RecipeDetailDto): RecipeSummary {
-  const { instructions, ...summary } = detail;
-  return summary;
+  const { instructions, ingredients, ...summary } = detail;
+
+  return {
+    ...summary,
+    ingredients: ingredients.map(item => ({
+      id: item.ingredient.id,
+      name: item.ingredient.name,
+    })),
+  };
 }
 
 @Injectable({ providedIn: 'root' })
@@ -26,23 +33,33 @@ export class RecipesStore extends EntityStore<RecipeSummary[]> {
     return this.recipeDetailsByIdSubject.value[id] ?? null;
   }
 
+  setRecipeSummary(summary: RecipeSummary): void {
+    this.dataSubject.next(this.upsertRecipeSummary(summary));
+    this.loadedSubject.next(true);
+    this.stateSubject.next('success');
+  }
+
   setRecipeDetails(detail: RecipeDetailDto): void {
     const summary = toRecipeSummary(detail);
-    const currentRecipes = this.dataSubject.value;
-    const nextRecipes = currentRecipes.some(recipe => recipe.id === detail.id)
-      ? currentRecipes.map(recipe => (recipe.id === detail.id ? summary : recipe))
-      : [...currentRecipes, summary];
 
     this.recipeDetailsByIdSubject.next({
       ...this.recipeDetailsByIdSubject.value,
       [detail.id]: detail,
     });
-    this.dataSubject.next(nextRecipes);
+    this.dataSubject.next(this.upsertRecipeSummary(summary));
     this.loadedSubject.next(true);
     this.stateSubject.next('success');
   }
 
   protected initialValue(): RecipeSummary[] {
     return [];
+  }
+
+  private upsertRecipeSummary(summary: RecipeSummary): RecipeSummary[] {
+    const currentRecipes = this.dataSubject.value;
+
+    return currentRecipes.some(recipe => recipe.id === summary.id)
+      ? currentRecipes.map(recipe => (recipe.id === summary.id ? summary : recipe))
+      : [...currentRecipes, summary];
   }
 }
