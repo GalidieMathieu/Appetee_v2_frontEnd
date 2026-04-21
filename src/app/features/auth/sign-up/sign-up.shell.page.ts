@@ -1,7 +1,7 @@
-import { Component, DestroyRef, inject, OnDestroy , OnInit} from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnDestroy, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet, RouterLink } from '@angular/router';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { filter } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize, tap } from 'rxjs';
 import { SignUpWizard } from './sign-up.wizard';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
@@ -16,7 +16,7 @@ import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingr
   templateUrl: './sign-up.shell.page.html',
   styleUrl: './sign-up.shell.page.scss',
 })
-export class SignUpShellPage implements OnDestroy, OnInit{
+export class SignUpShellPage implements OnDestroy{
 
     //Probably can do that in a JsonObject
     private readonly steps = ['account', 'diet', 'ingredient'] as const;
@@ -30,45 +30,41 @@ export class SignUpShellPage implements OnDestroy, OnInit{
         'Tell us about your dietary preferences so we can personalize recipes',
         'We will avoid recipes with these ingredients. You can add your own or select from used ones.'
       ];
-    currentIndex = 0;
+    private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
+    private readonly cdr = inject(ChangeDetectorRef);
+    private currentStepOverride: number | null = null;
     back_str : string = "Back";
     next_str : string = "Next";
     account_creation_str : string = "create account";
     account_creation_loading_str : string = "Creating Account...";
-    title = this.stepsTitle[0];
-    subTitle = this.stepsSubTitle[0];
+    get currentIndex(): number {
+        return this.currentStepOverride ?? this.resolveStepIndex();
+    }
 
+    get title(): string {
+        return this.stepsTitle[this.currentIndex] ?? this.stepsTitle[0];
+    }
+
+    get subTitle(): string {
+        return this.stepsSubTitle[this.currentIndex] ?? this.stepsSubTitle[0];
+    }
 
     //injections 
-    private router = inject(Router);
-    private route = inject(ActivatedRoute);
     readonly wizard = inject(SignUpWizard);
     private readonly user_authFacace = inject(UserFacade);
     private readonly authFacade = inject(AuthFacade);
     private readonly dietsFacade = inject(DietsFacade);
     private readonly ingredientsFacade = inject(IngredientsFacade);
-    private readonly destroyRef = inject(DestroyRef);
     private readonly authError = toSignal(this.authFacade.error$, { initialValue: null });
-    readonly isSubmitting = toSignal(this.authFacade.isLoading$, { initialValue: false });
+    private readonly submitPending = signal(false);
+    readonly isSubmitting = this.submitPending;
     private readonly userError = toSignal(this.user_authFacace.error$, { initialValue: null });
     private readonly dietsError = toSignal(this.dietsFacade.error$, { initialValue: null });
     private readonly ingredientsError = toSignal(this.ingredientsFacade.error$, { initialValue: null });
 
     ngOnDestroy(): void {
-        this.wizard.reset();
-    }
-
-    ngOnInit(): void {
-        //this is to make sure we are in the right page, and the index is link with the navigation
-        this.router.events
-        .pipe(filter(e => e instanceof NavigationEnd) , 
-            takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => { 
-            const childPath = this.route.firstChild?.snapshot.routeConfig?.path ?? 'account'; 
-            const idx = this.steps.indexOf(childPath as any); 
-            this.currentIndex = idx >= 0 ? idx : 0; 
-            this.setStep(this.currentIndex);
-        });
+        Promise.resolve().then(() => this.wizard.reset());
     }
 
     //Personal Notes : using get is better for wizard button
@@ -106,18 +102,33 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     }
 
     setStep(index: number) {
-        this.currentIndex = index;
-        this.title = this.stepsTitle[index];
-        this.subTitle = this.stepsSubTitle[index];
+        this.currentStepOverride = index;
       }
 
     goFinishSignUp(): void{
         if(this.isSubmitting()) return;
         if(this.wizard.account.invalid) return;
         const req = this.buildSignUpRequest();
-        this.authFacade.signUp(req).subscribe({
-             next: () => this.router.navigateByUrl('/home') 
-            });
+        this.submitPending.set(true);
+        let signUpSucceeded = false;
+
+        this.authFacade.signUp(req).pipe(
+            tap(() => {
+                signUpSucceeded = true;
+            }),
+            finalize(() => {
+                if (!signUpSucceeded) {
+                    this.submitPending.set(false);
+                    this.cdr.detectChanges();
+                }
+            })
+        ).subscribe({
+            complete: () => {
+                if (signUpSucceeded) {
+                    this.router.navigateByUrl('/home');
+                }
+            }
+        });
     }
 
     buildSignUpRequest(): SignUpRequest {
@@ -165,6 +176,14 @@ export class SignUpShellPage implements OnDestroy, OnInit{
         }
 
         return this.authError() ?? this.userError();
+    }
+
+    private resolveStepIndex(): number {
+        const segments = this.router.url.split('/').filter(Boolean);
+        const childPath = segments[segments.length - 1] ?? 'account';
+        const idx = this.steps.indexOf(childPath as (typeof this.steps)[number]);
+
+        return idx >= 0 ? idx : 0;
     }
 
 }

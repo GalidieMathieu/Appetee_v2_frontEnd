@@ -1,7 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize, tap } from 'rxjs';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 
@@ -14,8 +15,10 @@ import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 })
 export class LoginPage {
     private readonly authFacade = inject(AuthFacade);
+    private readonly cdr = inject(ChangeDetectorRef);
     readonly errorMessage = toSignal(this.authFacade.error$, { initialValue: null });
-    readonly isSubmitting = toSignal(this.authFacade.isLoading$, { initialValue: false });
+    private readonly submitPending = signal(false);
+    readonly isSubmitting = this.submitPending;
 
     constructor(private router: Router) {}
 
@@ -61,10 +64,21 @@ export class LoginPage {
         }
 
         const req: LoginRequest = this.loginForm.getRawValue();
-        this.authFacade.login$(req).subscribe({
-            next: () => {
-                this.router.navigate(['/home']);
-            }
+        this.submitPending.set(true);
+        let loginSucceeded = false;
+
+        this.authFacade.login$(req).pipe(
+            tap(() => {
+                loginSucceeded = true;
+            }),
+            finalize(() => {
+                this.submitPending.set(false);
+                this.cdr.detectChanges();
+                if (loginSucceeded) {
+                    this.router.navigate(['/home']);
+                }
+            })
+        ).subscribe({
         });
     }
 
