@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { catchError, EMPTY, map, Observable, of, tap, timeout } from 'rxjs';
+import { catchError, concatMap, defaultIfEmpty, EMPTY, from, map, Observable, of, switchMap, tap, timeout, toArray } from 'rxjs';
 
 import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
+import { IngredientsFacade } from '../ingredients/ingredient.facade';
 import { RecipeDetailDto, RecipeDetailRequest, RecipeSummary } from './recipe.model';
 import { RecipesApi } from './recipe.api';
 import { RecipesStore } from './recipes.store';
@@ -10,6 +11,7 @@ import { RecipesStore } from './recipes.store';
 export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesStore> {
   constructor(
     private readonly api: RecipesApi,
+    private readonly ingredientsFacade: IngredientsFacade,
     store: RecipesStore
   ) {
     super(store);
@@ -52,7 +54,23 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesSt
 
     this.setLoading();
 
-    return this.api.createRecipeWithDetails(this.toRecipeCreateFormData(recipeDetail)).pipe(
+    return this.api.createRecipeWithDetails(this.toRecipeFormData(recipeDetail)).pipe(
+      tap(recipe => this.store.setRecipeSummary(recipe)),
+      catchError(err => {
+        this.setError(this.toUserMessage(err));
+        return EMPTY;
+      })
+    );
+  }
+
+  updateRecipeWithDetails(id: number, recipeDetail: RecipeDetailRequest): Observable<RecipeSummary> {
+    if (this.store.isLoading()) {
+      return EMPTY;
+    }
+
+    this.setLoading();
+
+    return this.api.updateRecipeWithDetails(id, this.toRecipeFormData(recipeDetail)).pipe(
       tap(recipe => this.store.setRecipeSummary(recipe)),
       catchError(err => {
         this.setError(this.toUserMessage(err));
@@ -83,15 +101,38 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesSt
     );
   }
 
-  private toRecipeCreateFormData(recipe: RecipeDetailRequest): FormData {
+  getRecipesWithDetails(id: number): Observable<RecipeDetailDto> {
+    const cached = this.store.getRecipeDetailsById(id);
+    if (cached) {
+      return this.hydrateRecipeIngredients(cached).pipe(
+        tap(recipe => this.store.setRecipeDetails(recipe))
+      );
+    }
+
+    if (this.store.isLoading()) {
+      return EMPTY;
+    }
+
+    this.setLoading();
+
+    return this.api.getRecipeWithDetails(id).pipe(
+      switchMap(recipe => this.hydrateRecipeIngredients(recipe)),
+      tap(recipe => this.store.setRecipeDetails(recipe)),
+      catchError(err => {
+        this.setError(this.toUserMessage(err));
+        return EMPTY;
+      })
+    );
+  }
+
+  private toRecipeFormData(recipe: RecipeDetailRequest): FormData {
     const formData = new FormData();
 
     formData.append('name', recipe.name);
-    formData.append('image', recipe.image);
+    formData.append('instructions', recipe.instructions);
     formData.append('prepTimeMinutes', recipe.prepTimeMinutes.toString());
     formData.append('servings', recipe.servings.toString());
     formData.append('difficulty', recipe.difficulty);
-    formData.append('freezerFriendly', recipe.freezerFriendly.toString());
     formData.append('caloriesTotal', recipe.caloriesTotal.toString());
     formData.append('proteinTotal', recipe.proteinTotal.toString());
     formData.append('carbsTotal', recipe.carbsTotal.toString());
@@ -100,23 +141,53 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesSt
       formData.append('estimatedCostPerServing', recipe.estimatedCostPerServing.toString());
     }
 
-    for (const instruction of recipe.instructions) {
-      formData.append('instructions', instruction);
+    if (recipe.image) {
+      formData.append('image', recipe.image);
     }
 
-    for (const dietId of recipe.dietIds) {
-      formData.append('dietIds', dietId.toString());
-    }
-
-    for (const ingredient of recipe.ingredients) {
-      formData.append('ingredients', JSON.stringify(ingredient));
-    }
-
-    console.log('FormData entries:');
-    formData.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
+    recipe.badges.forEach((badge, index) => {
+      formData.append(`badges[${index}]`, badge);
     });
+
+    recipe.dietIds.forEach((dietId, index) => {
+      formData.append(`dietIds[${index}]`, dietId.toString());
+    });
+
+    recipe.ingredients.forEach((ingredient, index) => {
+      formData.append(`ingredients[${index}].ingredientId`, ingredient.ingredientId.toString());
+
+      if (ingredient.quantity !== null) {
+        formData.append(`ingredients[${index}].quantity`, ingredient.quantity.toString());
+      }
+
+      if (ingredient.unit !== null) {
+        formData.append(`ingredients[${index}].unit`, ingredient.unit);
+      }
+    });
+
     return formData;
   }
 
+  private hydrateRecipeIngredients(recipe: RecipeDetailDto): Observable<RecipeDetailDto> {
+    if (recipe.ingredients.length === 0) {
+      return of(recipe);
+    }
+
+    return from(recipe.ingredients).pipe(
+      concatMap(recipeIngredient =>
+        this.ingredientsFacade.getIngredientWithDetails(recipeIngredient.ingredientId).pipe(
+          defaultIfEmpty(recipeIngredient.ingredient),
+          map(ingredient => ({
+            ...recipeIngredient,
+            ingredient,
+          }))
+        )
+      ),
+      toArray(),
+      map(ingredients => ({
+        ...recipe,
+        ingredients,
+      }))
+    );
+  }
 }

@@ -3,35 +3,9 @@
     flex-direction: column;
     gap: 1.5rem; /* like space-y-6 */
   }
-  
-  .step-head h2 {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: var(--color-text);
-  }
-  
-  .step-head p {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: 1rem;
-  }
-  
-  .form-error {
-    padding: 1rem;
-    border-radius: 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--color-destructive, #dc2626) 20%, transparent);
-    background: color-mix(in srgb, var(--color-destructive, #dc2626) 10%, transparent);
-    color: var(--color-destructive, #dc2626);
-    font-size: 0.875rem;
-  }
-  
+
 .field__label {
     display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text);
     margin-bottom: 0.75rem; /* mb-3 */
   }
   
@@ -65,9 +39,6 @@
     border: 2px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text);
-  
-    font-weight: 600;
-    font-size: 0.875rem;
     text-align: center;
   
     transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
@@ -105,17 +76,10 @@
   .ingredient-loading__eyebrow {
     display: inline-block;
     margin-bottom: 0.35rem;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-primary);
   }
 
-  .ingredient-loading__copy p {
+  .ingredient-loading__message {
     margin: 0;
-    color: var(--color-muted);
-    font-size: 0.95rem;
   }
 
   .tile-grid--loading {
@@ -156,38 +120,10 @@
     text-align: center;
   }
 
-  .search-empty p {
+  .search-empty__message {
     margin: 0;
   }
-  
-  /* custom input row */
-  .inline-input {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  
-  .inline-input .form-input {
-    flex: 1;
-  }
-  
-  /* button style (match your primary) */
-  .btn-primary {
-    height: 3rem;
-    padding: 0 1rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-  
-    background: var(--color-primary);
-    color: var(--color-primary-foreground, white);
-  
-    transition: filter 150ms ease, opacity 150ms ease;
-  }
-  
-  .btn-primary:hover {
-    filter: brightness(0.95);
-  }
-  
+
   /* chips */
   .chips {
     display: flex;
@@ -205,16 +141,16 @@
   
     background: var(--color-secondary, color-mix(in srgb, var(--color-border) 25%, white));
     color: var(--color-text);
-  
-    font-size: 0.875rem;
-    font-weight: 600;
+  }
+
+  .chip__label {
+    margin: 0;
   }
   
   .chip__x {
     border: none;
     background: transparent;
     cursor: pointer;
-    font-size: 1.1rem;
     line-height: 1;
     opacity: 0.65;
     transition: opacity 150ms ease;

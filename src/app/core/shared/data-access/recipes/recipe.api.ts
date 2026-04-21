@@ -24,4 +24,8 @@ export class RecipesApi {
   createRecipeWithDetails(recipeDetails: FormData): Observable<RecipeSummary> {
     return this.http.post<RecipeSummary>(`${this.apiUrl}/admin/recipe-details`, recipeDetails);
   }
+
+  updateRecipeWithDetails(id: number, recipeDetails: FormData): Observable<RecipeSummary> {
+    return this.http.put<RecipeSummary>(`${this.apiUrl}/admin/recipe-details/${id}`, recipeDetails);
+  }
 }

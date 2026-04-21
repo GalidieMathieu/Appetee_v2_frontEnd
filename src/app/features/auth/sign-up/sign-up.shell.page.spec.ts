@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, Routes } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, finalize, Observable, of, Subject } from 'rxjs';
 import { vi } from 'vitest';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { SignUpRequest } from '@app/core/auth/data-access/auth.model';
@@ -39,6 +39,7 @@ describe('SignUpShellPage', () => {
   let harness: RouterTestingHarness;
   let router: Router;
   let authError$: BehaviorSubject<string | null>;
+  let authLoading$: BehaviorSubject<boolean>;
   let userError$: BehaviorSubject<string | null>;
   let dietsError$: BehaviorSubject<string | null>;
   let ingredientsError$: BehaviorSubject<string | null>;
@@ -47,6 +48,7 @@ describe('SignUpShellPage', () => {
 
   beforeEach(async () => {
     authError$ = new BehaviorSubject<string | null>(null);
+    authLoading$ = new BehaviorSubject<boolean>(false);
     userError$ = new BehaviorSubject<string | null>(null);
     dietsError$ = new BehaviorSubject<string | null>(null);
     ingredientsError$ = new BehaviorSubject<string | null>(null);
@@ -68,6 +70,7 @@ describe('SignUpShellPage', () => {
           provide: AuthFacade,
           useValue: {
             error$: authError$,
+            isLoading$: authLoading$,
             signUp: signUpSpy,
           },
         },
@@ -172,6 +175,49 @@ describe('SignUpShellPage', () => {
     });
     expect(router.url).toBe('/home');
   });
+
+  // Verifies that the create-account button stays in a loading state and does not navigate until sign-up completes.
+  it('shows a loading state while creating the account and waits before navigating home', async () => {
+    const pendingResponse$ = new Subject<void>();
+    signUpSpy.mockImplementation((request: SignUpRequest) => {
+      authLoading$.next(true);
+
+      return pendingResponse$.pipe(finalize(() => authLoading$.next(false)));
+    });
+
+    const component = await harness.navigateByUrl('/auth/sign-up/ingredient', SignUpShellPage);
+    component.wizard.account.setValue({
+      email: 'chef@appetee.dev',
+      username: 'chef-user',
+      password: 'strong-pass',
+      confirmPassword: 'strong-pass',
+    });
+    component.wizard.diet.controls.dietIds.setValue([1, 3]);
+    component.wizard.avoid.controls.ingredientIds.setValue([4, 8]);
+    harness.detectChanges();
+
+    const createButton = getButtonByText(harness.routeNativeElement!, 'create account');
+    createButton.click();
+    harness.detectChanges();
+
+    expect(signUpSpy).toHaveBeenCalledWith({
+      username: 'chef-user',
+      email: 'chef@appetee.dev',
+      password: 'strong-pass',
+      dietIds: [1, 3],
+      ingredientRestrictionIds: [4, 8],
+    });
+    expect(createButton.disabled).toBe(true);
+    expect(normalizeText(createButton.textContent)).toContain('Creating Account...');
+    expect(router.url).toBe('/auth/sign-up/ingredient');
+
+    pendingResponse$.next();
+    pendingResponse$.complete();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    expect(router.url).toBe('/home');
+  });
 });
 
 function setInputValue(input: HTMLInputElement, value: string): void {
@@ -182,7 +228,7 @@ function setInputValue(input: HTMLInputElement, value: string): void {
 
 function getButtonByText(root: HTMLElement, text: string): HTMLButtonElement {
   const button = Array.from(root.querySelectorAll('button')).find(candidate =>
-    candidate.textContent?.trim() === text
+    normalizeText(candidate.textContent) === text
   );
 
   if (!(button instanceof HTMLButtonElement)) {
@@ -190,4 +236,8 @@ function getButtonByText(root: HTMLElement, text: string): HTMLButtonElement {
   }
 
   return button;
+}
+
+function normalizeText(value: string | null): string {
+  return value?.replace(/\s+/g, ' ').trim() ?? '';
 }

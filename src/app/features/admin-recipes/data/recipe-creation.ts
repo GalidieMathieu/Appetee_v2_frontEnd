@@ -6,6 +6,7 @@ import {
 } from '@app/core/shared/data-access/ingredients/ingredient.model';
 import {
   RecipeDetailRequest,
+  RecipeBadge,
   RecipeDifficulty,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 
@@ -17,7 +18,7 @@ export type RecipeCreationForm = FormGroup<{
   servings: FormControl<number>;
   prepTimeMinutes: FormControl<number>;
   difficulty: FormControl<RecipeDifficulty | null>;
-  freezerFriendly: FormControl<boolean>;
+  badges: FormControl<RecipeBadge[]>;
   dietIds: FormControl<number[]>;
 }>;
 

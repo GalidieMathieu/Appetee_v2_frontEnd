@@ -1,5 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -12,16 +22,20 @@ import {
 } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { startWith, filter, map, switchMap } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { defaultIfEmpty, finalize, of, startWith, filter, map, switchMap, tap } from 'rxjs';
 
 import { Diet } from '@app/core/shared/data-access/diets/diet.model';
 import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
 import { IngredientDialogResult } from '@app/core/shared/data-access/ingredients/ingredient.model';
 import {
+  RecipeBadge,
+  RecipeDetailDto,
   RecipeDetailRequest,
   RecipeDifficulty,
   RecipeNutrition,
+  RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
 import { readAvifFileSelection } from '@app/core/shared/utils/avif-file-selection/avif-file-selection';
@@ -31,6 +45,10 @@ import {
   RecipeCreationIngredient,
 } from './data/recipe-creation';
 import { IngredientDialogComponent } from './component/ingredient-creation.dialog';
+import {
+  RecipeFeedbackDialogComponent,
+  RecipeFeedbackDialogData,
+} from './component/recipe-feedback.dialog';
 
 //########## Page Validation ############
 const requiredTrimmedValidator: ValidatorFn = (
@@ -55,19 +73,49 @@ const requiredTrimmedValidator: ValidatorFn = (
 export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   //########## Page Options ############
   readonly difficultyOptions: RecipeDifficulty[] = ['Easy', 'Medium', 'Hard'];
+  readonly badgeOptions: ReadonlyArray<{ value: RecipeBadge; label: string }> = [
+    { value: 'freezer-friendly', label: 'Freezer-friendly' },
+    { value: 'budget-focused', label: 'Budget-focused' },
+    { value: 'high-protein', label: 'High-protein' },
+  ];
 
   //########## Dependencies ############
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly dietsFacade = inject(DietsFacade);
   private readonly ingredientsFacade = inject(IngredientsFacade);
   private readonly recipesFacade = inject(RecipesFacade);
 
   //########## Page State ############
   protected previewImageUrl: string | null = null;
+  private previewImageObjectUrl: string | null = null;
   protected selectedImageName = '';
   protected readonly ingredients = signal<RecipeCreationIngredient[]>([]);
   protected readonly submitAttempted = signal(false);
+  private readonly routeId = toSignal(
+    this.route.paramMap.pipe(map(paramMap => paramMap.get('id'))),
+    { initialValue: this.route.snapshot.paramMap.get('id') }
+  );
+  protected readonly isEditRecipeLoading = signal(false);
+  protected readonly isEditRecipeReady = signal(false);
+  protected readonly editRecipeLoadError = signal<string | null>(null);
+  protected readonly isEditMode = computed(() => this.editRecipeId() !== null);
+  protected readonly pageTitle = computed(() => this.isEditMode() ? 'Edit Recipe' : 'Create New Recipe');
+  protected readonly pageDescription = computed(() =>
+    this.isEditMode()
+      ? 'Review the saved recipe details and prepare your changes in the existing edit route.'
+      : 'Build a new recipe with its image, ingredients, and nutrition totals.'
+  );
+  protected readonly saveButtonLabel = computed(() => {
+    if (this.isSaving()) {
+      return this.isEditMode() ? 'Updating Recipe...' : 'Saving Recipe...';
+    }
+
+    return this.isEditMode() ? 'Update Recipe' : 'Save Recipe';
+  });
+  private readonly saveFeedbackPending = signal(false);
   protected readonly hasIngredientsError = computed(
     () => this.submitAttempted() && this.ingredients().length === 0
   );
@@ -98,7 +146,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     difficulty: new FormControl<RecipeDifficulty | null>('Medium', {
       validators: [Validators.required],
     }),
-    freezerFriendly: new FormControl(false, {
+    badges: new FormControl<RecipeBadge[]>([], {
       nonNullable: true,
     }),
     dietIds: new FormControl<number[]>([], {
@@ -117,6 +165,41 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     const ids = new Set(this.selectedDietIds());
     return this.diets().filter(diet => ids.has(diet.id));
   });
+  private readonly editRecipeId = computed(() => {
+    const id = Number(this.routeId());
+    return Number.isInteger(id) && id > 0 ? id : null;
+  });
+
+  constructor() {
+    effect(() => {
+      const isEditMode = this.isEditMode();
+
+      untracked(() => {
+        this.applyImageValidators(isEditMode);
+      });
+    }, { allowSignalWrites: true });
+
+    effect(() => {
+      if (!this.saveFeedbackPending() || this.isSaving()) {
+        return;
+      }
+
+      const message = this.errorMessage();
+      if (!message) {
+        return;
+      }
+
+      untracked(() => {
+        this.saveFeedbackPending.set(false);
+        this.openFeedbackDialog({
+          eyebrow: 'Save failed',
+          title: 'Recipe could not be saved',
+          description: 'We were not able to finish saving your recipe.',
+          message,
+        });
+      });
+    }, { allowSignalWrites: true });
+  }
 
   get nameControl(): FormControl<string> {
     return this.form.controls.name;
@@ -145,6 +228,53 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   // Loads supporting option data used by the create form.
   ngOnInit(): void {
     this.dietsFacade.loadIfNeeded();
+
+    this.route.paramMap.pipe(
+      map(paramMap => paramMap.get('id')),
+      switchMap(routeId => {
+        this.editRecipeLoadError.set(null);
+
+        if (routeId === null) {
+          this.isEditRecipeLoading.set(false);
+          this.isEditRecipeReady.set(true);
+          this.resetCreateForm();
+          return of({ kind: 'create' as const });
+        }
+
+        const id = Number(routeId);
+        if (!Number.isInteger(id) || id <= 0) {
+          this.isEditRecipeLoading.set(false);
+          this.isEditRecipeReady.set(false);
+          void this.router.navigate(['/admin-recipes/create'], { replaceUrl: true });
+          return of({ kind: 'invalid' as const });
+        }
+
+        this.isEditRecipeReady.set(false);
+        this.isEditRecipeLoading.set(true);
+
+        return this.recipesFacade.getRecipesWithDetails(id).pipe(
+          map(recipe => ({ kind: 'loaded' as const, recipe })),
+          defaultIfEmpty({ kind: 'failed' as const }),
+          finalize(() => this.isEditRecipeLoading.set(false))
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(result => {
+      if (result.kind === 'create' || result.kind === 'invalid') {
+        return;
+      }
+
+      if (result.kind === 'failed') {
+        this.isEditRecipeReady.set(false);
+        this.editRecipeLoadError.set(
+          this.errorMessage() ?? 'We could not load this recipe. Please try again.'
+        );
+        return;
+      }
+
+      this.populateFormForEdit(result.recipe);
+      this.isEditRecipeReady.set(true);
+    });
   }
 
   // Releases the local image preview when the page is destroyed.
@@ -180,6 +310,11 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   // Exposes the selected difficulty label for the summary card.
   get difficultyValue(): RecipeDifficulty | null {
     return this.form.controls.difficulty.value;
+  }
+
+  // Exposes the selected recipe highlights for the summary card.
+  get selectedBadges(): RecipeBadge[] {
+    return this.form.controls.badges.value;
   }
 
   // Calculates the total recipe calories from loaded ingredient details.
@@ -256,17 +391,34 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.difficulty.value === difficulty;
   }
 
-  // Sets whether the recipe is intended to freeze well.
-  setFreezerFriendly(value: boolean): void {
-    const control = this.form.controls.freezerFriendly;
-    control.setValue(value);
+  // Toggles one recipe highlight tag on the recipe.
+  toggleBadge(badge: RecipeBadge): void {
+    const control = this.form.controls.badges;
+    const current = control.value;
+    control.setValue(
+      current.includes(badge)
+        ? current.filter(item => item !== badge)
+        : [...current, badge]
+    );
     control.markAsDirty();
     control.markAsTouched();
   }
 
-  // Reports whether the freezer-friendly option matches the current selection.
-  isFreezerFriendlySelected(value: boolean): boolean {
-    return this.form.controls.freezerFriendly.value === value;
+  // Reports whether a recipe highlight is selected.
+  isBadgeSelected(badge: RecipeBadge): boolean {
+    return this.form.controls.badges.value.includes(badge);
+  }
+
+  // Formats a recipe highlight label for display.
+  getBadgeLabel(badge: RecipeBadge): string {
+    switch (badge) {
+      case 'freezer-friendly':
+        return 'Freezer-friendly';
+      case 'budget-focused':
+        return 'Budget-focused';
+      case 'high-protein':
+        return 'High-protein';
+    }
   }
 
   // Validates the chosen AVIF image and creates a local preview URL.
@@ -291,7 +443,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.clearPreviewImage();
 
     this.selectedImageName = selection.file.name;
-    this.previewImageUrl = URL.createObjectURL(selection.file);
+    this.previewImageObjectUrl = URL.createObjectURL(selection.file);
+    this.previewImageUrl = this.previewImageObjectUrl;
     this.form.controls.image.setValue(selection.file);
     this.form.controls.image.markAsDirty();
     this.form.controls.image.updateValueAndValidity();
@@ -311,26 +464,52 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.recipesFacade.createRecipeWithDetails(recipeRequest).pipe(
+    this.saveFeedbackPending.set(true);
+    const editRecipeId = this.editRecipeId();
+    const saveRequest$ = editRecipeId === null
+      ? this.recipesFacade.createRecipeWithDetails(recipeRequest)
+      : this.recipesFacade.updateRecipeWithDetails(editRecipeId, recipeRequest);
+
+    saveRequest$.pipe(
+      tap(recipeSummary => {
+        if (editRecipeId === null) {
+          return;
+        }
+
+        this.applyUpdatedRecipeSummary(recipeSummary);
+      }),
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe();
+    ).subscribe({
+      next: recipeSummary => {
+        this.saveFeedbackPending.set(false);
+        if (editRecipeId === null) {
+          void this.navigateToSuccessPage(recipeSummary);
+          return;
+        }
+
+        this.openFeedbackDialog({
+          eyebrow: 'Recipe updated',
+          title: 'Recipe updated successfully',
+          description: 'Your changes were saved to the current recipe.',
+          message: `"${recipeSummary.name}" is now up to date.`,
+          actionLabel: 'Continue editing',
+        });
+      },
+    });
   }
 
   // Converts the page state into the recipe detail request shape used by the facade.
   private buildRecipeRequest(): RecipeDetailRequest | null {
     const value = this.form.getRawValue();
 
-    if (!value.image) {
+    if (!value.image && !this.isEditMode()) {
       this.form.controls.image.setErrors({ required: true });
       this.form.controls.image.markAsTouched();
       return null;
     }
 
     const name = value.name.trim();
-    const instructions = value.instructions
-      .split(/\r?\n/)
-      .map(step => step.trim())
-      .filter(step => step.length > 0);
+    const instructions = value.instructions.trim();
 
     if (!name) {
       this.form.controls.name.setErrors({ requiredTrimmed: true });
@@ -338,7 +517,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (instructions.length === 0) {
+    if (!instructions) {
       this.form.controls.instructions.setErrors({ requiredTrimmed: true });
       this.form.controls.instructions.markAsTouched();
       return null;
@@ -364,8 +543,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       prepTimeMinutes: value.prepTimeMinutes,
       servings: value.servings,
       difficulty: value.difficulty,
+      badges: value.badges,
       dietIds: value.dietIds,
-      freezerFriendly: value.freezerFriendly,
       estimatedCostPerServing: this.calculateEstimatedCostPerServing(value.servings),
       ingredients: this.ingredients().map(ingredient => ({
         ingredientId: ingredient.ingredientId,
@@ -440,18 +619,107 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.clearPreviewImage();
     this.selectedImageName = '';
     this.form.controls.image.setValue(null);
-    this.form.controls.image.updateValueAndValidity();
+    this.form.controls.image.updateValueAndValidity({ emitEvent: false });
   }
 
   // Revokes the generated object URL to avoid leaking browser memory.
   private clearPreviewImage(): void {
-    if (this.previewImageUrl) {
-      URL.revokeObjectURL(this.previewImageUrl);
-      this.previewImageUrl = null;
+    if (this.previewImageObjectUrl) {
+      URL.revokeObjectURL(this.previewImageObjectUrl);
+      this.previewImageObjectUrl = null;
     }
+
+    this.previewImageUrl = null;
   }
 
   protected shouldShowControlError(control: AbstractControl): boolean {
     return control.invalid && (control.touched || this.submitAttempted());
+  }
+
+  private applyImageValidators(isEditMode: boolean): void {
+    const imageControl = this.form.controls.image;
+    imageControl.setValidators(isEditMode ? [] : [Validators.required]);
+    imageControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private populateFormForEdit(recipe: RecipeDetailDto): void {
+    this.submitAttempted.set(false);
+    this.selectedImageName = recipe.imageUrl ? 'Current image on file' : '';
+    this.setPreviewImage(recipe.imageUrl);
+    this.form.setValue({
+      name: recipe.name,
+      image: null,
+      instructions: recipe.instructions.join('\n'),
+      servings: recipe.servings,
+      prepTimeMinutes: recipe.prepTimeMinutes,
+      difficulty: recipe.difficulty,
+      badges: recipe.badges ?? [],
+      dietIds: recipe.diets?.map(diet => diet.id) ?? [],
+    }, { emitEvent: false });
+    this.ingredients.set(
+      recipe.ingredients.map(recipeIngredient => ({
+        ingredientId: recipeIngredient.ingredientId,
+        quantity: recipeIngredient.quantity,
+        unit: recipeIngredient.unit,
+        ingredient: recipeIngredient.ingredient,
+      }))
+    );
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+  }
+
+  private resetCreateForm(): void {
+    this.submitAttempted.set(false);
+    this.selectedImageName = '';
+    this.editRecipeLoadError.set(null);
+    this.clearPreviewImage();
+    this.form.reset({
+      name: '',
+      image: null,
+      instructions: '',
+      servings: 1,
+      prepTimeMinutes: 15,
+      difficulty: 'Medium',
+      badges: [],
+      dietIds: [],
+    }, { emitEvent: false });
+    this.ingredients.set([]);
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+  }
+
+  private setPreviewImage(imageUrl: string | null): void {
+    this.clearPreviewImage();
+    this.previewImageUrl = imageUrl;
+  }
+
+  private applyUpdatedRecipeSummary(recipeSummary: RecipeSummary): void {
+    this.selectedImageName = recipeSummary.imageUrl ? 'Current image on file' : '';
+    this.form.controls.image.setValue(null);
+    this.setPreviewImage(recipeSummary.imageUrl);
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+  }
+
+  private openFeedbackDialog(data: RecipeFeedbackDialogData): void {
+    this.dialog.open(RecipeFeedbackDialogComponent, {
+      data,
+      role: 'alertdialog',
+      ariaLabel: data.title,
+      maxWidth: '32rem',
+      width: 'calc(100vw - 2rem)',
+    });
+  }
+
+  private navigateToSuccessPage(recipeSummary: RecipeSummary): Promise<boolean> {
+    return this.router.navigate(
+      ['/admin-recipes', 'create', 'success', recipeSummary.id],
+      {
+        replaceUrl: true,
+        state: {
+          recipeSummary,
+        },
+      }
+    );
   }
 }

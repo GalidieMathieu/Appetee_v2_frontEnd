@@ -34,6 +34,9 @@ export class RecipesStore extends EntityStore<RecipeSummary[]> {
   }
 
   setRecipeSummary(summary: RecipeSummary): void {
+    const { [summary.id]: _removedRecipeDetail, ...remainingRecipeDetails } = this.recipeDetailsByIdSubject.value;
+
+    this.recipeDetailsByIdSubject.next(remainingRecipeDetails);
     this.dataSubject.next(this.upsertRecipeSummary(summary));
     this.loadedSubject.next(true);
     this.stateSubject.next('success');

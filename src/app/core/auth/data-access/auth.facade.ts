@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { AbstractLoadFacade } from '@app/core/shared/data-access/generic-template/abstractLoadFacade';
-import { catchError, EMPTY, finalize, map, Observable, switchMap, tap } from 'rxjs';
+import { catchError, EMPTY, finalize, map, Observable, of, switchMap, tap } from 'rxjs';
 import { LoginRequest, SignUpRequest, UserSession } from './auth.model';
 import { AuthApi } from './auth.api';
 import { AuthStore } from './auth.store';
@@ -26,6 +26,41 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
 
   private readonly session = inject(SessionService);
 
+  private setAuthenticatedSession(session: UserSession): void {
+    this.setSuccess(session);
+    this.store.isAuthenticated.set(true);
+  }
+
+  /**
+   * Validates the current authenticated user profile and only then persists the session data.
+   *
+   * @remarks This keeps cookie restoration and explicit sign-in flows aligned.
+   */
+  private hydrateSession$(session: UserSession): Observable<void> {
+    return this.userFacade.getMe$().pipe(
+      tap(() => this.setAuthenticatedSession(session)),
+      map(() => void 0)
+    );
+  }
+
+  /**
+   * Restores a cookie-backed session during bootstrap so authenticated users do not need to log in again.
+   */
+  restoreSession$(): Observable<void> {
+    if (this.isLoaded()) {
+      return of(void 0);
+    }
+
+    this.setLoading();
+
+    return this.api.refreshSession().pipe(
+      switchMap((session: UserSession) => this.hydrateSession$(session)),
+      catchError(() => {
+        this.session.resetAll();
+        return EMPTY;
+      })
+    );
+  }
 
   /**
    * Authenticates a user using username/password credentials.
@@ -42,12 +77,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     this.setLoading();
 
     return this.api.login(request).pipe(
-      tap((session: UserSession) => {
-        this.setSuccess(session);
-        this.store.isAuthenticated.set(true);
-      }),
-      switchMap(() => this.userFacade.getMe$()),
-      map(() => void 0),
+      switchMap((session: UserSession) => this.hydrateSession$(session)),
       catchError(err => {
         this.store.setError(this.toUserMessage(err));
         return EMPTY;
@@ -70,15 +100,9 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
       return EMPTY;
     }
     this.setLoading();
-    console.log(user);
 
     return this.api.signUp(user).pipe(
-      tap((session: UserSession) => {
-        this.setSuccess(session);
-        this.store.isAuthenticated.set(true);
-      }),
-      switchMap(() => this.userFacade.getMe$()),
-      map(() => void 0),
+      switchMap((session: UserSession) => this.hydrateSession$(session)),
       catchError(err => {
         this.store.setError(this.toUserMessage(err));
         return EMPTY;

@@ -61,7 +61,7 @@
                     <p>{{ recipe.prepTimeMinutes }} min · {{ recipe.difficulty }}</p>
                   </div>
 
-                  @if (recipe.freezerFriendly) {
+                  @if (recipe.badges?.includes('freezer-friendly')) {
                     <span class="discover-step__badge">Freezer-friendly</span>
                   }
                 </div>

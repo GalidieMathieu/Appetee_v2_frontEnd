@@ -1,13 +1,21 @@
 import { Routes } from '@angular/router';
 import { AdminRecipesPageComponent } from './admin-recipes.page';
+import { AdminRecipesSuccessPageComponent } from './admin-recipes-success.page';
 
 export const ADMINRECIPES_ROUTES: Routes = [
   {
     path: 'create',
+    title: 'Create Recipe',
     component: AdminRecipesPageComponent,
   },
   {
+    path: 'create/success/:id',
+    title: 'Recipe Created',
+    component: AdminRecipesSuccessPageComponent,
+  },
+  {
     path: ':id/edit',
+    title: 'Edit Recipe',
     component: AdminRecipesPageComponent,
   },
 ];

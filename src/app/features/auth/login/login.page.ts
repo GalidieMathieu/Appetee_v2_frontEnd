@@ -15,6 +15,7 @@ import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 export class LoginPage {
     private readonly authFacade = inject(AuthFacade);
     readonly errorMessage = toSignal(this.authFacade.error$, { initialValue: null });
+    readonly isSubmitting = toSignal(this.authFacade.isLoading$, { initialValue: false });
 
     constructor(private router: Router) {}
 
@@ -26,6 +27,7 @@ export class LoginPage {
     minlength_password_error_label : string = "Password must be at least 8 characters long";
 
     SignIn_str : string = "Sign In";
+    signingIn_str : string = "Signing In...";
     signUp_cta_text : string = "Don't have an account? ";
     signUp_cta_link_text : string = "Sign Up";
 
@@ -54,6 +56,10 @@ export class LoginPage {
     
 
     SignIn() {
+        if (this.loginForm.invalid || this.isSubmitting()) {
+            return;
+        }
+
         const req: LoginRequest = this.loginForm.getRawValue();
         this.authFacade.login$(req).subscribe({
             next: () => {

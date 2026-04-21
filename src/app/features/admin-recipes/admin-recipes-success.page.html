@@ -1,0 +1,123 @@
+<section class="recipe-created-page">
+  <div class="recipe-created-page__shell">
+    @if (recipeSummary(); as recipe) {
+      <header class="recipe-created-card recipe-created-hero">
+        <div class="recipe-created-hero__copy">
+          <span class="text-eyebrow">{{ copy.hero.eyebrow }}</span>
+          <h1 class="text-title">{{ copy.hero.title }}</h1>
+          <p class="text-body-secondary">
+            {{ buildHeroDescription(recipe.name) }}
+          </p>
+        </div>
+
+        <div class="recipe-created-hero__actions">
+          <a class="btn-link-secondary recipe-created-hero__button" routerLink="/admin-recipes/create">
+            <mat-icon>add_circle</mat-icon>
+            <span>{{ copy.actions.createAnother }}</span>
+          </a>
+
+          <a
+            class="btn-link--primary recipe-created-hero__button"
+            [routerLink]="['/admin-recipes', recipe.id, 'edit']"
+          >
+            <mat-icon>edit</mat-icon>
+            <span>{{ copy.actions.modifyCurrent }}</span>
+          </a>
+        </div>
+      </header>
+
+      <div class="recipe-created-layout">
+        <section class="recipe-created-card recipe-created-summary">
+          <div class="recipe-created-summary__media">
+            @if (recipe.imageUrl) {
+              <img [src]="recipe.imageUrl" [alt]="recipe.name" />
+            } @else {
+              <mat-icon>image</mat-icon>
+              <span class="text-body-secondary">{{ copy.summary.emptyImage }}</span>
+            }
+          </div>
+
+          <div class="recipe-created-summary__body">
+            <div class="recipe-created-summary__heading">
+              <h2 class="text-subtitle">{{ recipe.name }}</h2>
+              <p class="text-body-secondary">
+                {{ buildIngredientCountText(recipe.ingredients.length) }}
+              </p>
+            </div>
+
+            <div class="recipe-created-summary__meta">
+              <span><mat-icon>schedule</mat-icon>{{ buildPrepTimeText(recipe.prepTimeMinutes) }}</span>
+              <span><mat-icon>restaurant</mat-icon>{{ buildServingsText(recipe.servings) }}</span>
+              <span><mat-icon>tune</mat-icon>{{ recipe.difficulty }}</span>
+            </div>
+
+            @if (badgeLabels().length > 0) {
+              <div class="recipe-created-summary__chips">
+                @for (badge of badgeLabels(); track badge) {
+                  <span class="recipe-created-summary__chip">{{ badge }}</span>
+                }
+              </div>
+            }
+
+            @if (recipe.diets?.length) {
+              <div class="recipe-created-summary__chips">
+                @for (diet of recipe.diets; track diet.id) {
+                  <span class="recipe-created-summary__chip">{{ diet.name }}</span>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <section class="recipe-created-card recipe-created-details">
+          <div class="recipe-created-details__grid">
+            <article class="recipe-created-details__stat">
+              <span class="text-body-secondary">{{ copy.stats.calories }}</span>
+              <strong>{{ recipe.caloriesTotal | number: '1.0-0' }} {{ copy.stats.caloriesUnit }}</strong>
+            </article>
+
+            <article class="recipe-created-details__stat">
+              <span class="text-body-secondary">{{ copy.stats.protein }}</span>
+              <strong>{{ recipe.proteinTotal | number: '1.0-0' }} {{ copy.stats.gramsUnit }}</strong>
+            </article>
+
+            <article class="recipe-created-details__stat">
+              <span class="text-body-secondary">{{ copy.stats.carbs }}</span>
+              <strong>{{ recipe.carbsTotal | number: '1.0-0' }} {{ copy.stats.gramsUnit }}</strong>
+            </article>
+
+            <article class="recipe-created-details__stat">
+              <span class="text-body-secondary">{{ copy.stats.costPerServing }}</span>
+              <strong>
+                @if (recipe.estimatedCostPerServing !== null) {
+                  {{ recipe.estimatedCostPerServing | currency: currencyCode }}
+                } @else {
+                  {{ copy.stats.pendingPrices }}
+                }
+              </strong>
+            </article>
+          </div>
+
+          <div class="recipe-created-details__ingredients">
+            <div class="recipe-created-details__header">
+              <h2 class="text-subtitle">{{ copy.recap.title }}</h2>
+              <p class="text-body-secondary">{{ copy.recap.description }}</p>
+            </div>
+
+            <div class="recipe-created-details__ingredient-list">
+              @for (ingredient of recipe.ingredients; track ingredient.id) {
+                <span class="recipe-created-details__ingredient">{{ ingredient.name }}</span>
+              }
+            </div>
+          </div>
+        </section>
+      </div>
+    } @else {
+      <section class="recipe-created-card recipe-created-loading">
+        <mat-icon>{{ loadingContent().icon }}</mat-icon>
+        <h1 class="text-title">{{ loadingContent().title }}</h1>
+        <p class="text-body-secondary">{{ loadingContent().description }}</p>
+      </section>
+    }
+  </div>
+</section>

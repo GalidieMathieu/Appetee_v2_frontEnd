@@ -1,4 +1,5 @@
 import {
+  RecipeBadge,
   RecipeDifficulty,
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
@@ -16,6 +17,10 @@ const difficultyRank: Record<RecipeDifficulty, number> = {
   Hard: 3,
 };
 
+function hasRecipeBadge(recipe: RecipeSummary, badge: RecipeBadge): boolean {
+  return recipe.badges?.includes(badge) ?? false;
+}
+
 export function matchesMealPlanTarget(recipe: RecipeSummary, target: MealPlanTarget): boolean {
   if (
     target.maxPrepTimeMinutes !== null &&
@@ -31,7 +36,7 @@ export function matchesMealPlanTarget(recipe: RecipeSummary, target: MealPlanTar
     return false;
   }
 
-  if (target.freezerFriendlyOnly && !recipe.freezerFriendly) {
+  if (target.freezerFriendlyOnly && !hasRecipeBadge(recipe, 'freezer-friendly')) {
     return false;
   }
 
@@ -72,11 +77,14 @@ export function sortRecipesForDiscovery(
       return nextRecipes.sort((left, right) => right.proteinTotal - left.proteinTotal);
     case 'freezer-friendly':
       return nextRecipes.sort((left, right) => {
-        if (left.freezerFriendly === right.freezerFriendly) {
+        const leftIsFreezerFriendly = hasRecipeBadge(left, 'freezer-friendly');
+        const rightIsFreezerFriendly = hasRecipeBadge(right, 'freezer-friendly');
+
+        if (leftIsFreezerFriendly === rightIsFreezerFriendly) {
           return right.proteinTotal - left.proteinTotal;
         }
 
-        return left.freezerFriendly ? -1 : 1;
+        return leftIsFreezerFriendly ? -1 : 1;
       });
     case 'easiest':
       return nextRecipes.sort((left, right) => {

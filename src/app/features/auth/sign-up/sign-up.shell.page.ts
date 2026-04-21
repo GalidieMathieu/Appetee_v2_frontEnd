@@ -34,6 +34,7 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     back_str : string = "Back";
     next_str : string = "Next";
     account_creation_str : string = "create account";
+    account_creation_loading_str : string = "Creating Account...";
     title = this.stepsTitle[0];
     subTitle = this.stepsSubTitle[0];
 
@@ -48,6 +49,7 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     private readonly ingredientsFacade = inject(IngredientsFacade);
     private readonly destroyRef = inject(DestroyRef);
     private readonly authError = toSignal(this.authFacade.error$, { initialValue: null });
+    readonly isSubmitting = toSignal(this.authFacade.isLoading$, { initialValue: false });
     private readonly userError = toSignal(this.user_authFacace.error$, { initialValue: null });
     private readonly dietsError = toSignal(this.dietsFacade.error$, { initialValue: null });
     private readonly ingredientsError = toSignal(this.ingredientsFacade.error$, { initialValue: null });
@@ -87,11 +89,13 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     }
 
     goBack(): void {
+        if (this.isSubmitting()) return;
         if (this.currentIndex === 0) return;
         this.router.navigate([this.steps[this.currentIndex - 1]], { relativeTo: this.route});
       }
 
     goNext(): void {
+        if (this.isSubmitting()) return;
         if (this.currentIndex >= this.steps.length - 1) return;
         if(this.currentIndex == 0){
             this.checkEmailAndProceed();
@@ -108,6 +112,7 @@ export class SignUpShellPage implements OnDestroy, OnInit{
       }
 
     goFinishSignUp(): void{
+        if(this.isSubmitting()) return;
         if(this.wizard.account.invalid) return;
         const req = this.buildSignUpRequest();
         this.authFacade.signUp(req).subscribe({

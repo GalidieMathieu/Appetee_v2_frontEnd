@@ -3,6 +3,7 @@ import { Ingredient, IngredientAdminDetailDto } from '../ingredients/ingredient.
 
 //########## Shared ############
 export type RecipeDifficulty = 'Easy' | 'Medium' | 'Hard';
+export type RecipeBadge = 'freezer-friendly' | 'budget-focused' | 'high-protein';
 
 export interface RecipeNutrition {
   caloriesTotal: number;
@@ -18,8 +19,8 @@ export interface RecipeSummary extends RecipeNutrition {
   prepTimeMinutes: number;
   servings: number;
   difficulty: RecipeDifficulty;
+  badges: RecipeBadge[] | null;
   diets: Diet[] | null;
-  freezerFriendly: boolean;
   estimatedCostPerServing: number | null;
   ingredients: Ingredient[];
 }
@@ -45,13 +46,13 @@ export interface RecipeIngredientRequest {
 
 export interface RecipeDetailRequest extends RecipeNutrition {
   name: string;
-  image: File;
-  instructions: string[];
+  image: File | null;
+  instructions: string;
   prepTimeMinutes: number;
   servings: number;
   difficulty: RecipeDifficulty;
+  badges: RecipeBadge[];
   dietIds: number[];
-  freezerFriendly: boolean;
   estimatedCostPerServing: number | null;
   ingredients: RecipeIngredientRequest[];
 }

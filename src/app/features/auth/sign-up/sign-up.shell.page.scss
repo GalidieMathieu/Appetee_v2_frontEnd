@@ -47,13 +47,9 @@
   .bar.isActive {
     background-color: var(--color-primary);
   }
-  
-  /* Step text */
-  .header_shell h4 {
+
+  .sign-up-shell__step-count {
     margin: 0;
-    font-size: 0.875rem; 
-    color: var(--color-muted);
-    font-weight: 400;
   }
   
   /* Card */
@@ -76,21 +72,13 @@
       padding: 2.5rem;
     }
   }
-  
 
-  .sign-up-shell__content h2 {
-    font-size: 1.875rem; 
-    line-height: 2.25rem;
-    font-weight: 700;   
-    margin: 0 0 0.35rem 0;
-    color: var(--color-text);
+  .sign-up-shell__title {
+    margin-bottom: 0.35rem;
   }
-  
-  .sign-up-shell__content p {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: 1rem;
-    margin: 0 0 1rem 0;
+
+  .sign-up-shell__subtitle {
+    margin-bottom: 1rem;
   }
 
   .subtitle-error {
@@ -108,7 +96,6 @@
   .button_nav {
     flex: 1;
     height: 3rem;
-    font-weight: 600;  
     border-radius: var(--radius); 
     border: none;
   }
@@ -133,11 +120,6 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-  
-    color: var(--color-muted);
-    font-size: 0.875rem; /* text-sm */
-    font-weight: 600;
-  
     text-decoration: none;
     padding: 0.5rem 0.75rem;
     border-radius: 9999px;

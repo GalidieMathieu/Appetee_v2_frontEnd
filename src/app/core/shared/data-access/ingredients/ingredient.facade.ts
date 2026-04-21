@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { catchError, EMPTY, map, Observable, of, switchMap, tap, timeout } from 'rxjs';
+import { catchError, EMPTY, map, Observable, of, tap, timeout } from 'rxjs';
 
 import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
 import { Ingredient, IngredientAdminDetailDto, IngredientAdminDetailRequest } from './ingredient.model';
@@ -70,14 +70,13 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
       }
 
       getIngredientWithDetails(id: number): Observable<IngredientAdminDetailDto> {
-
-        if(this.store.isLoading()) {
-          return EMPTY;
-        }
-
         const cached = this.store.getIngredientDetailsById(id);
         if (cached) {
           return of(cached);
+        }
+
+        if(this.store.isLoading()) {
+          return EMPTY;
         }
 
         this.setLoading();

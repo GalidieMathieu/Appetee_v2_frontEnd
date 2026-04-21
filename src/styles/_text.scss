@@ -1,8 +1,44 @@
+:root {
+  --font-family-base: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html,
+body {
+  font-family: var(--font-family-base);
+}
+
+button,
+input,
+textarea,
+select,
+option {
+  font: inherit;
+  font-family: var(--font-family-base);
+}
+
+.text-display {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(3rem, 5vw, 4.5rem);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.text-section-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(1.7rem, 2.5vw, 2.1rem);
+  line-height: 1.12;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
 .text-title {
   margin: 0;
   color: var(--color-text);
-  font-size: clamp(1.65rem, 2.2vw, 1.95rem);
-  line-height: 1.08;
+  font-size: clamp(1.45rem, 1.9vw, 1.7rem);
+  line-height: 1.06;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
@@ -25,12 +61,28 @@
   letter-spacing: -0.02em;
 }
 
+.text-lead {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  line-height: 1.625;
+  font-weight: 400;
+}
+
 .text-body {
   margin: 0;
   color: var(--color-text);
   font-size: 0.9rem;
   line-height: 1.45;
   font-weight: 400;
+}
+
+.text-body-strong {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  line-height: 1.35;
+  font-weight: 600;
 }
 
 .text-body-secondary {
@@ -41,6 +93,37 @@
   font-weight: 400;
 }
 
+.text-button,
+.text-button-white,
+.text-button-on-secondary {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.text-button {
+  color: inherit;
+}
+
+.text-button-white {
+  color: #fff;
+}
+
+.text-button-on-secondary {
+  color: var(--color-on-secondary);
+}
+
+.text-link-muted {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 .text-label {
   margin: 0;
   color: var(--color-text);
@@ -49,7 +132,34 @@
   font-weight: 600;
 }
 
+.text-badge {
+  margin: 0;
+  color: inherit;
+  font-size: 1.125rem;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.text-chip {
+  margin: 0;
+  color: inherit;
+  font-size: 0.75rem;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.text-eyebrow {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .text-small {
+  margin: 0;
   font-size: 0.8rem;
   line-height: 1rem;
   color: var(--color-muted);
@@ -66,4 +176,3 @@
   font-size: 0.875rem;
   color: var(--color-destructive, #dc2626);
 }
-

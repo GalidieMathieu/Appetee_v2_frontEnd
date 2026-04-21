@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { apiErrorInterceptor } from './core/api/api-error.interceptor';
@@ -12,6 +12,7 @@ import { IngredientsStore } from './core/shared/data-access/ingredients/ingredie
 import { AuthStore } from './core/auth/data-access/auth.store';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { UserStore } from './core/shared/data-access/user/user.store';
+import { AuthFacade } from './core/auth/data-access/auth.facade';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,6 +22,8 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([authInterceptor,apiErrorInterceptor])
     ),
+    // Restore a valid cookie-backed session before the router renders any guarded route.
+    provideAppInitializer(() => inject(AuthFacade).restoreSession$()),
     // Register stores for resetAll()
     //{ provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: DietsStore, multi: true },

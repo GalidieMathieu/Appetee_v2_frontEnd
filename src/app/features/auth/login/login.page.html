@@ -40,11 +40,17 @@
             <div class = "bottom_button_div">
                 <button 
                     type="button" 
-                    class = "btn-link--primary button_nav"
-                    [disabled]="!loginForm.valid"
+                    class = "btn-link--primary button_nav text-button-white"
+                    [disabled]="!loginForm.valid || isSubmitting()"
+                    [attr.aria-busy]="isSubmitting()"
                     (click)="SignIn()"
                 >
-                    {{SignIn_str}}
+                    <span class="btn-loading__content">
+                        @if (isSubmitting()) {
+                            <span class="btn-loading__spinner" aria-hidden="true"></span>
+                        }
+                        <span>{{ isSubmitting() ? signingIn_str : SignIn_str }}</span>
+                    </span>
                 </button>
             </div>
             <div class="signUp-cta">
