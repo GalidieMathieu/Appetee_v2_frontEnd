@@ -129,7 +129,6 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesSt
     const formData = new FormData();
 
     formData.append('name', recipe.name);
-    formData.append('instructions', recipe.instructions);
     formData.append('prepTimeMinutes', recipe.prepTimeMinutes.toString());
     formData.append('servings', recipe.servings.toString());
     formData.append('difficulty', recipe.difficulty);
@@ -147,6 +146,10 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeSummary[], RecipesSt
 
     recipe.badges.forEach((badge, index) => {
       formData.append(`badges[${index}]`, badge);
+    });
+
+    recipe.instructions.forEach((instruction, index) => {
+      formData.append(`instructions[${index}]`, instruction);
     });
 
     recipe.dietIds.forEach((dietId, index) => {

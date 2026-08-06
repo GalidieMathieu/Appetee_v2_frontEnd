@@ -42,7 +42,6 @@ export class PrivateHeaderComponent {
     { label: 'Diet & Needs', path: '/diet-needs' },
     { label: 'Profile', path: '/profile' },
     { label: 'Create Recipes', path: '/admin-recipes/create' },
-    { label: 'Meal plan', path: '/meal-plan' },
 
   ];
 

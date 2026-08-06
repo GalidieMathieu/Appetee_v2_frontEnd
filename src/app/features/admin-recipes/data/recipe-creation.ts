@@ -1,4 +1,4 @@
-import { FormControl, FormGroup } from '@angular/forms';
+import { FormArray, FormControl, FormGroup } from '@angular/forms';
 
 import {
   IngredientAdminDetailDto,
@@ -14,7 +14,7 @@ import {
 export type RecipeCreationForm = FormGroup<{
   name: FormControl<string>;
   image: FormControl<File | null>;
-  instructions: FormControl<string>;
+  instructions: FormArray<FormControl<string>>;
   servings: FormControl<number>;
   prepTimeMinutes: FormControl<number>;
   difficulty: FormControl<RecipeDifficulty | null>;

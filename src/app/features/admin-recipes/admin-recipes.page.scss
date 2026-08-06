@@ -61,7 +61,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.85rem;
+  gap: .85rem;
   margin-bottom: 1rem;
 }
 
@@ -70,7 +70,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: .4rem;
   min-height: 2.45rem;
   border: none;
   border-radius: 0.45rem;
@@ -78,7 +78,6 @@
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: none;
 }
 
 .recipe-card__action {
@@ -89,7 +88,7 @@
 .recipe-form-field {
   display: flex;
   flex-direction: column;
-  gap: 0.38rem;
+  gap: .38rem;
 }
 
 .recipe-form-field__error {
@@ -124,7 +123,7 @@
 .recipe-file-field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.45rem;
+  gap: .45rem;
 }
 
 .recipe-file-button {
@@ -228,45 +227,7 @@
   border-radius: 1rem;
 }
 
-.recipe-option-tile {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.6rem;
-  padding: 0.72rem 1rem;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 92%, transparent);
-  background: color-mix(in srgb, var(--color-surface) 92%, white);
-  color: var(--color-text);
-  font-family: inherit;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    color 150ms ease,
-    box-shadow 150ms ease,
-    transform 150ms ease;
-}
-
-.recipe-option-tile:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
-}
-
-.recipe-option-tile:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-
-.recipe-option-tile.is-selected {
-  border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 10%, white);
-  color: var(--color-primary);
-  transform: translateY(-1px);
-}
-
-.recipe-ingredients--invalid .recipe-ingredients__empty,
-.recipe-ingredients--invalid .recipe-ingredients__list {
+.recipe-ingredients--invalid :is(.recipe-ingredients__empty, .recipe-ingredients__list) {
   border-color: color-mix(in srgb, var(--color-destructive, #dc2626) 55%, transparent);
 }
 
@@ -305,6 +266,13 @@
   border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
   border-radius: 0.75rem;
   background: color-mix(in srgb, var(--color-bg-secondary) 65%, white);
+}
+
+.recipe-steps__item {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.65rem;
 }
 
 .recipe-ingredients__item-copy {

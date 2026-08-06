@@ -160,7 +160,7 @@
                 @for (badge of badgeOptions; track badge.value) {
                   <button
                     type="button"
-                    class="recipe-option-tile text-label"
+                    class="btn-selection text-label"
                     [class.is-selected]="isBadgeSelected(badge.value)"
                     (click)="toggleBadge(badge.value)"
                     [attr.aria-pressed]="isBadgeSelected(badge.value)"
@@ -184,7 +184,7 @@
                 @for (difficulty of difficultyOptions; track difficulty) {
                   <button
                     type="button"
-                    class="recipe-option-tile text-label"
+                    class="btn-selection text-label"
                     [class.is-selected]="isDifficultySelected(difficulty)"
                     (click)="setDifficulty(difficulty)"
                     [attr.aria-pressed]="isDifficultySelected(difficulty)"
@@ -204,14 +204,14 @@
             <section class="recipe-options__section">
               <div class="recipe-options__copy">
                 <h3 class="text-label">Diet Tags</h3>
-                <p class="text-body-secondary">Optional labels that help meal-plan filtering and discovery later.</p>
+                <p class="text-body-secondary">Optional labels that help recipe filtering and discovery later.</p>
               </div>
 
               <div class="recipe-options__chips">
                 @for (diet of diets(); track diet.id) {
                   <button
                     type="button"
-                    class="recipe-option-tile text-label"
+                    class="btn-selection text-label"
                     [class.is-selected]="isDietSelected(diet.id)"
                     (click)="toggleDiet(diet.id)"
                     [attr.aria-pressed]="isDietSelected(diet.id)"
@@ -279,23 +279,60 @@
           </section>
 
           <section class="recipe-card">
-            <div class="recipe-card__copy">
-              <h2 class="text-subtitle">Instructions</h2>
-              <p class="text-body-secondary">How do you cook this recipe?</p>
+            <div class="recipe-card__header">
+              <div class="recipe-card__copy">
+                <h2 class="text-subtitle">Instructions</h2>
+                <p class="text-body-secondary">Add each cooking step in order.</p>
+              </div>
+
+              <button
+                type="button"
+                class="btn-link--primary recipe-card__action"
+                (click)="addInstructionStep()"
+                [attr.aria-describedby]="hasInstructionsError() ? 'recipe-instructions-error' : null"
+              >
+                <mat-icon>add</mat-icon>
+                <span>Add Step</span>
+              </button>
             </div>
 
-            <div class="recipe-form-field">
-              <textarea
-                class="input--primary recipe-form-field__textarea"
-                [class.recipe-form-field__textarea--invalid]="shouldShowControlError(instructionsControl)"
-                formControlName="instructions"
-                placeholder="Step 1: Boil water... Step 2: Add pasta... Step 3: Enjoy!"
-                [attr.aria-describedby]="shouldShowControlError(instructionsControl) ? 'recipe-instructions-error' : null"
-                [attr.aria-invalid]="shouldShowControlError(instructionsControl)"
-              ></textarea>
-              @if (shouldShowControlError(instructionsControl) && instructionsControl.hasError('requiredTrimmed')) {
+            <div class="recipe-ingredients" [class.recipe-ingredients--invalid]="hasInstructionsError()">
+              @if (instructionStepControls.length === 0) {
+                <div class="text-body-secondary recipe-ingredients__empty">
+                  No steps added yet.
+                </div>
+              } @else {
+                <div class="recipe-ingredients__list">
+                  @for (stepControl of instructionStepControls; track $index; let index = $index) {
+                    <article class="recipe-ingredients__item recipe-steps__item">
+                      <div class="recipe-card__header">
+                        <label class="text-label" [attr.for]="'recipe-step-' + index">
+                          Step {{ index + 1 }}
+                        </label>
+
+                        <button
+                          type="button"
+                          class="recipe-ingredients__remove"
+                          (click)="removeInstructionStep(index)"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <textarea
+                        [id]="'recipe-step-' + index"
+                        class="input--primary recipe-form-field__textarea recipe-steps__textarea"
+                        [formControl]="stepControl"
+                        [placeholder]="'Describe step ' + (index + 1) + '...'"
+                      ></textarea>
+                    </article>
+                  }
+                </div>
+              }
+
+              @if (hasInstructionsError()) {
                 <small id="recipe-instructions-error" class="text-error recipe-form-field__error" role="alert">
-                  Recipe description is required.
+                  Add at least one instruction step before saving.
                 </small>
               }
             </div>

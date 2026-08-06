@@ -1,0 +1,63 @@
+<article class="recipe-card">
+  <div class="recipe-card__media">
+    <img
+      class="recipe-card__image"
+      [src]="recipe().imageUrl"
+      [alt]="recipe().name"
+      width="300"
+      height="150"
+    />
+
+    <button
+      type="button"
+      class="recipe-card__favorite"
+      [class.is-saved]="recipe().isSaved"
+      [attr.aria-label]="recipe().isSaved ? 'Remove saved recipe' : 'Save recipe'"
+      (click)="onFavoriteClick($event)"
+    >
+      <mat-icon aria-hidden="true">
+        {{ recipe().isSaved ? 'favorite' : 'favorite_border' }}
+      </mat-icon>
+    </button>
+
+    <div class="recipe-card__badges">
+      <span class="recipe-card__meal-type text-chip">{{ mealTypeLabel }}</span>
+
+      @if (ingredientMatch() !== null) {
+        <span class="recipe-card__match text-chip">{{ ingredientMatch() }}% match</span>
+      }
+    </div>
+  </div>
+
+  <div class="recipe-card__body">
+    <h2 class="text-heading recipe-card__title">{{ recipe().name }}</h2>
+
+    <div class="recipe-card__meta" aria-label="Recipe details">
+      <span>
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        {{ recipe().prepTimeMinutes }} mins
+      </span>
+      <span>
+        <mat-icon aria-hidden="true">group</mat-icon>
+        {{ recipe().servings }} servings
+      </span>
+      <span>
+        <mat-icon aria-hidden="true">local_fire_department</mat-icon>
+        {{ recipe().caloriesTotal }} cal
+      </span>
+    </div>
+
+    @if (showIngredientMatch() && recipe().ownedIngredientCount > 0) {
+      <p class="text-small recipe-card__ingredients">
+        You have {{ recipe().ownedIngredientCount }}
+        ingredient@if (recipe().ownedIngredientCount !== 1) {s}
+      </p>
+    }
+
+    <div class="recipe-card__tags" aria-label="Recipe tags">
+      @for (tag of visibleTags(); track tag) {
+        <span class="text-chip recipe-card__tag">{{ tag }}</span>
+      }
+    </div>
+  </div>
+</article>

@@ -47,7 +47,7 @@ export interface RecipeIngredientRequest {
 export interface RecipeDetailRequest extends RecipeNutrition {
   name: string;
   image: File | null;
-  instructions: string;
+  instructions: string[];
   prepTimeMinutes: number;
   servings: number;
   difficulty: RecipeDifficulty;

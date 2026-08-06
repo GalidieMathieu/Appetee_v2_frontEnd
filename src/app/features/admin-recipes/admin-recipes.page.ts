@@ -13,6 +13,7 @@ import {
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
+  FormArray,
   FormControl,
   FormGroup,
   ReactiveFormsModule,
@@ -131,10 +132,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
-    instructions: new FormControl('', {
-      nonNullable: true,
-      validators: [requiredTrimmedValidator],
-    }),
+    instructions: new FormArray<FormControl<string>>([]),
     servings: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1)],
@@ -209,8 +207,12 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.image;
   }
 
-  get instructionsControl(): FormControl<string> {
+  get instructionsControl(): FormArray<FormControl<string>> {
     return this.form.controls.instructions;
+  }
+
+  get instructionStepControls(): FormControl<string>[] {
+    return this.instructionsControl.controls;
   }
 
   get servingsControl(): FormControl<number> {
@@ -364,6 +366,20 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     );
   }
 
+  // Adds one editable instruction step to the recipe draft.
+  addInstructionStep(value = ''): void {
+    this.instructionsControl.push(this.createInstructionStepControl(value));
+    this.instructionsControl.markAsDirty();
+    this.instructionsControl.markAsTouched();
+  }
+
+  // Removes one instruction step from the recipe draft.
+  removeInstructionStep(index: number): void {
+    this.instructionsControl.removeAt(index);
+    this.instructionsControl.markAsDirty();
+    this.instructionsControl.markAsTouched();
+  }
+
   // Toggles one diet tag on the recipe.
   toggleDiet(id: number): void {
     const control = this.form.controls.dietIds;
@@ -501,6 +517,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   // Converts the page state into the recipe detail request shape used by the facade.
   private buildRecipeRequest(): RecipeDetailRequest | null {
     const value = this.form.getRawValue();
+    const instructions = this.getNormalizedInstructionSteps();
 
     if (!value.image && !this.isEditMode()) {
       this.form.controls.image.setErrors({ required: true });
@@ -509,7 +526,6 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     }
 
     const name = value.name.trim();
-    const instructions = value.instructions.trim();
 
     if (!name) {
       this.form.controls.name.setErrors({ requiredTrimmed: true });
@@ -517,9 +533,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (!instructions) {
-      this.form.controls.instructions.setErrors({ requiredTrimmed: true });
-      this.form.controls.instructions.markAsTouched();
+    if (instructions.length === 0) {
+      this.instructionsControl.markAsTouched();
       return null;
     }
 
@@ -636,6 +651,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return control.invalid && (control.touched || this.submitAttempted());
   }
 
+  protected hasInstructionsError(): boolean {
+    return this.submitAttempted() && this.getNormalizedInstructionSteps().length === 0;
+  }
+
   private applyImageValidators(isEditMode: boolean): void {
     const imageControl = this.form.controls.image;
     imageControl.setValidators(isEditMode ? [] : [Validators.required]);
@@ -646,10 +665,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.submitAttempted.set(false);
     this.selectedImageName = recipe.imageUrl ? 'Current image on file' : '';
     this.setPreviewImage(recipe.imageUrl);
-    this.form.setValue({
+    this.replaceInstructionSteps(recipe.instructions);
+    this.form.patchValue({
       name: recipe.name,
       image: null,
-      instructions: recipe.instructions.join('\n'),
       servings: recipe.servings,
       prepTimeMinutes: recipe.prepTimeMinutes,
       difficulty: recipe.difficulty,
@@ -673,10 +692,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.selectedImageName = '';
     this.editRecipeLoadError.set(null);
     this.clearPreviewImage();
+    this.replaceInstructionSteps([]);
     this.form.reset({
       name: '',
       image: null,
-      instructions: '',
       servings: 1,
       prepTimeMinutes: 15,
       difficulty: 'Medium',
@@ -721,5 +740,25 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
         },
       }
     );
+  }
+
+  private createInstructionStepControl(value = ''): FormControl<string> {
+    return new FormControl(value, {
+      nonNullable: true,
+    });
+  }
+
+  private replaceInstructionSteps(steps: string[]): void {
+    this.instructionsControl.clear();
+
+    for (const step of steps) {
+      this.instructionsControl.push(this.createInstructionStepControl(step));
+    }
+  }
+
+  private getNormalizedInstructionSteps(): string[] {
+    return this.instructionsControl.getRawValue()
+      .map(step => step.trim())
+      .filter(step => step.length > 0);
   }
 }

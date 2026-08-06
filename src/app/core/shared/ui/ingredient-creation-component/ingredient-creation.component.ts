@@ -1,6 +1,9 @@
 import { Component, effect, inject, input, OnInit, output } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { IngredientAdminDetailRequest } from '../../data-access/ingredients/ingredient.model';
+import {
+  IngredientAdminDetailRequest,
+  IngredientBasisUnit,
+} from '../../data-access/ingredients/ingredient.model';
 import { readAvifFileSelection } from '../../utils/avif-file-selection/avif-file-selection';
 
 @Component({
@@ -19,6 +22,7 @@ export class IngredientCreateFormComponent implements OnInit {
   readonly cancelled = output<void>();
   readonly validityChanged = output<boolean>();
   selectedImageName = '';
+  readonly basisUnitOptions: IngredientBasisUnit[] = ['g', 'ml'];
 
   //##################### Ingredient Form #################
   readonly form = new FormGroup({
@@ -28,6 +32,10 @@ export class IngredientCreateFormComponent implements OnInit {
     }),
     basis: new FormControl<number>(100,{nonNullable: true,
       validators: [Validators.required, Validators.min(0.01)],
+    }),
+    basisUnit: new FormControl<IngredientBasisUnit>('g', {
+      nonNullable: true,
+      validators: [Validators.required],
     }),
     caloriesKcal:new FormControl<number>(100,{nonNullable: true,
       validators: [Validators.required, Validators.min(0)],
@@ -118,6 +126,7 @@ export class IngredientCreateFormComponent implements OnInit {
     return {
       name: formValue.name,
       basis: formValue.basis,
+      basisUnit: formValue.basisUnit,
       price: formValue.price,
       caloriesKcal: formValue.caloriesKcal,
       image,

@@ -1,6 +1,5 @@
 .home-page {
   min-height: 100%;
-  background: var(--color-surface);
 }
 
 .home-page__container {
@@ -31,7 +30,7 @@
   padding: 1rem;
   border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
+  background: var(--color-bg-tint);
 }
 
 .ingredient-callout__icon {
@@ -53,7 +52,6 @@
   border-radius: var(--radius);
   padding: 0 1.05rem;
   cursor: pointer;
-  transition: background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .home-action-button {
@@ -71,7 +69,6 @@
   min-height: 2.75rem;
   padding: 0 1rem;
   background: var(--color-surface);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
 }
 
 .home-search__field input {
@@ -114,9 +111,6 @@
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
-  box-shadow:
-    0 10px 15px -3px rgba(255, 114, 20, 0.25),
-    0 4px 6px -4px rgba(255, 114, 20, 0.2);
 }
 
 .meal-filter {
@@ -128,6 +122,7 @@
 .recipe-results {
   padding: 5rem 0;
   background: var(--color-surface);
+  scroll-margin-top: 1rem;
 }
 
 .recipe-results__header {
@@ -140,8 +135,33 @@
 
 .recipe-results__grid {
   display: grid;
-  grid-template-columns: minmax(0, 18.6rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
   gap: 1.5rem;
+}
+
+.recipe-results__status {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  min-height: 14rem;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.recipe-results__status--error mat-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--color-primary);
+  font-size: 3rem;
+}
+
+.recipe-results__retry {
+  min-height: 2.55rem;
+  margin-top: 0.35rem;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 0 1.1rem;
+  cursor: pointer;
 }
 
 .recipe-results__empty {
@@ -163,13 +183,7 @@
 .recipe-collection-cta {
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-primary) 9%, var(--color-surface)) 0%,
-      color-mix(in srgb, var(--color-secondary) 22%, var(--color-surface)) 52%,
-      color-mix(in srgb, var(--color-primary) 5%, var(--color-surface)) 100%
-    );
+  background: var(--color-bg-tint);
 }
 
 .recipe-collection-cta__inner {
@@ -198,10 +212,6 @@
   padding: 0 2rem;
   cursor: pointer;
   font-size: 1.25rem;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.14),
-    0 8px 10px -6px rgba(0, 0, 0, 0.14);
-  transition: background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .recipe-collection-cta__button mat-icon {

@@ -95,6 +95,7 @@ export class IngredientsFacade extends AbstractLoadFacade<Ingredient[],Ingredien
 
         formData.append('name', ingredient.name);
         formData.append('basis', ingredient.basis.toString());
+        formData.append('basisUnit', ingredient.basisUnit);
 
         if (ingredient.price !== null) {
           formData.append('price', ingredient.price.toString());

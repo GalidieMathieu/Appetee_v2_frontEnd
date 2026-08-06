@@ -187,7 +187,7 @@ export class IngredientDialogComponent implements OnInit {
     this.recipeIngredientForm.patchValue({
       ingredientId: ingredient.id,
       quantity: ingredient.basis,
-      unit: 'g',
+      unit: ingredient.basisUnit,
     });
     this.mode.set('link');
     queueMicrotask(() => this.changeDetectorRef.detectChanges());

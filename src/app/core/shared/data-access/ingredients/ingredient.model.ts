@@ -1,3 +1,5 @@
+export type IngredientBasisUnit = 'g' | 'ml';
+
 //########## DTO ############
 export interface Ingredient {
   id: number;
@@ -8,6 +10,7 @@ export type IngredientAdminDetailDto = {
   id: number;
   name: string;
   basis: number;
+  basisUnit: IngredientBasisUnit;
   price: number | null;
   caloriesKcal: number;
   imageUrl: string | null;
@@ -25,6 +28,7 @@ export type IngredientAdminDetailDto = {
 export type IngredientAdminDetailRequest = {
   name: string;
   basis: number;
+  basisUnit: IngredientBasisUnit;
   price: number | null;
   caloriesKcal: number;
   image: File;
