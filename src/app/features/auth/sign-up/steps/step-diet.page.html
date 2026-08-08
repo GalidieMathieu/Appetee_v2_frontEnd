@@ -3,7 +3,7 @@
       @for (d of (diets$ | async) ?? []; track d.id) {
         <button
           type="button"
-          class="diet-tile"
+          class="diet-tile text-button"
           [class.is-selected]="isSelected(d.id)"
           (click)="toggleDiet(d.id)"
           role="checkbox"

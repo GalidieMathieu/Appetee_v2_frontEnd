@@ -1,4 +1,4 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { apiErrorInterceptor } from './core/api/api-error.interceptor';
@@ -12,6 +12,12 @@ import { IngredientsStore } from './core/shared/data-access/ingredients/ingredie
 import { AuthStore } from './core/auth/data-access/auth.store';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { UserStore } from './core/shared/data-access/user/user.store';
+import { AuthFacade } from './core/auth/data-access/auth.facade';
+import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
+import { RecipeDetailsStore } from './core/shared/data-access/recipes/recipe-details.store';
+import { AdminRecipeStore } from './core/shared/data-access/recipes/admin/admin-recipe.store';
+import { IngredientDetailsStore } from './core/shared/data-access/ingredients/admin/ingredient-details.store';
+import { AdminIngredientStore } from './core/shared/data-access/ingredients/admin/admin-ingredient.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,10 +27,16 @@ export const appConfig: ApplicationConfig = {
       withFetch(),
       withInterceptors([authInterceptor,apiErrorInterceptor])
     ),
+    // Restore a valid cookie-backed session before the router renders any guarded route.
+    provideAppInitializer(() => inject(AuthFacade).restoreSession$()),
     // Register stores for resetAll()
-    //{ provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: RecipeDetailsStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: AdminRecipeStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: DietsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: IngredientsStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: IngredientDetailsStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: AdminIngredientStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: AuthStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: UserStore, multi: true },
   ]

@@ -2,12 +2,14 @@ import { CommonModule } from '@angular/common';
 import {
   Component,
   ChangeDetectionStrategy,
+  computed,
   HostListener,
-  Input,
   inject,
 } from '@angular/core';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
+import { finalize } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 type NavItem = {
@@ -26,9 +28,10 @@ type NavItem = {
 })
 export class PrivateHeaderComponent {
   private readonly authFacade = inject(AuthFacade);
+  private readonly session = toSignal(this.authFacade.data$, { initialValue: null });
 
-  @Input() username: string = 'demouser'; // wire from your store later
-  @Input() userInitial: string = 'D';     // wire from your store later
+  readonly username = computed(() => this.session()?.username ?? 'Guest');
+  readonly userInitial = computed(() => this.username().slice(0, 1).toUpperCase() || 'G');
 
   isMenuOpen = false;
   activePath = '';
@@ -38,7 +41,7 @@ export class PrivateHeaderComponent {
     { label: 'Recipes', path: '/recipes' },
     { label: 'Diet & Needs', path: '/diet-needs' },
     { label: 'Profile', path: '/profile' },
-    { label: 'Create Recipes', path: '/admin-recipes' },
+    { label: 'Create Recipes', path: '/admin-recipes/create' },
 
   ];
 
@@ -80,7 +83,12 @@ export class PrivateHeaderComponent {
   }
 
   logout(): void {
-    this.authFacade.logout();
-    void this.router.navigateByUrl('/auth/login');
+    this.authFacade.logout()
+      .pipe(
+        finalize(() => {
+          void this.router.navigateByUrl('/auth/login');
+        })
+      )
+      .subscribe();
   }
 }

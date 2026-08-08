@@ -1,0 +1,167 @@
+
+<div class="dialog_main" [attr.aria-busy]="isLoading()">
+
+  <!--  Header -->
+  <div class="header_dialog">
+    <h2 mat-dialog-title>{{dialog_Title}}</h2>
+    <button class="button_header_dialog" type="button" (click)="cancel()" [disabled]="isLoading()">x</button>
+  </div>
+  <p class="text-small subTitle_dialog">{{dialog_subTitle}}</p>
+  @if (errorMessage(); as errorMessage) {
+    <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
+  }
+
+  @if (isLoading()) {
+    @let loader = loadingContent();
+    <section class="dialog-loading">
+      <app-loading-indicator
+        [eyebrow]="loader.eyebrow"
+        [title]="loader.title"
+        [description]="loader.description"
+        [lineCount]="loader.lineCount"
+      />
+    </section>
+  } @else if (mode() === 'search') {
+    <!--  
+      Search mode, to handle the possibility of creating a new ingredient  
+      or selecting an existing one
+    -->
+    <div class="input_with_icon--primary">
+      <mat-icon>search</mat-icon>
+      <input
+        type="text"
+        placeholder="Search ingredients..."
+        [formControl]="searchControl"
+      />
+    </div>
+    <div class="search-results">
+      <!-- 3 state here : 
+            !hasSearchTerm : means we havent type anything in the search bar 
+            filteredIngredients().length > 0 : mean we have a list of ingredient 
+              matching the search
+            and last, if we search for something but it doesnt exist
+       -->
+      @if (!hasSearchTerm()) {
+        <div class="search-results_empty">
+          <p class="text-small">Type to search or create new</p>
+
+          <button
+            type="button"
+            class="manual_entry__button"
+            (click)="openCreateMode()"
+          >
+            Add manual entry
+          </button>
+        </div>
+      } @else if (filteredIngredients().length > 0) {
+        @for (ingredient of filteredIngredients(); track ingredient.id) {
+          <button
+            type="button"
+            class="search-result-item"
+            (click)="selectIngredient(ingredient)"
+          >
+            <span class="search-result-item__name">{{ ingredient.name }}</span>
+          </button>
+        }
+      } @else {
+        <div class="search-results_empty">
+          <p class="text-small">No ingredient found.</p>
+          <button
+            type="button"
+            class="manual_entry__button"
+            (click)="openCreateMode()"
+          >
+            Create "{{ searchTerm() }}"
+          </button>
+        </div>
+      }
+    </div>
+  } @else if (mode() === 'create') {
+    <!--  
+      Creation of a new ingredient, everything will be handle by 
+      app-ingredient-create-form
+    -->
+    <section class="dialog-section">
+      <app-ingredient-create-form
+        [initialName]="createName()"
+        (validityChanged)="onChildValidityChanged($event)"
+      />
+    </section>
+  } @else if (mode() === 'link') {
+    @let ingredient = selectedIngredient();
+    <form [formGroup]="recipeIngredientForm" novalidate class="ingredient-form-div">
+      @if (ingredient) {
+        <div class="ingredient-summary-card">
+          <div class="ingredient-summary-card__content">
+            <span class="ingredient-summary-card__name">{{ ingredient.name }}</span>
+            <!-- <p class="text-small ingredient-summary-card__nutrition"> for {{ingredient.basis}}</p>
+            <p class="text-small ingredient-summary-card__nutrition">
+              {{ ingredient.caloriesKcal }} kcal
+              @if (ingredient.proteinG != null) {
+                | {{ ingredient.proteinG }}g protein
+              }
+            </p> -->
+          </div>
+          <button
+            type="button"
+            class="ingredient-summary-card_change"
+            (click)="backToSearch()"
+            [disabled]="isLoading()"
+          >
+            Change
+          </button>
+        </div>
+
+        <div class="ingredient-form-fields">
+          <div class="ingredient-form-field">
+            <label for="quantity">Quantity</label>
+            <input
+              id="quantity"
+              type="number"
+              min="0"
+              step="any"
+              placeholder="1"
+              formControlName="quantity"
+              class="input--primary form-input"
+            />
+          </div>
+          <div class="ingredient-form-field">
+            <label for="unit">Unit</label>
+            <input
+              id="unit"
+              type="text"
+              placeholder="g"
+              formControlName="unit"
+              class="input--primary form-input"
+            />
+          </div>
+        </div>
+      }
+    </form>
+  }
+</div>
+
+
+<mat-dialog-actions align="end" class="footer">
+  @if (mode() === 'create') {
+    <button type="button"  class ="btn-link-secondary button_nav" (click)="backToSearch()" [disabled]="isLoading()">
+      cancel
+    </button>
+    <button type="button" 
+    class ="btn-link--primary button_nav"
+    (click)="onCreateIngredientClick()"
+    [disabled]="isLoading() || !canCreateIngredient()"
+    >
+      Create ingredient
+    </button>
+  }
+
+  @if (mode() === 'link') {
+    <button type="button" class ="btn-link-secondary button_nav" (click)="backToSearch()" [disabled]="isLoading()">
+      cancel
+    </button>
+    <button type="button" class ="btn-link--primary button_nav" (click)="confirmRecipeIngredient()" [disabled]="isLoading()">
+      Add to recipe
+    </button>
+  }
+</mat-dialog-actions>

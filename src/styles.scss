@@ -1,8 +1,18 @@
-/* Global styles – partials loaded with @use (Sass module system) */
+
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+/* Global styles */
 @use "./styles/_theme.scss";
 @use "./styles/_button.scss";
+@use "./styles/input.scss";
+@use "./styles/text.scss";
 
-/* Prevent horizontal overflow: padding/margin count inside width */
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -15,7 +25,6 @@ html, body {
 
 body {
   margin: 0;
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--color-text);
 
   background:

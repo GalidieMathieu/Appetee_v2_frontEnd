@@ -1,32 +1,38 @@
 <form [formGroup]="wizard.avoid" class="ingredients-form" novalidate>
-  
-    @if (error$ | async) {
-        <div class="form-error" role="alert">
-          {{ error$ | async }}
+  <div class="input_with_icon--primary">
+    <mat-icon>search</mat-icon>
+    <input
+      id="ingredientSearch"
+      type="text"
+      placeholder="Search ingredients..."
+      [formControl]="searchControl"
+    />
+  </div>
+
+  <div class="field">
+    <label class="text-label field__label">Common Allergens & Ingredients</label>
+
+    @if (isLoading()) {
+      <div class="ingredient-loading" aria-live="polite" aria-busy="true">
+        <div class="ingredient-loading__copy">
+          <span class="text-eyebrow ingredient-loading__eyebrow">Loading ingredients</span>
+          <p class="text-body-secondary ingredient-loading__message">Preparing your ingredient list...</p>
         </div>
-      }
 
-    <div>
-        <label class="field_label" for="ingredientSearch">Search</label>
-        <input
-        id="ingredientSearch"
-        class="form-input"
-        type="text"
-        [formControl]="searchCtrl"
-        placeholder="Search ingredients..."
-        />
-    </div>
-
-
-    <!-- ingredients present in our recipes -->
-    <div class="field">
-      <label class="field__label">Common Allergens & Ingredients</label>
-  
+        <div class="tile-grid tile-grid--loading">
+          @for (placeholder of loadingPlaceholders; track placeholder) {
+            <div class="tile tile--loading" aria-hidden="true">
+              <span class="tile--loading__line"></span>
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
       <div class="tile-grid">
-        @for (ing of (ingredients$ | async) ?? []; track ing.id) {
+        @for (ing of visibleIngredients(); track ing.id) {
           <button
             type="button"
-            class="tile"
+            class="tile text-button"
             [class.is-selected]="isSelected(ing.id)"
             (click)="toggleIngredient(ing.id)"
             role="checkbox"
@@ -36,30 +42,36 @@
           </button>
         }
       </div>
-    </div>
-  
-    @if (selectedCount() > 0) {
-      <div class="field">
-        <label class="field__label">
-          Selected Ingredients ({{ selectedCount() }})
-        </label>
-  
-        <div class="chips">
-          @for (ing of (selectedIngredients$ | async) ?? []; track ing.id) {
-            <div class="chip">
-              <span>{{ ing.name }}</span>
-              <button
-                type="button"
-                class="chip__x"
-                (click)="toggleIngredient(ing.id)"
-                aria-label="Remove {{ ing.name }}"
-              >
-                ×
-              </button>
-            </div>
-          }
+
+      @if (hasSearchTerm() && filteredIngredients().length === 0) {
+        <div class="search-empty" role="status">
+          <p class="text-body-secondary search-empty__message">No ingredients start with "{{ searchTerm() }}".</p>
         </div>
-      </div>
+      }
     }
-  </form>
-  
+  </div>
+
+  @if (selectedCount() > 0) {
+    <div class="field">
+      <label class="text-label field__label">
+        Selected Ingredients ({{ selectedCount() }})
+      </label>
+
+      <div class="chips">
+        @for (ing of selectedIngredients(); track ing.id) {
+          <div class="chip">
+            <span class="text-chip chip__label">{{ ing.name }}</span>
+            <button
+              type="button"
+              class="text-chip chip__x"
+              (click)="toggleIngredient(ing.id)"
+              aria-label="Remove {{ ing.name }}"
+            >
+              ×
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</form>

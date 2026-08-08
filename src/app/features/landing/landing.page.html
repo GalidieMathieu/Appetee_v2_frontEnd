@@ -1,10 +1,11 @@
 <div class="landing-page">
     <section class="descrition-landing-page">
         <div class="text-description-lp">
-            <h1>{{title}}
-                <span>{{title_p2}}</span>
+            <h1 class="text-display landing-page__title">
+                {{title}}
+                <span class="landing-page__title-accent">{{title_p2}}</span>
             </h1>
-            <p class="subtitle">
+            <p class="text-lead landing-page__subtitle">
                 {{subtitle}}
             </p>
             <div class="image_description-lp">
@@ -18,10 +19,10 @@
                 }
             </div>
             <div class="signIn-SignOut-Buttons">
-                <a class = "btn-link--primary" routerLink="/sign-up">
+                <a class="btn-link--primary text-button-white landing-page__cta" routerLink="/auth/sign-up">
                     {{buttonSignUpTitle}}
                 </a>
-                <a class="btn-link-secondary" routerLink="/login">
+                <a class="btn-link-secondary text-button-on-secondary landing-page__cta" routerLink="/auth/login">
                     {{buttonLoginTitle}}
                 </a>
             </div>
@@ -30,8 +31,8 @@
             <div class="box-card-example">
                 <div class="personalized-recipes-icons">
                     <div class = "padding-personalized">
-                        <img class="logo-icon" src="/assets/icons/chef-hat.png" alt="Appetee Logo" aria-hidden="true" />
-                        <h4 class="h4-card">{{title_card}} </h4>
+                        <img class="logo-icon" src="assets/icons/chef-hat.png" alt="Appetee Logo" aria-hidden="true" />
+                        <h4 class="text-body-strong landing-card__title">{{title_card}}</h4>
                     </div>
                 </div>
                 <div class="text-grey-block-div"> <!--TODO Use @for and component -->
@@ -41,10 +42,10 @@
                 </div>
                 <div class = "diet-in-card-example">
                     <div class = "diet-label">
-                        <h4 class = "h4-card padding4">{{diet_1}}</h4>
+                        <h4 class="text-chip landing-card__diet-text">{{diet_1}}</h4>
                     </div>
                     <div class = "diet-label">
-                        <h4 class = "h4-card padding4">{{diet_2}}</h4>
+                        <h4 class="text-chip landing-card__diet-text">{{diet_2}}</h4>
                     </div>
                 </div>
             </div>
@@ -54,7 +55,7 @@
     </section>
     <section class = "steps-landing-page">
         <div class="steps-container-header">
-            <h2 class="h2-steps-landing-page">{{StepsTitle}}</h2>
+            <h2 class="text-section-title steps-landing-page__title">{{StepsTitle}}</h2>
         </div>
         <div class="steps-container">
             @for (s of steps; track s.title) {   

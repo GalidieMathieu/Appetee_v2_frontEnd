@@ -1,0 +1,190 @@
+<form class="ingredient-form" [formGroup]="form">
+  <div class="form-field form-field--full">
+    <label class="form-label" for="ingredient-name">Ingredient Name</label>
+    <input
+      id="ingredient-name"
+      class="input--primary form-input"
+      type="text"
+      formControlName="name"
+      placeholder=""
+    />
+  </div>
+
+  <div class="nutrition-grid">
+    <div class="form-field">
+      <label class="form-label" for="basis">Basis amount</label>
+      <input
+        id="basis"
+        class="input--primary form-input"
+        type="number"
+        formControlName="basis"
+        placeholder="100"
+        step="0.01"
+        min="0.01"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="basisUnit">Basis unit</label>
+      <select
+        id="basisUnit"
+        class="input--primary form-input"
+        formControlName="basisUnit"
+      >
+        @for (unit of basisUnitOptions; track unit) {
+          <option [value]="unit">{{ unit }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="caloriesKcal">Calories (kcal)</label>
+      <input
+        id="caloriesKcal"
+        class="input--primary form-input"
+        type="number"
+        formControlName="caloriesKcal"
+        placeholder=""
+        step="1"
+        min="0"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="price">Price</label>
+      <input
+        id="price"
+        class="input--primary form-input"
+        type="number"
+        formControlName="price"
+        placeholder=""
+        step="0.01"
+        min="0"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="ingredientImage">Image (.avif)</label>
+      <button
+        id="ingredientImage"
+        class="input--primary form-input ingredient-file-button"
+        type="button"
+        (click)="imageInput.click()"
+        [attr.title]="selectedImageName || 'Select .avif file'"
+      >
+        <span
+          class="ingredient-file-button__text"
+          [class.ingredient-file-button__text--placeholder]="!selectedImageName"
+        >
+          {{ selectedImageName || 'Select .avif file' }}
+        </span>
+        <span class="ingredient-file-button__action">
+          {{ selectedImageName ? 'Change' : 'Browse' }}
+        </span>
+      </button>
+      <input
+        #imageInput
+        type="file"
+        accept=".avif,image/avif"
+        hidden
+        (change)="onImageSelected($event)"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="proteinG">Protein (g)</label>
+      <input
+        id="proteinG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="proteinG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="fatG">Fat (g)</label>
+      <input
+        id="fatG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="fatG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="carbsG">Carbs (g)</label>
+      <input
+        id="carbsG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="carbsG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="sugarG">Sugar (g)</label>
+      <input
+        id="sugarG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="sugarG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="fiberG">Fiber (g)</label>
+      <input
+        id="fiberG"
+        class="input--primary form-input"
+        type="number"
+        formControlName="fiberG"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="sodiumMg">Sodium (mg)</label>
+      <input
+        id="sodiumMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="sodiumMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="vitaminCMg">Vitamin C (mg)</label>
+      <input
+        id="vitaminCMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="vitaminCMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+
+    <div class="form-field">
+      <label class="form-label" for="ironMg">Iron (mg)</label>
+      <input
+        id="ironMg"
+        class="input--primary form-input"
+        type="number"
+        formControlName="ironMg"
+        placeholder=""
+        step="1"
+      />
+    </div>
+  </div>
+</form>

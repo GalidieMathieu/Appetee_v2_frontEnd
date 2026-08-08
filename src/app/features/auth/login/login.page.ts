@@ -1,6 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize, tap } from 'rxjs';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 
@@ -13,6 +15,11 @@ import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 })
 export class LoginPage {
     private readonly authFacade = inject(AuthFacade);
+    private readonly cdr = inject(ChangeDetectorRef);
+    readonly errorMessage = toSignal(this.authFacade.error$, { initialValue: null });
+    private readonly submitPending = signal(false);
+    readonly isSubmitting = this.submitPending;
+
     constructor(private router: Router) {}
 
     email_Label : string = "Email";
@@ -23,6 +30,7 @@ export class LoginPage {
     minlength_password_error_label : string = "Password must be at least 8 characters long";
 
     SignIn_str : string = "Sign In";
+    signingIn_str : string = "Signing In...";
     signUp_cta_text : string = "Don't have an account? ";
     signUp_cta_link_text : string = "Sign Up";
 
@@ -51,11 +59,26 @@ export class LoginPage {
     
 
     SignIn() {
+        if (this.loginForm.invalid || this.isSubmitting()) {
+            return;
+        }
+
         const req: LoginRequest = this.loginForm.getRawValue();
-        this.authFacade.login$(req).subscribe({
-            next: () => {
-                this.router.navigate(['/home']);
-            }
+        this.submitPending.set(true);
+        let loginSucceeded = false;
+
+        this.authFacade.login$(req).pipe(
+            tap(() => {
+                loginSucceeded = true;
+            }),
+            finalize(() => {
+                this.submitPending.set(false);
+                this.cdr.detectChanges();
+                if (loginSucceeded) {
+                    this.router.navigate(['/home']);
+                }
+            })
+        ).subscribe({
         });
     }
 

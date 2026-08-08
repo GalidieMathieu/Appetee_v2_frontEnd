@@ -3,7 +3,7 @@
 
     <!-- Brand -->
     <a class="hdr__brand" routerLink="/home">
-      <span class="hdr__logo">🍳</span>
+      <img class="logo-icon" src="/assets/icons/chef-hat.png" alt="Appetee Logo" aria-hidden="true" />
       <span class="hdr__name">Appetee</span>
     </a>
 
@@ -26,10 +26,10 @@
 
       <div class="hdr__user">
         <span class="hdr__avatar">
-          D <!--{{ userInitial$ | async }}-->
+          {{ userInitial() }}
         </span>
         <span class="hdr__username">
-           David <!--  {{ username$ | async }}-->
+           {{ username() }}
         </span>
       </div>
 

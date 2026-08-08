@@ -3,35 +3,9 @@
     flex-direction: column;
     gap: 1.5rem; /* like space-y-6 */
   }
-  
-  .step-head h2 {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-    font-weight: 700;
-    margin: 0 0 0.5rem 0;
-    color: var(--color-text);
-  }
-  
-  .step-head p {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: 1rem;
-  }
-  
-  .form-error {
-    padding: 1rem;
-    border-radius: 0.5rem;
-    border: 1px solid color-mix(in srgb, var(--color-destructive, #dc2626) 20%, transparent);
-    background: color-mix(in srgb, var(--color-destructive, #dc2626) 10%, transparent);
-    color: var(--color-destructive, #dc2626);
-    font-size: 0.875rem;
-  }
-  
-  .field__label {
+
+.field__label {
     display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-text);
     margin-bottom: 0.75rem; /* mb-3 */
   }
   
@@ -40,6 +14,23 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.75rem;
+    max-height: min(28rem, 55vh);
+    overflow-y: auto;
+    padding-right: 0.35rem;
+    align-content: start;
+  }
+
+  .tile-grid::-webkit-scrollbar {
+    width: 0.45rem;
+  }
+
+  .tile-grid::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: color-mix(in srgb, var(--color-primary) 24%, transparent);
+  }
+
+  .tile-grid::-webkit-scrollbar-track {
+    background: transparent;
   }
   
   .tile {
@@ -48,9 +39,6 @@
     border: 2px solid var(--color-border);
     background: var(--color-surface);
     color: var(--color-text);
-  
-    font-weight: 600;
-    font-size: 0.875rem;
     text-align: center;
   
     transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
@@ -71,35 +59,71 @@
     outline: none;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 30%, transparent);
   }
-  
-  /* custom input row */
-  .inline-input {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+
+  .ingredient-loading {
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    background:
+      radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 42%),
+      linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 92%, white), var(--color-surface));
   }
-  
-  .inline-input .form-input {
-    flex: 1;
+
+  .ingredient-loading__copy {
+    margin-bottom: 1rem;
   }
-  
-  /* button style (match your primary) */
-  .btn-primary {
-    height: 3rem;
-    padding: 0 1rem;
-    border-radius: 0.5rem;
-    font-weight: 600;
-  
-    background: var(--color-primary);
-    color: var(--color-primary-foreground, white);
-  
-    transition: filter 150ms ease, opacity 150ms ease;
+
+  .ingredient-loading__eyebrow {
+    display: inline-block;
+    margin-bottom: 0.35rem;
   }
-  
-  .btn-primary:hover {
-    filter: brightness(0.95);
+
+  .ingredient-loading__message {
+    margin: 0;
   }
-  
+
+  .tile-grid--loading {
+    overflow: hidden;
+    padding-right: 0;
+  }
+
+  .tile--loading {
+    pointer-events: none;
+    border-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+    background:
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-surface) 90%, white) 0%,
+        color-mix(in srgb, var(--color-primary) 12%, white) 50%,
+        color-mix(in srgb, var(--color-surface) 90%, white) 100%
+      );
+    background-size: 220% 100%;
+    animation: ingredient-skeleton 1.25s ease-in-out infinite;
+  }
+
+  .tile--loading__line {
+    display: block;
+    width: 72%;
+    height: 0.9rem;
+    margin: 0.2rem auto;
+    border-radius: 9999px;
+    background: color-mix(in srgb, white 72%, transparent);
+  }
+
+  .search-empty {
+    margin-top: 0.9rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.8rem;
+    border: 1px dashed color-mix(in srgb, var(--color-border) 75%, transparent);
+    background: color-mix(in srgb, var(--color-surface) 92%, white);
+    color: var(--color-muted);
+    text-align: center;
+  }
+
+  .search-empty__message {
+    margin: 0;
+  }
+
   /* chips */
   .chips {
     display: flex;
@@ -117,16 +141,16 @@
   
     background: var(--color-secondary, color-mix(in srgb, var(--color-border) 25%, white));
     color: var(--color-text);
-  
-    font-size: 0.875rem;
-    font-weight: 600;
+  }
+
+  .chip__label {
+    margin: 0;
   }
   
   .chip__x {
     border: none;
     background: transparent;
     cursor: pointer;
-    font-size: 1.1rem;
     line-height: 1;
     opacity: 0.65;
     transition: opacity 150ms ease;
@@ -134,5 +158,14 @@
   
   .chip__x:hover {
     opacity: 1;
+  }
+
+  @keyframes ingredient-skeleton {
+    0% {
+      background-position: 100% 0;
+    }
+    100% {
+      background-position: -100% 0;
+    }
   }
   

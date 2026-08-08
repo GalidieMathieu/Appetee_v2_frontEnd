@@ -25,25 +25,25 @@ export class LandingPageComponent {
     //all the feature for the front
     features = [
       {
-        iconSrc: '/assets/icons/leaf.png',
+        iconSrc: 'assets/icons/leaf.png',
         iconAlt: 'leaf',
         title: 'Personalized by Diet',
         description: 'Recipes tailored to your dietary preferences.',
       },
       {
-        iconSrc: '/assets/icons/fire.png',
+        iconSrc: 'assets/icons/fire.png',
         iconAlt: 'fire',
         title: 'Smart Ingredients',
         description: 'Recipes that avoid your disliked ingredients.',
       },
       { 
-        iconSrc: '/assets/icons/clock.png',
+        iconSrc: 'assets/icons/clock.png',
         iconAlt: 'Clock',
         title: 'Flexible Prep',
         description: 'Batch prep recipes or daily meal plans.',
       },
       {
-        iconSrc: '/assets/icons/heart.png',
+        iconSrc: 'assets/icons/heart.png',
         iconAlt: 'heart',
         title: 'Community Favorites',
         description: 'Save and share recipes with other food lovers.',

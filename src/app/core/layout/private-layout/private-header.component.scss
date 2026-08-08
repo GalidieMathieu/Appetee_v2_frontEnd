@@ -10,7 +10,7 @@
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-around;
   padding: 0 20px;
 }
 
@@ -22,9 +22,13 @@
   text-decoration: none;
 }
 
-.hdr__logo {
-  font-size: 20px;
-}
+.logo-icon {
+  width: 28px;     /* h-7 w-7 */
+  height: 28px;
+  object-fit: contain;
+  display: block;
+} 
+
 
 .hdr__name {
   font-weight: 800;

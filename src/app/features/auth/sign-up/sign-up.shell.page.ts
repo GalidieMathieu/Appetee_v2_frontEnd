@@ -1,11 +1,13 @@
-import { Component, DestroyRef, inject, OnDestroy , OnInit} from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet, RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { finalize, tap } from 'rxjs';
 import { SignUpWizard } from './sign-up.wizard';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { SignUpRequest } from '@app/core/auth/data-access/auth.model';
+import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
+import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
 
 @Component({
   standalone: true,
@@ -14,7 +16,7 @@ import { SignUpRequest } from '@app/core/auth/data-access/auth.model';
   templateUrl: './sign-up.shell.page.html',
   styleUrl: './sign-up.shell.page.scss',
 })
-export class SignUpShellPage implements OnDestroy, OnInit{
+export class SignUpShellPage {
 
     //Probably can do that in a JsonObject
     private readonly steps = ['account', 'diet', 'ingredient'] as const;
@@ -28,42 +30,44 @@ export class SignUpShellPage implements OnDestroy, OnInit{
         'Tell us about your dietary preferences so we can personalize recipes',
         'We will avoid recipes with these ingredients. You can add your own or select from used ones.'
       ];
-    currentIndex = 0;
+    private readonly router = inject(Router);
+    private readonly route = inject(ActivatedRoute);
+    private readonly cdr = inject(ChangeDetectorRef);
+    private currentStepOverride: number | null = null;
     back_str : string = "Back";
     next_str : string = "Next";
     account_creation_str : string = "create account";
-    title = this.stepsTitle[0];
-    subTitle = this.stepsSubTitle[0];
+    account_creation_loading_str : string = "Creating Account...";
+    get currentIndex(): number {
+        return this.currentStepOverride ?? this.resolveStepIndex();
+    }
 
+    get title(): string {
+        return this.stepsTitle[this.currentIndex] ?? this.stepsTitle[0];
+    }
+
+    get subTitle(): string {
+        return this.stepsSubTitle[this.currentIndex] ?? this.stepsSubTitle[0];
+    }
 
     //injections 
-    private router = inject(Router);
-    private route = inject(ActivatedRoute);
     readonly wizard = inject(SignUpWizard);
     private readonly user_authFacace = inject(UserFacade);
     private readonly authFacade = inject(AuthFacade);
-    private readonly destroyRef = inject(DestroyRef);
-
-    ngOnDestroy(): void {
-        this.wizard.reset();
-    }
-
-    ngOnInit(): void {
-        //this is to make sure we are in the right page, and the index is link with the navigation
-        this.router.events
-        .pipe(filter(e => e instanceof NavigationEnd) , 
-            takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => { 
-            const childPath = this.route.firstChild?.snapshot.routeConfig?.path ?? 'account'; 
-            const idx = this.steps.indexOf(childPath as any); 
-            this.currentIndex = idx >= 0 ? idx : 0; 
-            this.setStep(this.currentIndex);
-        });
-    }
+    private readonly dietsFacade = inject(DietsFacade);
+    private readonly ingredientsFacade = inject(IngredientsFacade);
+    private readonly authError = toSignal(this.authFacade.error$, { initialValue: null });
+    private readonly submitPending = signal(false);
+    readonly isSubmitting = this.submitPending;
+    private readonly userError = toSignal(this.user_authFacace.error$, { initialValue: null });
+    private readonly emailCheckPending = signal(false);
+    private readonly emailCheckError = signal<string | null>(null);
+    private readonly dietsError = toSignal(this.dietsFacade.error$, { initialValue: null });
+    private readonly ingredientsError = toSignal(this.ingredientsFacade.error$, { initialValue: null });
 
     //Personal Notes : using get is better for wizard button
     get canGoNext(): boolean {
-        return (this.wizard.account.valid);
+        return this.wizard.account.valid && !this.emailCheckPending();
     }
 
     get isNextAvailable() : boolean{
@@ -79,11 +83,13 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     }
 
     goBack(): void {
+        if (this.isSubmitting()) return;
         if (this.currentIndex === 0) return;
         this.router.navigate([this.steps[this.currentIndex - 1]], { relativeTo: this.route});
       }
 
     goNext(): void {
+        if (this.isSubmitting()) return;
         if (this.currentIndex >= this.steps.length - 1) return;
         if(this.currentIndex == 0){
             this.checkEmailAndProceed();
@@ -94,17 +100,33 @@ export class SignUpShellPage implements OnDestroy, OnInit{
     }
 
     setStep(index: number) {
-        this.currentIndex = index;
-        this.title = this.stepsTitle[index];
-        this.subTitle = this.stepsSubTitle[index];
+        this.currentStepOverride = index;
       }
 
     goFinishSignUp(): void{
+        if(this.isSubmitting()) return;
         if(this.wizard.account.invalid) return;
         const req = this.buildSignUpRequest();
-        this.authFacade.signUp(req).subscribe({
-             next: () => this.router.navigateByUrl('/home') 
-            });
+        this.submitPending.set(true);
+        let signUpSucceeded = false;
+
+        this.authFacade.signUp(req).pipe(
+            tap(() => {
+                signUpSucceeded = true;
+            }),
+            finalize(() => {
+                if (!signUpSucceeded) {
+                    this.submitPending.set(false);
+                    this.cdr.detectChanges();
+                }
+            })
+        ).subscribe({
+            complete: () => {
+                if (signUpSucceeded) {
+                    this.router.navigateByUrl('/home');
+                }
+            }
+        });
     }
 
     buildSignUpRequest(): SignUpRequest {
@@ -115,13 +137,14 @@ export class SignUpShellPage implements OnDestroy, OnInit{
         return {
           username: account.username.trim(),    // default choice if you don’t collect it
           email: account.email.trim(),
-          password: account.password,                        // or omit it
+          password: account.password,                       
           dietIds: diet.dietIds?.length ? diet.dietIds : null,
           ingredientRestrictionIds: avoid.ingredientIds?.length ? avoid.ingredientIds : null
         };
     }
 
     checkEmailAndProceed() : void {
+        if (this.emailCheckPending()) return;
         //double check that doesnt allowed to go next if all input are not valid
         this.wizard.account.markAllAsTouched();
         if (this.wizard.account.invalid) return;
@@ -132,14 +155,40 @@ export class SignUpShellPage implements OnDestroy, OnInit{
 
         // clear previous
         this.wizard.removeError(emailCtrl, 'emailTaken');
-        this.user_authFacace.checkEmailAndProceed$(email).subscribe(canProceed =>{
-            if (canProceed) this.router.navigate([this.steps[this.currentIndex +1]], { relativeTo: this.route});
-            else{
+        this.emailCheckError.set(null);
+        this.emailCheckPending.set(true);
+        this.user_authFacace.checkEmailAndProceed$(email).pipe(
+            finalize(() => this.emailCheckPending.set(false))
+        ).subscribe(result =>{
+            if (result.status === 'available') {
+                this.router.navigate([this.steps[this.currentIndex +1]], { relativeTo: this.route});
+            } else if (result.status === 'taken') {
                 this.wizard.addError(emailCtrl, 'emailTaken'); // validation feedback
                 emailCtrl.markAsTouched();
-                return;
+            } else {
+                this.emailCheckError.set(result.error);
             }
         });
+    }
+
+    errorMessage(): string | null {
+        if (this.currentIndex === 1) {
+            return this.dietsError();
+        }
+
+        if (this.currentIndex === 2) {
+            return this.authError() ?? this.ingredientsError();
+        }
+
+        return this.authError() ?? this.emailCheckError() ?? this.userError();
+    }
+
+    private resolveStepIndex(): number {
+        const segments = this.router.url.split('/').filter(Boolean);
+        const childPath = segments[segments.length - 1] ?? 'account';
+        const idx = this.steps.indexOf(childPath as (typeof this.steps)[number]);
+
+        return idx >= 0 ? idx : 0;
     }
 
 }

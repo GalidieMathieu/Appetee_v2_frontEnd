@@ -1,62 +1,79 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 import { SignUpWizard } from '../sign-up.wizard';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
-import { IngredientsStore } from '@app/core/shared/data-access/ingredients/ingredients.store';
-import { combineLatest, filter, map, startWith } from 'rxjs';
 import { Ingredient } from '@app/core/shared/data-access/ingredients/ingredient.model';
+import { MatIconModule } from '@angular/material/icon';
+import { startWith } from 'rxjs';
 
 @Component({
   selector: 'app-step-ingredient',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, MatIconModule],
   templateUrl: './step-ingredient.page.html',
   styleUrl:'./step-ingredient.page.scss',
 })
 export class StepIngredientPage implements OnInit {
   readonly wizard = inject(SignUpWizard);
-  readonly searchCtrl = new FormControl('', { nonNullable: true });
+  readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly loadingPlaceholders = Array.from({ length: 10 }, (_, index) => index);
 
   private readonly facade = inject(IngredientsFacade);
 
-  readonly ingredients$ = this.facade.ingredients$;
-  readonly loadstate$ = this.facade.state$;
-  readonly error$ = this.facade.error$;
-  
+  readonly ingredients = toSignal(this.facade.ingredients$, {
+    initialValue: [] as Ingredient[],
+  });
 
-  //we use this for the search purpose
-  readonly filteredIngredients$ = combineLatest({
-    list: this.ingredients$,
-    q: this.searchCtrl.valueChanges.pipe(startWith(this.searchCtrl.value)),
-  }).pipe(
-    map(({ list, q }) => {
-      const query = q.trim().toLowerCase();
-      if (!query) return list;
-      return list.filter(x => x.name.toLowerCase().includes(query));
-    })
+  readonly loadState = toSignal(this.facade.state$, { initialValue: 'idle' });
+
+  readonly search = toSignal(
+    this.searchControl.valueChanges.pipe(startWith(this.searchControl.value)),
+    { initialValue: this.searchControl.value }
   );
 
-  //we use that to see all the selected ID.
-  private readonly selectedIds$ =
-  this.wizard.avoid.controls.ingredientIds.valueChanges.pipe(
-    startWith(this.wizard.avoid.controls.ingredientIds.value ?? [])
+  readonly searchTerm = computed(() => this.search().trim());
+  readonly hasSearchTerm = computed(() => this.searchTerm().length > 0);
+
+  readonly filteredIngredients = computed(() => {
+    const ingredients = this.ingredients();
+    const term = this.search().trim().toLowerCase();
+
+    if (!term) {
+      return [];
+    }
+
+    return ingredients
+      .filter(ingredient => ingredient.name.toLowerCase().startsWith(term))
+      .slice(0, 10);
+  });
+
+  readonly visibleIngredients = computed(() =>
+    this.hasSearchTerm() ? this.filteredIngredients() : this.ingredients()
   );
 
-  readonly selectedIngredients$ = combineLatest({
-    list: this.ingredients$,
-    ids: this.selectedIds$,
-  }).pipe(
-    map(({ list, ids }) => {
-      const set = new Set(ids ?? []);
-      return (list ?? []).filter(i => set.has(i.id));
-    })
+  readonly isLoading = computed(
+    () => this.loadState() === 'loading' && this.ingredients().length === 0
   );
+
+  private readonly selectedIds = toSignal(
+    this.wizard.avoid.controls.ingredientIds.valueChanges.pipe(
+      startWith(this.wizard.avoid.controls.ingredientIds.value ?? [])
+    ),
+    { initialValue: this.wizard.avoid.controls.ingredientIds.value ?? [] }
+  );
+
+  readonly selectedIngredients = computed(() => {
+    const ids = new Set(this.selectedIds() ?? []);
+    return this.ingredients().filter(ingredient => ids.has(ingredient.id));
+  });
+
+  readonly selectedCount = computed(() => (this.selectedIds() ?? []).length);
 
   ngOnInit(): void {
     this.facade.loadIfNeeded();
-
   }
 
   toggleIngredient(id: number): void {
@@ -72,18 +89,6 @@ export class StepIngredientPage implements OnInit {
   }
 
   isSelected(id: number): boolean {
-    const ctrl = this.wizard.avoid.controls.ingredientIds;
-    const current = Array.isArray(ctrl.value) ? ctrl.value : [];
-    return current.includes(id);
+    return (this.selectedIds() ?? []).includes(id);
   }
-
-  //to see the number of selected ingredients
-  selectedCount(): number {
-    const ctrl = this.wizard.avoid.controls.ingredientIds;
-    const current = Array.isArray(ctrl.value) ? ctrl.value : [];
-    return current.length;
-  }
-
-
-
 }

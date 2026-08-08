@@ -1,4 +1,4 @@
 export const environment = {
-    apiUrl: 'https://localhost:5001/api', // your local backend
+    apiUrl: 'https://localhost:5001/api', 
   };
   

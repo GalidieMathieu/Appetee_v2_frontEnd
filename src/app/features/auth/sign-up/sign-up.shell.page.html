@@ -6,45 +6,55 @@
                 <div class="bar"    [class.isActive] = "currentIndex >= 1"></div>
                 <div class="bar"    [class.isActive] = "currentIndex >= 2"></div>
             </div>
-            <h4>Step {{currentIndex +1}} of 3</h4>
+            <h4 class="text-small sign-up-shell__step-count">Step {{currentIndex +1}} of 3</h4>
           </header>
         
         <main class="sign-up-shell_main">
             <div class = "sign-up-shell__content">
-                <h2>{{title}}</h2>
-                <p>{{subTitle}}</p>
+                <h2 class="text-title sign-up-shell__title">{{title}}</h2>
+                <p class="text-body-secondary sign-up-shell__subtitle">{{subTitle}}</p>
+                @if (errorMessage(); as errorMessage) {
+                    <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
+                }
                 <router-outlet></router-outlet>
                 <div class = "bottom_button_div">
                     <button 
                         type="button" 
-                        class = "btn-link-secondary button_nav"   
+                        class = "btn-link-secondary button_nav text-button-on-secondary"
                         [class.is-not-active]="!canGoBack"
-                        [disabled]="!canGoBack"
+                        [disabled]="!canGoBack || isSubmitting()"
                         (click)="goBack()"
                     >
                         {{back_str}}
                     </button>
                     <button 
                         type="button" 
-                        class = "btn-link--primary button_nav" 
+                        class = "btn-link--primary button_nav text-button-white"
                         [class.is-not-active] = "!isNextAvailable" 
-                        [disabled]="!canGoNext"
+                        [disabled]="!canGoNext || isSubmitting()"
                         (click)="goNext()"
                     >
                         {{next_str}}
                     </button>
                     <button type="button" 
-                        class = "btn-link--primary button_nav" 
+                        class = "btn-link--primary button_nav text-button-white"
                         [class.is-not-active] = "!isLast" 
-                        [disabled]="!isLast"
+                        [disabled]="!isLast || isSubmitting()"
+                        [attr.aria-busy]="isSubmitting()"
                         (click)="goFinishSignUp()"
                     >
-                        {{account_creation_str}}</button>
+                        <span class="btn-loading__content">
+                            @if (isSubmitting()) {
+                                <span class="btn-loading__spinner" aria-hidden="true"></span>
+                            }
+                            <span>{{ isSubmitting() ? account_creation_loading_str : account_creation_str }}</span>
+                        </span>
+                    </button>
                 </div>
             </div>
         </main>
         <div class="signin-cta">
-            <a class="signin-cta__link" [routerLink]="['/login']">
+            <a class="signin-cta__link text-link-muted" [routerLink]="['/auth/login']">
               <span class="signin-cta__icon" aria-hidden="true">←</span>
               <span>Log In</span>
             </a>

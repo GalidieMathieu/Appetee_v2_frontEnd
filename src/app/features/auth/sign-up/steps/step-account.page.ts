@@ -41,7 +41,7 @@ export class StepAccountPage {
       if (!p.touched) { this.inv_pass_error_label = ''; return; }
 
       if (p.hasError('required')) {
-        this.inv_pass_error_label = 'Username is required';
+        this.inv_pass_error_label = 'Password is required';
         return;
       }
 
@@ -66,7 +66,7 @@ export class StepAccountPage {
   username_Label : string = "Username";
   username_error_text : string = "pls enter an username";
 
-  password_title : string = "Paswword";
+  password_title : string = "Password";
   inv_pass_error_label : string = "";
 
   confirm_password_title = "Confirm Password";

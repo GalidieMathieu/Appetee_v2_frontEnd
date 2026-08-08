@@ -16,7 +16,6 @@ export const AUTH_ROUTES: Routes = [
             { path: 'ingredient', loadComponent: () => import('./sign-up/steps/step-ingredient.page').then(m => m.StepIngredientPage) },
             // ...
         ],
-    },
-    {path: 'Login', loadComponent: () => import('./login/login.page').then(m => m.LoginPage) },
+    }
   ];
   

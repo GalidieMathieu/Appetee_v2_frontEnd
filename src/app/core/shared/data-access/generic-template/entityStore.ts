@@ -23,7 +23,7 @@ export abstract class EntityStore<T> implements ResettableStore {
    *
    * @remarks Exposed publicly via {@link state$}.
    */
-  private readonly stateSubject = new BehaviorSubject<LoadState>('idle');
+  protected readonly stateSubject = new BehaviorSubject<LoadState>('idle');
 
   /**
    * Stream of load state updates.
@@ -37,7 +37,7 @@ export abstract class EntityStore<T> implements ResettableStore {
    *
    * @remarks Exposed publicly via {@link error$}.
    */
-  private readonly errorSubject = new BehaviorSubject<string | null>(null);
+  protected readonly errorSubject = new BehaviorSubject<string | null>(null);
 
   /**
    * Stream of error message updates.
@@ -51,7 +51,7 @@ export abstract class EntityStore<T> implements ResettableStore {
    *
    * @remarks Exposed publicly via {@link loaded$}. Used by {@link isLoaded}.
    */
-  private readonly loadedSubject = new BehaviorSubject<boolean>(false);
+  protected readonly loadedSubject = new BehaviorSubject<boolean>(false);
 
   /**
    * Stream that indicates whether the store has successfully loaded data.
@@ -122,7 +122,7 @@ export abstract class EntityStore<T> implements ResettableStore {
    * @remarks Useful when the data is already up-to-date but the load state needs to be advanced.
    * @returns void
    */
-  setSucess(): void {
+  setSucessWithoutData(): void {
     this.loadedSubject.next(true);
     this.stateSubject.next('success');
   }
@@ -149,13 +149,4 @@ export abstract class EntityStore<T> implements ResettableStore {
     this.loadedSubject.next(false);
   }
 
-  /**
-   * Returns the current data value synchronously.
-   *
-   * @returns The latest value held by {@link dataSubject}.
-   * @remarks Prefer {@link data$} for reactive usage.
-   */
-  protected get snapshot(): T {
-    return this.dataSubject.value;
-  }
 }

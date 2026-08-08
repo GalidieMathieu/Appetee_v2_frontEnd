@@ -1,0 +1,17 @@
+<section class="recipe-feedback-dialog">
+  <header class="recipe-feedback-dialog__header">
+    <p class="text-eyebrow">{{ data.eyebrow }}</p>
+    <h2 class="text-title">{{ data.title }}</h2>
+    <p class="text-body-secondary">{{ data.description }}</p>
+  </header>
+
+  <div class="recipe-feedback-dialog__message">
+    <p class="text-body">{{ data.message }}</p>
+  </div>
+
+  <footer class="recipe-feedback-dialog__footer">
+    <button type="button" class="btn-link--primary recipe-feedback-dialog__button" (click)="close()">
+      {{ data.actionLabel || 'Close' }}
+    </button>
+  </footer>
+</section>

@@ -21,20 +21,20 @@
   .Login-shell_main {
     background-color: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 1rem; /* rounded-2xl */
+    border-radius: 1rem;
   
     box-shadow:
       0 10px 15px -3px rgba(0, 0, 0, 0.10),
       0 4px 6px -4px rgba(0, 0, 0, 0.10);
 
-      padding: 2rem; /* p-8 */
+      padding: 2rem;
   }
   
-  /* Typography scoped to this page */
+
   .Login-shell_main h2 {
-    font-size: 1.875rem; /* text-3xl */
+    font-size: 1.875rem; 
     line-height: 2.25rem;
-    font-weight: 700;    /* font-bold */
+    font-weight: 700;   
     margin: 0 0 0.35rem 0;
     color: var(--color-text);
   }
@@ -46,54 +46,31 @@
     margin: 0 0 1rem 0;
   }
 
+  .subtitle-error {
+    margin-bottom: 1rem;
+  }
+
     /* ===== form div===== */
 
 
   .account-form-div {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem; /* a bit more like Tailwind spacing */
+    gap: 0.75rem; 
   }
   
   /* Labels */
   .account-form-div label {
-    font-size: 0.875rem; /* text-sm */
-    font-weight: 500;    /* font-medium */
+    font-size: 0.875rem; 
+    font-weight: 500;    
     color: var(--color-text);
     margin-top: 0.25rem;
   }
   
-  /* Inputs (apply class="form-input") */
-  .account-form-div .form-input {
-    width: 100%;
-    height: 3rem; /* closer to Tailwind py-3 feel */
-    border-radius: 0.5rem; /* rounded-lg */
-    border: 1px solid var(--color-border);
   
-    background: var(--color-bg-input, transparent);
-    color: var(--color-text);
-  
-    padding: 0 1rem; /* px-4 */
-  }
-  
-  .account-form-div .form-input::placeholder {
-    color: var(--color-muted);
-  }
-  
-  /* Focus ring-ish effect */
-  .account-form-div .form-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-  
-    /* Tailwind-like ring (works well if --color-primary is a valid color) */
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 35%, transparent);
-  }
-  
-  /* Error text */
-  .account-form-div small,
-  .account-form-div [role="alert"] {
-    font-size: 0.875rem;
-    color: var(--color-destructive, #dc2626);
+  .account-form-div input{
+    height: 3rem;
+    margin-top: 0.3rem;
   }
 
 

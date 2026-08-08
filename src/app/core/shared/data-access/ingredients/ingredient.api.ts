@@ -14,4 +14,5 @@ export class IngredientsApi {
   getAll(): Observable<Ingredient[]> {
     return this.http.get<Ingredient[]>(`${this.apiUrl}/ingredients`);
   }
+
 }
