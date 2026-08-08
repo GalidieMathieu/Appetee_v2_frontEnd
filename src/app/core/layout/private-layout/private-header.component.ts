@@ -9,6 +9,7 @@ import {
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
+import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { finalize } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -28,9 +29,10 @@ type NavItem = {
 })
 export class PrivateHeaderComponent {
   private readonly authFacade = inject(AuthFacade);
-  private readonly session = toSignal(this.authFacade.data$, { initialValue: null });
+  private readonly userFacade = inject(UserFacade);
+  private readonly profileUsername = toSignal(this.userFacade.username$, { initialValue: '' });
 
-  readonly username = computed(() => this.session()?.username ?? 'Guest');
+  readonly username = computed(() => this.profileUsername() || 'Guest');
   readonly userInitial = computed(() => this.username().slice(0, 1).toUpperCase() || 'G');
 
   isMenuOpen = false;

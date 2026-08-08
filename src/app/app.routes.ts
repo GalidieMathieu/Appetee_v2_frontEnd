@@ -37,7 +37,12 @@ export const routes: Routes = [
                     loadChildren: () =>
                         import('./features/admin-recipes/admin-recipes.routes').then(m => m.ADMINRECIPES_ROUTES),
                   },
-                  // recipes, profile, etc.
+                  {
+                    path: 'profile',
+                    loadChildren: () =>
+                      import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES),
+                  },
+                  // recipes, etc.
             ]
     },
     { path: '**', redirectTo: ''},

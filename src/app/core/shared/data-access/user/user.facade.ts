@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
 import { UserApi } from './user_auth.api';
-import { User } from './user.model';
+import { UpdateCurrentUserRequest, User } from './user.model';
 import { UserStore } from './user.store';
 import { catchError, distinctUntilChanged, map, Observable, of, take, tap, throwError } from 'rxjs';
 import { toApiErrorMessage } from '../generic-template/api-error-message';
@@ -41,6 +41,17 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
     this.store.setLoading();
     return this.api.getMe().pipe(
       tap((data : User) => this.setSuccess(data)),
+      catchError((error: unknown) => {
+        this.setError(this.toUserMessage(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
+  updateMe$(request: UpdateCurrentUserRequest): Observable<User> {
+    this.store.setLoading();
+    return this.api.updateMe(request).pipe(
+      tap((data: User) => this.setSuccess(data)),
       catchError((error: unknown) => {
         this.setError(this.toUserMessage(error));
         return throwError(() => error);
