@@ -1,13 +1,11 @@
 export interface User {
-    id: number;
-    username: string;
-    email: string;
-    dietIds?: readonly number[] | null;
-    ingredientRestrictionIds?: readonly number[] | null;
-  }
+  readonly username: string;
+  readonly imageUrl: string | null;
+}
 
-  export interface changePasswordRequest{
-    password : string;
-  }
+export interface UpdateCurrentUserRequest {
+  readonly username: string;
+  readonly imageUrl: string | null;
+}
 
-  export type ExistsResponse = { exists: boolean };
+export type ExistsResponse = { readonly exists: boolean };

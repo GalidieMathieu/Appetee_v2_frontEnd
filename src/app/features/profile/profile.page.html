@@ -1,0 +1,68 @@
+<main class="profile-page" aria-labelledby="profile-title">
+  <section class="profile-card">
+    <header>
+      <p class="eyebrow">Account</p>
+      <h1 id="profile-title">Your profile</h1>
+      <p>Update the public details associated with your signed-in account.</p>
+    </header>
+
+    @if (isLoading()) {
+      <p class="status" role="status">Loading your profile…</p>
+    } @else if (errorMessage() && !hasProfile()) {
+      <div class="status status--error" role="alert">
+        <p>{{ errorMessage() }}</p>
+        <button type="button" class="secondary-button" (click)="retry()">Try again</button>
+      </div>
+    } @else {
+      @if (errorMessage(); as error) {
+        <p class="status status--error" role="alert">{{ error }}</p>
+      }
+      @if (successMessage(); as success) {
+        <p class="status status--success" role="status">{{ success }}</p>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="field">
+          <label for="profile-username">Username</label>
+          <input
+            id="profile-username"
+            class="input--primary"
+            formControlName="username"
+            autocomplete="username"
+            [attr.aria-invalid]="form.controls.username.invalid && form.controls.username.touched"
+            [attr.aria-describedby]="form.controls.username.invalid && form.controls.username.touched ? 'username-error' : null"
+          />
+          @if (form.controls.username.touched && form.controls.username.hasError('required')) {
+            <small id="username-error" role="alert">Username is required.</small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="profile-image-url">Profile image URL <span>(optional)</span></label>
+          <input
+            id="profile-image-url"
+            class="input--primary"
+            formControlName="imageUrl"
+            type="url"
+            inputmode="url"
+            placeholder="https://example.com/avatar.jpg"
+            [attr.aria-invalid]="form.controls.imageUrl.invalid && form.controls.imageUrl.touched"
+            [attr.aria-describedby]="form.controls.imageUrl.invalid && form.controls.imageUrl.touched ? 'image-url-error' : null"
+          />
+          @if (form.controls.imageUrl.touched && form.controls.imageUrl.hasError('invalidUrl')) {
+            <small id="image-url-error" role="alert">Enter a complete HTTP or HTTPS URL.</small>
+          }
+        </div>
+
+        <button
+          type="submit"
+          class="save-button"
+          [disabled]="form.invalid || isSubmitting()"
+          [attr.aria-busy]="isSubmitting()"
+        >
+          {{ isSubmitting() ? 'Saving…' : 'Save profile' }}
+        </button>
+      </form>
+    }
+  </section>
+</main>
