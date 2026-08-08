@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EnvironmentInjector, createEnvironmentInjector } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, Routes } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -7,7 +7,7 @@ import { vi } from 'vitest';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { SignUpRequest } from '@app/core/auth/data-access/auth.model';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
-import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
+import { EmailAvailabilityResult, UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
 import { StepAccountPage } from './steps/step-account.page';
 import { SignUpShellPage } from './sign-up.shell.page';
@@ -52,7 +52,10 @@ describe('SignUpShellPage', () => {
     userError$ = new BehaviorSubject<string | null>(null);
     dietsError$ = new BehaviorSubject<string | null>(null);
     ingredientsError$ = new BehaviorSubject<string | null>(null);
-    checkEmailAndProceedSpy = vi.fn(() => of<'available' | 'taken' | 'error'>('available'));
+    checkEmailAndProceedSpy = vi.fn(() => of<EmailAvailabilityResult>({
+      status: 'available',
+      error: null,
+    }));
     signUpSpy = vi.fn((request: SignUpRequest) => of(void 0));
 
     await TestBed.configureTestingModule({
@@ -104,6 +107,21 @@ describe('SignUpShellPage', () => {
     expect(text).toContain('Set up your Appetee account with your email and password');
   });
 
+  it('destroys the route-scoped wizard draft after leaving the sign-up flow', async () => {
+    const parent = TestBed.inject(EnvironmentInjector);
+    const firstScope = createEnvironmentInjector([SignUpWizard], parent);
+    const first = firstScope.get(SignUpWizard);
+    first.account.controls.email.setValue('draft@appetee.dev');
+    firstScope.destroy();
+
+    const nextScope = createEnvironmentInjector([SignUpWizard], parent);
+    const next = nextScope.get(SignUpWizard);
+
+    expect(next).not.toBe(first);
+    expect(next.account.controls.email.value).toBe('');
+    nextScope.destroy();
+  });
+
   // Verifies that the first-step Next action checks email availability and advances to the diet step when the account form is valid.
   it('checks email availability and navigates to the diet step from the account step', async () => {
     await harness.navigateByUrl('/auth/sign-up/account', SignUpShellPage);
@@ -129,7 +147,10 @@ describe('SignUpShellPage', () => {
 
   // Verifies that the account step shows the email-taken validation message when the availability check rejects the submitted address.
   it('shows an email taken validation message when the email is already registered', async () => {
-    checkEmailAndProceedSpy.mockReturnValue(of<'available' | 'taken' | 'error'>('taken'));
+    checkEmailAndProceedSpy.mockReturnValue(of<EmailAvailabilityResult>({
+      status: 'taken',
+      error: null,
+    }));
 
     await harness.navigateByUrl('/auth/sign-up/account', SignUpShellPage);
 

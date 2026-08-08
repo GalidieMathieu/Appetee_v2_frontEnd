@@ -12,7 +12,8 @@ export interface RecipeNutrition {
 }
 
 //########## DTO ############
-export interface RecipeSummary extends RecipeNutrition {
+/** Lightweight projection owned by recipe query/list state. */
+export interface RecipeCardDto extends RecipeNutrition {
   id: number;
   name: string;
   imageUrl: string | null;
@@ -25,6 +26,9 @@ export interface RecipeSummary extends RecipeNutrition {
   ingredients: Ingredient[];
 }
 
+/** @deprecated Prefer RecipeCardDto for list/card responses. */
+export type RecipeSummary = RecipeCardDto;
+
 export interface RecipeIngredientDetailDto {
   ingredientId: number;
   quantity: number | null;
@@ -32,7 +36,7 @@ export interface RecipeIngredientDetailDto {
   ingredient: IngredientAdminDetailDto;
 }
 
-export interface RecipeDetailDto extends Omit<RecipeSummary, 'ingredients'> {
+export interface RecipeDetailDto extends Omit<RecipeCardDto, 'ingredients'> {
   instructions: string[];
   ingredients: RecipeIngredientDetailDto[];
 }

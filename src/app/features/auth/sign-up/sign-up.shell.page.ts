@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, inject, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, NavigationEnd, Router, RouterOutlet, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { finalize, tap } from 'rxjs';
@@ -16,7 +16,7 @@ import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingr
   templateUrl: './sign-up.shell.page.html',
   styleUrl: './sign-up.shell.page.scss',
 })
-export class SignUpShellPage implements OnDestroy{
+export class SignUpShellPage {
 
     //Probably can do that in a JsonObject
     private readonly steps = ['account', 'diet', 'ingredient'] as const;
@@ -60,16 +60,14 @@ export class SignUpShellPage implements OnDestroy{
     private readonly submitPending = signal(false);
     readonly isSubmitting = this.submitPending;
     private readonly userError = toSignal(this.user_authFacace.error$, { initialValue: null });
+    private readonly emailCheckPending = signal(false);
+    private readonly emailCheckError = signal<string | null>(null);
     private readonly dietsError = toSignal(this.dietsFacade.error$, { initialValue: null });
     private readonly ingredientsError = toSignal(this.ingredientsFacade.error$, { initialValue: null });
 
-    ngOnDestroy(): void {
-        Promise.resolve().then(() => this.wizard.reset());
-    }
-
     //Personal Notes : using get is better for wizard button
     get canGoNext(): boolean {
-        return (this.wizard.account.valid);
+        return this.wizard.account.valid && !this.emailCheckPending();
     }
 
     get isNextAvailable() : boolean{
@@ -146,6 +144,7 @@ export class SignUpShellPage implements OnDestroy{
     }
 
     checkEmailAndProceed() : void {
+        if (this.emailCheckPending()) return;
         //double check that doesnt allowed to go next if all input are not valid
         this.wizard.account.markAllAsTouched();
         if (this.wizard.account.invalid) return;
@@ -156,12 +155,18 @@ export class SignUpShellPage implements OnDestroy{
 
         // clear previous
         this.wizard.removeError(emailCtrl, 'emailTaken');
-        this.user_authFacace.checkEmailAndProceed$(email).subscribe(result =>{
-            if (result === 'available') {
+        this.emailCheckError.set(null);
+        this.emailCheckPending.set(true);
+        this.user_authFacace.checkEmailAndProceed$(email).pipe(
+            finalize(() => this.emailCheckPending.set(false))
+        ).subscribe(result =>{
+            if (result.status === 'available') {
                 this.router.navigate([this.steps[this.currentIndex +1]], { relativeTo: this.route});
-            } else if (result === 'taken') {
+            } else if (result.status === 'taken') {
                 this.wizard.addError(emailCtrl, 'emailTaken'); // validation feedback
                 emailCtrl.markAsTouched();
+            } else {
+                this.emailCheckError.set(result.error);
             }
         });
     }
@@ -175,7 +180,7 @@ export class SignUpShellPage implements OnDestroy{
             return this.authError() ?? this.ingredientsError();
         }
 
-        return this.authError() ?? this.userError();
+        return this.authError() ?? this.emailCheckError() ?? this.userError();
     }
 
     private resolveStepIndex(): number {

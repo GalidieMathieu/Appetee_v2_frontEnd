@@ -4,6 +4,8 @@ import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/materia
 import { Ingredient, IngredientAdminDetailDto, IngredientDialogResult } from '@app/core/shared/data-access/ingredients/ingredient.model';
 import { MatIconModule } from '@angular/material/icon';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
+import { IngredientDetailsFacade } from '@app/core/shared/data-access/ingredients/admin/ingredient-details.facade';
+import { AdminIngredientFacade } from '@app/core/shared/data-access/ingredients/admin/admin-ingredient.facade';
 import { startWith } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { IngredientCreateFormComponent } from '@app/core/shared/ui/ingredient-creation-component/ingredient-creation.component';
@@ -32,8 +34,31 @@ export class IngredientDialogComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly changeDetectorRef = inject(ChangeDetectorRef);
   readonly facade = inject(IngredientsFacade);
-  readonly errorMessage = toSignal(this.facade.error$, { initialValue: null });
-  readonly isLoading = toSignal(this.facade.isLoading$, { initialValue: false });
+  private readonly detailsFacade = inject(IngredientDetailsFacade);
+  private readonly adminFacade = inject(AdminIngredientFacade);
+  private readonly catalogueError = toSignal(this.facade.error$, { initialValue: null });
+  private readonly catalogueLoading = toSignal(this.facade.isLoading$, { initialValue: false });
+  private readonly createError = toSignal(this.adminFacade.error$, { initialValue: null });
+  private readonly createLoading = toSignal(this.adminFacade.isLoading$, { initialValue: false });
+  private readonly selectedDetailId = signal<number | null>(null);
+  private readonly selectedDetailState = computed(() => {
+    const id = this.selectedDetailId();
+    return id === null ? null : this.detailsFacade.requestState(id);
+  });
+  readonly isLoading = computed(() => {
+    switch (this.loadingPhase()) {
+      case 'create': return this.createLoading();
+      case 'details': return this.selectedDetailState()?.status === 'loading';
+      default: return this.catalogueLoading();
+    }
+  });
+  readonly errorMessage = computed(() => {
+    switch (this.loadingPhase()) {
+      case 'create': return this.createError();
+      case 'details': return this.selectedDetailState()?.error ?? null;
+      default: return this.catalogueError();
+    }
+  });
 
   dialog_Title: string = 'Add Ingredient';
   dialog_subTitle: string = 'Search for an existing ingredient or create a new one.';
@@ -116,7 +141,8 @@ export class IngredientDialogComponent implements OnInit {
 
   // Fetches the full ingredient DTO used by the link step.
   private loadIngredientDetails(id: number): void {
-    this.facade.getIngredientWithDetails(id).pipe(
+    this.selectedDetailId.set(id);
+    this.detailsFacade.get(id).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: details => {
@@ -151,7 +177,7 @@ export class IngredientDialogComponent implements OnInit {
     }
 
     this.loadingPhase.set('create');
-    this.facade.createIngredientWithDetails(ingredientRequest).pipe(
+    this.adminFacade.create(ingredientRequest).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (ingredient: IngredientAdminDetailDto) => {
@@ -170,6 +196,7 @@ export class IngredientDialogComponent implements OnInit {
   // Returns from create/link mode to the ingredient search view.
   backToSearch(): void {
     this.isChildFormValid.set(false);
+    this.loadingPhase.set('ingredients');
     this.mode.set('search');
   }
 

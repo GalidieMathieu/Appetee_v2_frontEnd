@@ -74,6 +74,9 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
       return EMPTY;
     }
 
+    // A new authentication attempt is an identity boundary. Clear all data owned by
+    // the previous identity before accepting profile/session data for the next one.
+    this.session.resetAll();
     this.setLoading();
 
     return this.api.login(request).pipe(
@@ -99,6 +102,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     if(this.store.isLoading()) {
       return EMPTY;
     }
+    this.session.resetAll();
     this.setLoading();
 
     return this.api.signUp(user).pipe(

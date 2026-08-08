@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_URL } from '@app/core/api/api.config';
-import { RecipeDetailDto, RecipeSummary } from './recipe.model';
+import { RecipeCardDto, RecipeDetailDto } from './recipe.model';
 
 @Injectable({ providedIn: 'root' })
 export class RecipesApi {
@@ -13,19 +13,12 @@ export class RecipesApi {
   ) {}
 
   //the get All function should almost never use except for admin
-  getAll(): Observable<RecipeSummary[]> {
-    return this.http.get<RecipeSummary[]>(`${this.apiUrl}/recipes`);
+  getAll(): Observable<RecipeCardDto[]> {
+    return this.http.get<RecipeCardDto[]>(`${this.apiUrl}/recipes`);
   }
 
   getRecipeWithDetails(id: number): Observable<RecipeDetailDto> {
     return this.http.get<RecipeDetailDto>(`${this.apiUrl}/recipes/${id}`);
   }
 
-  createRecipeWithDetails(recipeDetails: FormData): Observable<RecipeSummary> {
-    return this.http.post<RecipeSummary>(`${this.apiUrl}/admin/recipe-details`, recipeDetails);
-  }
-
-  updateRecipeWithDetails(id: number, recipeDetails: FormData): Observable<RecipeSummary> {
-    return this.http.put<RecipeSummary>(`${this.apiUrl}/admin/recipe-details/${id}`, recipeDetails);
-  }
 }

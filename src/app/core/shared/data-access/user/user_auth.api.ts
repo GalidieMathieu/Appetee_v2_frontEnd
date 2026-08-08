@@ -18,6 +18,6 @@ export class UserApi {
   }
 
   checkUserExist(email : string) : Observable<ExistsResponse>{
-    return this.http.get<ExistsResponse>(`${this.apiUrl}/users/exists-by-email`,{ params: { email } })
+    return this.http.get<ExistsResponse>(`${this.apiUrl}/auth/exists-by-email`,{ params: { email } })
   }
 }

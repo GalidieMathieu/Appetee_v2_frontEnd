@@ -1,5 +1,5 @@
 // sign-up.wizard.ts
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable } from '@angular/core';
 import {
   AbstractControl,
   FormControl,
@@ -18,11 +18,6 @@ const passwordMatch: ValidatorFn = (ctrl: AbstractControl): ValidationErrors | n
 
 @Injectable()
 export class SignUpWizard{
-
-    constructor() {
-        console.log('SignUpWizard created', this.account.value);
-      }
-      
       reset(): void {
         this.account.reset();
         this.diet.reset({ dietIds: [] });

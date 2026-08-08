@@ -31,6 +31,7 @@ export class DietsFacade extends AbstractLoadFacade<Diet[] , DietsStore> {
   }
 
   load(): void {
+    if (this.store.isLoading()) return;
     this.setLoading();
 
     this.api.getAll().pipe(

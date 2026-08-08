@@ -29,6 +29,7 @@ import { defaultIfEmpty, finalize, of, startWith, filter, map, switchMap, tap } 
 import { Diet } from '@app/core/shared/data-access/diets/diet.model';
 import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
+import { IngredientDetailsFacade } from '@app/core/shared/data-access/ingredients/admin/ingredient-details.facade';
 import { IngredientDialogResult } from '@app/core/shared/data-access/ingredients/ingredient.model';
 import {
   RecipeBadge,
@@ -39,6 +40,7 @@ import {
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
+import { AdminRecipeFacade } from '@app/core/shared/data-access/recipes/admin/admin-recipe.facade';
 import { readAvifFileSelection } from '@app/core/shared/utils/avif-file-selection/avif-file-selection';
 
 import {
@@ -87,7 +89,9 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly dietsFacade = inject(DietsFacade);
   private readonly ingredientsFacade = inject(IngredientsFacade);
+  private readonly ingredientDetailsFacade = inject(IngredientDetailsFacade);
   private readonly recipesFacade = inject(RecipesFacade);
+  private readonly adminRecipeFacade = inject(AdminRecipeFacade);
 
   //########## Page State ############
   protected previewImageUrl: string | null = null;
@@ -120,8 +124,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   protected readonly hasIngredientsError = computed(
     () => this.submitAttempted() && this.ingredients().length === 0
   );
-  protected readonly errorMessage = toSignal(this.recipesFacade.error$, { initialValue: null });
-  protected readonly isSaving = toSignal(this.recipesFacade.isLoading$, { initialValue: false });
+  protected readonly errorMessage = toSignal(this.adminRecipeFacade.error$, { initialValue: null });
+  protected readonly isSaving = toSignal(this.adminRecipeFacade.isLoading$, { initialValue: false });
 
   //########## Page Form ############
   readonly form: RecipeCreationForm = new FormGroup({
@@ -346,7 +350,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     dialogRef.afterClosed().pipe(
       filter((result): result is IngredientDialogResult => result != null),
       switchMap(result =>
-        this.ingredientsFacade.getIngredientWithDetails(result.ingredientId).pipe(
+        this.ingredientDetailsFacade.get(result.ingredientId).pipe(
           map(ingredient => ({
             ...result,
             ingredient,
@@ -483,8 +487,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.saveFeedbackPending.set(true);
     const editRecipeId = this.editRecipeId();
     const saveRequest$ = editRecipeId === null
-      ? this.recipesFacade.createRecipeWithDetails(recipeRequest)
-      : this.recipesFacade.updateRecipeWithDetails(editRecipeId, recipeRequest);
+      ? this.adminRecipeFacade.createRecipeWithDetails(recipeRequest)
+      : this.adminRecipeFacade.updateRecipeWithDetails(editRecipeId, recipeRequest);
 
     saveRequest$.pipe(
       tap(recipeSummary => {

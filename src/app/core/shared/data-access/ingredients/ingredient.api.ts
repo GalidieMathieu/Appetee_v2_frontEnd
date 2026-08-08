@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL } from '../../../api/api.config';
-import { Ingredient, IngredientAdminDetailDto } from './ingredient.model';
+import { Ingredient } from './ingredient.model';
 
 @Injectable({ providedIn: 'root' })
 export class IngredientsApi {
@@ -15,13 +15,4 @@ export class IngredientsApi {
     return this.http.get<Ingredient[]>(`${this.apiUrl}/ingredients`);
   }
 
-
-  //Admin request
-  createIngredientWithDetails(ingredientDetails: FormData): Observable<IngredientAdminDetailDto> {
-    return this.http.post<IngredientAdminDetailDto>(`${this.apiUrl}/admin/ingredient-details`, ingredientDetails);
-  }
-
-  getIngredientWithDetails(id: number): Observable<IngredientAdminDetailDto> {
-    return this.http.get<IngredientAdminDetailDto>(`${this.apiUrl}/admin/ingredient-details/${id}`);
-  }
 }

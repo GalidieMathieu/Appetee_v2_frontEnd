@@ -16,8 +16,6 @@ export const signupWizardGuard: CanActivateChildFn = (childRoute, state) => {
   // Gate other steps until account is completed
   const accountComplete = wizard.account.valid; // or wizard.accountCompleted flag
   if (!accountComplete) {
-    console.log(wizard.account.valid);
-    console.log('state.url:', state.url, 'childPath:', childRoute.routeConfig?.path);
     // Relative redirect (prevents "/sign-up" vs "/auth/sign-up" mismatch)
     return router.createUrlTree(['/sign-up/account']);
   }
