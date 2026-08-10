@@ -56,18 +56,12 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
     formData.append('prepTimeMinutes', recipe.prepTimeMinutes.toString());
     formData.append('servings', recipe.servings.toString());
     formData.append('difficulty', recipe.difficulty);
-    formData.append('caloriesTotal', recipe.caloriesTotal.toString());
-    formData.append('proteinTotal', recipe.proteinTotal.toString());
-    formData.append('carbsTotal', recipe.carbsTotal.toString());
-
-    if (recipe.estimatedCostPerServing !== null) {
-      formData.append('estimatedCostPerServing', recipe.estimatedCostPerServing.toString());
-    }
     if (recipe.image) formData.append('image', recipe.image);
     recipe.badges.forEach((value, index) => formData.append(`badges[${index}]`, value));
-    recipe.instructions.forEach((value, index) =>
-      formData.append(`instructions[${index}]`, value)
-    );
+    recipe.instructions.forEach((value, index) => {
+      formData.append(`instructions[${index}].title`, value.title);
+      formData.append(`instructions[${index}].instruction`, value.instruction);
+    });
     recipe.dietIds.forEach((value, index) =>
       formData.append(`dietIds[${index}]`, value.toString())
     );

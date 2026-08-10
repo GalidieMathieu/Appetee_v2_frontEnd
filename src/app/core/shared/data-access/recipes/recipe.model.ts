@@ -11,6 +11,11 @@ export interface RecipeNutrition {
   carbsTotal: number;
 }
 
+export interface RecipeInstructionStep {
+  title: string;
+  instruction: string;
+}
+
 //########## DTO ############
 /** Lightweight projection owned by recipe query/list state. */
 export interface RecipeCardDto extends RecipeNutrition {
@@ -37,7 +42,7 @@ export interface RecipeIngredientDetailDto {
 }
 
 export interface RecipeDetailDto extends Omit<RecipeCardDto, 'ingredients'> {
-  instructions: string[];
+  instructions: RecipeInstructionStep[];
   ingredients: RecipeIngredientDetailDto[];
 }
 
@@ -48,15 +53,14 @@ export interface RecipeIngredientRequest {
   unit: string | null;
 }
 
-export interface RecipeDetailRequest extends RecipeNutrition {
+export interface RecipeDetailRequest {
   name: string;
   image: File | null;
-  instructions: string[];
+  instructions: RecipeInstructionStep[];
   prepTimeMinutes: number;
   servings: number;
   difficulty: RecipeDifficulty;
   badges: RecipeBadge[];
   dietIds: number[];
-  estimatedCostPerServing: number | null;
   ingredients: RecipeIngredientRequest[];
 }

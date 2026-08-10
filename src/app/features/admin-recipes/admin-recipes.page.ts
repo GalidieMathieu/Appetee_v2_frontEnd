@@ -36,7 +36,7 @@ import {
   RecipeDetailDto,
   RecipeDetailRequest,
   RecipeDifficulty,
-  RecipeNutrition,
+  RecipeInstructionStep,
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
@@ -44,8 +44,12 @@ import { AdminRecipeFacade } from '@app/core/shared/data-access/recipes/admin/ad
 import { readAvifFileSelection } from '@app/core/shared/utils/avif-file-selection/avif-file-selection';
 
 import {
+  EMPTY_RECIPE_CALCULATION,
+  RecipeCalculation,
   RecipeCreationForm,
   RecipeCreationIngredient,
+  RecipeInstructionStepDraft,
+  RecipeInstructionStepForm,
 } from './data/recipe-creation';
 import { IngredientDialogComponent } from './component/ingredient-creation.dialog';
 import {
@@ -64,6 +68,33 @@ const requiredTrimmedValidator: ValidatorFn = (
   }
 
   return value.trim().length > 0 ? null : { requiredTrimmed: true };
+};
+
+const structuredInstructionStepValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const value = control.value as RecipeInstructionStepDraft;
+  const title = value.title?.trim() ?? '';
+  const instruction = value.instruction?.trim() ?? '';
+
+  if (!title && !instruction) {
+    return null;
+  }
+
+  const errors: ValidationErrors = {};
+  if (!title) errors['titleRequired'] = true;
+  if (!instruction) errors['instructionRequired'] = true;
+  return Object.keys(errors).length > 0 ? errors : null;
+};
+
+const atLeastOneCompleteInstructionValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const values = control.value as RecipeInstructionStepDraft[];
+  const hasCompleteStep = values.some(
+    value => Boolean(value.title?.trim()) && Boolean(value.instruction?.trim())
+  );
+  return hasCompleteStep ? null : { required: true };
 };
 
 @Component({
@@ -98,6 +129,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   private previewImageObjectUrl: string | null = null;
   protected selectedImageName = '';
   protected readonly ingredients = signal<RecipeCreationIngredient[]>([]);
+  protected readonly duplicateIngredientError = signal<string | null>(null);
+  private readonly recipeCalculation = signal<RecipeCalculation>(EMPTY_RECIPE_CALCULATION);
   protected readonly submitAttempted = signal(false);
   private readonly routeId = toSignal(
     this.route.paramMap.pipe(map(paramMap => paramMap.get('id'))),
@@ -136,7 +169,9 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
-    instructions: new FormArray<FormControl<string>>([]),
+    instructions: new FormArray<RecipeInstructionStepForm>([], {
+      validators: [atLeastOneCompleteInstructionValidator],
+    }),
     servings: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1)],
@@ -173,6 +208,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
+    this.form.controls.servings.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateRecipePreview());
+
     effect(() => {
       const isEditMode = this.isEditMode();
 
@@ -211,11 +250,11 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.image;
   }
 
-  get instructionsControl(): FormArray<FormControl<string>> {
+  get instructionsControl(): FormArray<RecipeInstructionStepForm> {
     return this.form.controls.instructions;
   }
 
-  get instructionStepControls(): FormControl<string>[] {
+  get instructionStepControls(): RecipeInstructionStepForm[] {
     return this.instructionsControl.controls;
   }
 
@@ -323,32 +362,43 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.badges.value;
   }
 
-  // Calculates the total recipe calories from loaded ingredient details.
+  // Exposes the current preview or saved calorie total.
   get totalCalories(): number {
-    return Math.round(this.calculateRecipeNutrition().caloriesTotal);
+    return Math.round(this.recipeCalculation().caloriesTotal);
   }
 
-  // Calculates the total recipe protein from loaded ingredient details.
+  // Exposes the current preview or saved protein total.
   get totalProtein(): number {
-    return Math.round(this.calculateRecipeNutrition().proteinTotal);
+    return Math.round(this.recipeCalculation().proteinTotal);
   }
 
-  // Calculates the total recipe carbs from loaded ingredient details.
+  // Exposes the current preview or saved carbohydrate total.
   get totalCarbs(): number {
-    return Math.round(this.calculateRecipeNutrition().carbsTotal);
+    return Math.round(this.recipeCalculation().carbsTotal);
   }
 
-  // Estimates the cost per serving from the linked ingredient prices.
+  // Exposes the current preview or saved cost per serving.
   get estimatedCostPerServing(): number | null {
-    return this.calculateEstimatedCostPerServing(this.servingsValue);
+    return this.recipeCalculation().estimatedCostPerServing;
   }
 
   // Opens the ingredient dialog and loads full DTO details for the selected id.
   openIngredientDialog(): void {
+    this.duplicateIngredientError.set(null);
     const dialogRef = this.dialog.open(IngredientDialogComponent);
 
     dialogRef.afterClosed().pipe(
       filter((result): result is IngredientDialogResult => result != null),
+      filter(result => {
+        if (!this.isIngredientSelected(result.ingredientId)) {
+          return true;
+        }
+
+        this.duplicateIngredientError.set(
+          'This ingredient is already linked to the recipe.'
+        );
+        return false;
+      }),
       switchMap(result =>
         this.ingredientDetailsFacade.get(result.ingredientId).pipe(
           map(ingredient => ({
@@ -359,19 +409,30 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       ),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(recipeIngredient => {
+      if (this.isIngredientSelected(recipeIngredient.ingredientId)) {
+        this.duplicateIngredientError.set(
+          'This ingredient is already linked to the recipe.'
+        );
+        return;
+      }
+
+      this.duplicateIngredientError.set(null);
       this.ingredients.update(ingredients => [...ingredients, recipeIngredient]);
+      this.updateRecipePreview();
     });
   }
 
   // Removes one selected ingredient from the recipe draft.
   removeIngredient(index: number): void {
+    this.duplicateIngredientError.set(null);
     this.ingredients.update(ingredients =>
       ingredients.filter((_, currentIndex) => currentIndex !== index)
     );
+    this.updateRecipePreview();
   }
 
   // Adds one editable instruction step to the recipe draft.
-  addInstructionStep(value = ''): void {
+  addInstructionStep(value: RecipeInstructionStepDraft = {}): void {
     this.instructionsControl.push(this.createInstructionStepControl(value));
     this.instructionsControl.markAsDirty();
     this.instructionsControl.markAsTouched();
@@ -382,6 +443,20 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.instructionsControl.removeAt(index);
     this.instructionsControl.markAsDirty();
     this.instructionsControl.markAsTouched();
+  }
+
+  private isIngredientSelected(ingredientId: number): boolean {
+    return this.ingredients().some(ingredient => ingredient.ingredientId === ingredientId);
+  }
+
+  // Moves one instruction earlier while preserving the existing control instance.
+  moveInstructionStepUp(index: number): void {
+    this.moveInstructionStep(index, index - 1);
+  }
+
+  // Moves one instruction later while preserving the existing control instance.
+  moveInstructionStepDown(index: number): void {
+    this.moveInstructionStep(index, index + 1);
   }
 
   // Toggles one diet tag on the recipe.
@@ -537,8 +612,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (instructions.length === 0) {
-      this.instructionsControl.markAsTouched();
+    if (instructions.length === 0 || this.instructionsControl.invalid) {
+      this.instructionsControl.markAllAsTouched();
       return null;
     }
 
@@ -552,10 +627,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    const nutrition = this.calculateRecipeNutrition();
-
     return {
-      ...nutrition,
       name,
       image: value.image,
       instructions,
@@ -564,7 +636,6 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       difficulty: value.difficulty,
       badges: value.badges,
       dietIds: value.dietIds,
-      estimatedCostPerServing: this.calculateEstimatedCostPerServing(value.servings),
       ingredients: this.ingredients().map(ingredient => ({
         ingredientId: ingredient.ingredientId,
         quantity: ingredient.quantity,
@@ -573,50 +644,42 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     };
   }
 
-  // Aggregates the recipe nutrition totals from each selected ingredient quantity.
-  private calculateRecipeNutrition(): RecipeNutrition {
-    const totals = this.ingredients().reduce(
-      (sum, ingredient) => {
-        const factor = this.getIngredientQuantityFactor(ingredient);
-        const detail = ingredient.ingredient;
+  // Calculates the complete live preview once when its source data changes.
+  private calculateRecipePreview(): RecipeCalculation {
+    const ingredients = this.ingredients();
+    const servings = this.servingsValue;
+    let caloriesTotal = 0;
+    let proteinTotal = 0;
+    let carbsTotal = 0;
+    let totalCost = 0;
+    let hasCompletePricing = servings > 0 && ingredients.length > 0;
 
-        return {
-          caloriesTotal: sum.caloriesTotal + detail.caloriesKcal * factor,
-          proteinTotal: sum.proteinTotal + (detail.proteinG ?? 0) * factor,
-          carbsTotal: sum.carbsTotal + (detail.carbsG ?? 0) * factor,
-        };
-      },
-      {
-        caloriesTotal: 0,
-        proteinTotal: 0,
-        carbsTotal: 0,
+    for (const recipeIngredient of ingredients) {
+      const factor = this.getIngredientQuantityFactor(recipeIngredient);
+      const detail = recipeIngredient.ingredient;
+      caloriesTotal += detail.caloriesKcal * factor;
+      proteinTotal += (detail.proteinG ?? 0) * factor;
+      carbsTotal += (detail.carbsG ?? 0) * factor;
+
+      if (detail.price === null) {
+        hasCompletePricing = false;
+      } else {
+        totalCost += detail.price * factor;
       }
-    );
+    }
 
     return {
-      caloriesTotal: this.roundTo(totals.caloriesTotal, 2),
-      proteinTotal: this.roundTo(totals.proteinTotal, 2),
-      carbsTotal: this.roundTo(totals.carbsTotal, 2),
+      caloriesTotal: this.roundTo(caloriesTotal, 2),
+      proteinTotal: this.roundTo(proteinTotal, 2),
+      carbsTotal: this.roundTo(carbsTotal, 2),
+      estimatedCostPerServing: hasCompletePricing
+        ? this.roundTo(totalCost / servings, 2)
+        : null,
     };
   }
 
-  // Estimates the recipe cost per serving from ingredient prices when available.
-  private calculateEstimatedCostPerServing(servings: number): number | null {
-    if (servings <= 0 || this.ingredients().length === 0) {
-      return null;
-    }
-
-    let totalCost = 0;
-
-    for (const recipeIngredient of this.ingredients()) {
-      if (recipeIngredient.ingredient.price === null) {
-        return null;
-      }
-
-      totalCost += recipeIngredient.ingredient.price * this.getIngredientQuantityFactor(recipeIngredient);
-    }
-
-    return this.roundTo(totalCost / servings, 2);
+  private updateRecipePreview(): void {
+    this.recipeCalculation.set(this.calculateRecipePreview());
   }
 
   // Converts one selected ingredient quantity into a scale factor relative to its nutrition basis.
@@ -656,7 +719,25 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   }
 
   protected hasInstructionsError(): boolean {
-    return this.submitAttempted() && this.getNormalizedInstructionSteps().length === 0;
+    return this.submitAttempted() && this.instructionsControl.invalid;
+  }
+
+  protected instructionsErrorMessage(): string {
+    return this.instructionsControl.hasError('required')
+      ? 'Add at least one complete instruction step before saving.'
+      : 'Complete both fields for every partially filled instruction step.';
+  }
+
+  protected shouldShowInstructionFieldError(
+    step: RecipeInstructionStepForm,
+    field: 'title' | 'instruction'
+  ): boolean {
+    if (!this.submitAttempted() && !step.controls[field].touched) {
+      return false;
+    }
+
+    const groupError = field === 'title' ? 'titleRequired' : 'instructionRequired';
+    return step.hasError(groupError) || this.instructionsControl.hasError('required');
   }
 
   private applyImageValidators(isEditMode: boolean): void {
@@ -667,6 +748,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   private populateFormForEdit(recipe: RecipeDetailDto): void {
     this.submitAttempted.set(false);
+    this.duplicateIngredientError.set(null);
     this.selectedImageName = recipe.imageUrl ? 'Current image on file' : '';
     this.setPreviewImage(recipe.imageUrl);
     this.replaceInstructionSteps(recipe.instructions);
@@ -687,16 +769,18 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
         ingredient: recipeIngredient.ingredient,
       }))
     );
+    this.applySavedCalculation(recipe);
     this.form.markAsPristine();
     this.form.markAsUntouched();
   }
 
   private resetCreateForm(): void {
     this.submitAttempted.set(false);
+    this.duplicateIngredientError.set(null);
     this.selectedImageName = '';
     this.editRecipeLoadError.set(null);
     this.clearPreviewImage();
-    this.replaceInstructionSteps([]);
+    this.replaceInstructionSteps([{}]);
     this.form.reset({
       name: '',
       image: null,
@@ -707,6 +791,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       dietIds: [],
     }, { emitEvent: false });
     this.ingredients.set([]);
+    this.recipeCalculation.set(EMPTY_RECIPE_CALCULATION);
     this.form.markAsPristine();
     this.form.markAsUntouched();
   }
@@ -720,8 +805,18 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.selectedImageName = recipeSummary.imageUrl ? 'Current image on file' : '';
     this.form.controls.image.setValue(null);
     this.setPreviewImage(recipeSummary.imageUrl);
+    this.applySavedCalculation(recipeSummary);
     this.form.markAsPristine();
     this.form.markAsUntouched();
+  }
+
+  private applySavedCalculation(recipe: RecipeCalculation): void {
+    this.recipeCalculation.set({
+      caloriesTotal: recipe.caloriesTotal,
+      proteinTotal: recipe.proteinTotal,
+      carbsTotal: recipe.carbsTotal,
+      estimatedCostPerServing: recipe.estimatedCostPerServing,
+    });
   }
 
   private openFeedbackDialog(data: RecipeFeedbackDialogData): void {
@@ -746,13 +841,37 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private createInstructionStepControl(value = ''): FormControl<string> {
-    return new FormControl(value, {
-      nonNullable: true,
-    });
+  private createInstructionStepControl(
+    value: RecipeInstructionStepDraft = {}
+  ): RecipeInstructionStepForm {
+    return new FormGroup(
+      {
+        title: new FormControl(value.title ?? '', { nonNullable: true }),
+        instruction: new FormControl(value.instruction ?? '', { nonNullable: true }),
+      },
+      { validators: [structuredInstructionStepValidator] }
+    );
   }
 
-  private replaceInstructionSteps(steps: string[]): void {
+  private moveInstructionStep(fromIndex: number, toIndex: number): void {
+    if (
+      fromIndex < 0
+      || fromIndex >= this.instructionsControl.length
+      || toIndex < 0
+      || toIndex >= this.instructionsControl.length
+      || fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const control = this.instructionsControl.at(fromIndex);
+    this.instructionsControl.removeAt(fromIndex);
+    this.instructionsControl.insert(toIndex, control);
+    this.instructionsControl.markAsDirty();
+    this.instructionsControl.markAsTouched();
+  }
+
+  private replaceInstructionSteps(steps: RecipeInstructionStepDraft[]): void {
     this.instructionsControl.clear();
 
     for (const step of steps) {
@@ -760,9 +879,12 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getNormalizedInstructionSteps(): string[] {
+  private getNormalizedInstructionSteps(): RecipeInstructionStep[] {
     return this.instructionsControl.getRawValue()
-      .map(step => step.trim())
-      .filter(step => step.length > 0);
+      .map(step => ({
+        title: step.title.trim(),
+        instruction: step.instruction.trim(),
+      }))
+      .filter(step => step.title.length > 0 || step.instruction.length > 0);
   }
 }
