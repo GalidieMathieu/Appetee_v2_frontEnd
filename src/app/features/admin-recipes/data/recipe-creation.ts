@@ -8,13 +8,15 @@ import {
   RecipeDetailRequest,
   RecipeBadge,
   RecipeDifficulty,
+  RecipeInstructionStep,
+  RecipeNutrition,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 
 //########## Page ############
 export type RecipeCreationForm = FormGroup<{
   name: FormControl<string>;
   image: FormControl<File | null>;
-  instructions: FormArray<FormControl<string>>;
+  instructions: FormArray<RecipeInstructionStepForm>;
   servings: FormControl<number>;
   prepTimeMinutes: FormControl<number>;
   difficulty: FormControl<RecipeDifficulty | null>;
@@ -22,8 +24,26 @@ export type RecipeCreationForm = FormGroup<{
   dietIds: FormControl<number[]>;
 }>;
 
+export type RecipeInstructionStepForm = FormGroup<{
+  title: FormControl<string>;
+  instruction: FormControl<string>;
+}>;
+
+export type RecipeInstructionStepDraft = Partial<RecipeInstructionStep>;
+
 export type RecipeCreationIngredient = IngredientDialogResult & {
   ingredient: IngredientAdminDetailDto;
+};
+
+export type RecipeCalculation = RecipeNutrition & {
+  estimatedCostPerServing: number | null;
+};
+
+export const EMPTY_RECIPE_CALCULATION: RecipeCalculation = {
+  caloriesTotal: 0,
+  proteinTotal: 0,
+  carbsTotal: 0,
+  estimatedCostPerServing: null,
 };
 
 export type RecipeCreationRequestPreview = RecipeDetailRequest;

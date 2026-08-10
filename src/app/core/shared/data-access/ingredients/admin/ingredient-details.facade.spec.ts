@@ -88,6 +88,10 @@ describe('ingredient data access boundaries', () => {
     expect(await firstValueFrom(admin.create(createRequest()))).toEqual(detail(4));
 
     expect(create).toHaveBeenCalledTimes(1);
+    const formData = create.mock.calls[0]?.[0] as FormData;
+    expect(formData.get('price')).toBe('0');
+    expect(formData.get('proteinG')).toBe('0');
+    expect(formData.get('carbsG')).toBe('0');
     expect(details.get(4)).toEqual(detail(4));
     expect(await firstValueFrom(catalogue.data$)).toEqual([{ id: 4, name: 'Ingredient 4' }]);
   });
@@ -155,6 +159,9 @@ function detail(id: number): IngredientAdminDetailDto {
 function createRequest(): IngredientAdminDetailRequest {
   return {
     ...detail(0),
+    price: 0,
+    proteinG: 0,
+    carbsG: 0,
     image: new File(['image'], 'ingredient.avif', { type: 'image/avif' }),
   };
 }

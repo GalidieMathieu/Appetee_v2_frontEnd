@@ -234,7 +234,7 @@
                 type="button"
                 class="btn-link--primary recipe-card__action"
                 (click)="openIngredientDialog()"
-                [attr.aria-describedby]="hasIngredientsError() ? 'recipe-ingredients-error' : null"
+                [attr.aria-describedby]="duplicateIngredientError() ? 'recipe-duplicate-ingredient-error' : (hasIngredientsError() ? 'recipe-ingredients-error' : null)"
               >
                 <mat-icon>add</mat-icon>
                 <span>Add Ingredient</span>
@@ -242,6 +242,16 @@
             </div>
 
             <div class="recipe-ingredients" [class.recipe-ingredients--invalid]="hasIngredientsError()">
+              @if (duplicateIngredientError(); as duplicateError) {
+                <small
+                  id="recipe-duplicate-ingredient-error"
+                  class="text-error recipe-ingredients__error"
+                  role="alert"
+                >
+                  {{ duplicateError }}
+                </small>
+              }
+
               @if (ingredients().length === 0) {
                 <div class="text-body-secondary recipe-ingredients__empty">
                   No ingredients added yet.
@@ -306,25 +316,86 @@
                   @for (stepControl of instructionStepControls; track $index; let index = $index) {
                     <article class="recipe-ingredients__item recipe-steps__item">
                       <div class="recipe-card__header">
-                        <label class="text-label" [attr.for]="'recipe-step-' + index">
+                        <span class="text-label">
                           Step {{ index + 1 }}
-                        </label>
+                        </span>
 
-                        <button
-                          type="button"
-                          class="recipe-ingredients__remove"
-                          (click)="removeInstructionStep(index)"
-                        >
-                          Remove
-                        </button>
+                        <div>
+                          <button
+                            type="button"
+                            class="recipe-ingredients__remove"
+                            (click)="moveInstructionStepUp(index)"
+                            [disabled]="index === 0"
+                            [attr.aria-label]="'Move step ' + (index + 1) + ' up'"
+                          >
+                            Move Up
+                          </button>
+                          <button
+                            type="button"
+                            class="recipe-ingredients__remove"
+                            (click)="moveInstructionStepDown(index)"
+                            [disabled]="index === instructionStepControls.length - 1"
+                            [attr.aria-label]="'Move step ' + (index + 1) + ' down'"
+                          >
+                            Move Down
+                          </button>
+                          <button
+                            type="button"
+                            class="recipe-ingredients__remove"
+                            (click)="removeInstructionStep(index)"
+                            [disabled]="instructionStepControls.length === 1"
+                            [attr.aria-label]="'Remove step ' + (index + 1)"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
 
+                      <div class="recipe-form-field">
+                        <label class="text-label" [attr.for]="'recipe-step-title-' + index">
+                          Title
+                        </label>
+                        <input
+                          [id]="'recipe-step-title-' + index"
+                          class="input--primary recipe-form-field__input"
+                          type="text"
+                          [formControl]="stepControl.controls.title"
+                          placeholder="e.g. Prepare the vegetables"
+                          [attr.aria-invalid]="shouldShowInstructionFieldError(stepControl, 'title')"
+                          [attr.aria-describedby]="shouldShowInstructionFieldError(stepControl, 'title') ? 'recipe-step-title-' + index + '-error' : null"
+                        />
+                        @if (shouldShowInstructionFieldError(stepControl, 'title')) {
+                          <small
+                            [id]="'recipe-step-title-' + index + '-error'"
+                            class="text-error recipe-form-field__error"
+                            role="alert"
+                          >
+                            Step title is required.
+                          </small>
+                        }
+                      </div>
+
+                      <label class="text-label" [attr.for]="'recipe-step-instruction-' + index">
+                        Instructions
+                      </label>
                       <textarea
-                        [id]="'recipe-step-' + index"
+                        [id]="'recipe-step-instruction-' + index"
                         class="input--primary recipe-form-field__textarea recipe-steps__textarea"
-                        [formControl]="stepControl"
-                        [placeholder]="'Describe step ' + (index + 1) + '...'"
+                        [formControl]="stepControl.controls.instruction"
+                        [placeholder]="'Describe step ' + (index + 1) + ' in detail...'"
+                        rows="5"
+                        [attr.aria-invalid]="shouldShowInstructionFieldError(stepControl, 'instruction')"
+                        [attr.aria-describedby]="shouldShowInstructionFieldError(stepControl, 'instruction') ? 'recipe-step-instruction-' + index + '-error' : null"
                       ></textarea>
+                      @if (shouldShowInstructionFieldError(stepControl, 'instruction')) {
+                        <small
+                          [id]="'recipe-step-instruction-' + index + '-error'"
+                          class="text-error recipe-form-field__error"
+                          role="alert"
+                        >
+                          Step instructions are required.
+                        </small>
+                      }
                     </article>
                   }
                 </div>
@@ -332,7 +403,7 @@
 
               @if (hasInstructionsError()) {
                 <small id="recipe-instructions-error" class="text-error recipe-form-field__error" role="alert">
-                  Add at least one instruction step before saving.
+                  {{ instructionsErrorMessage() }}
                 </small>
               }
             </div>

@@ -97,7 +97,7 @@ function createDetail(id: number): RecipeDetailDto {
     caloriesTotal: 100,
     proteinTotal: 10,
     carbsTotal: 20,
-    instructions: ['Cook'],
+    instructions: [{ title: 'Prepare', instruction: 'Cook' }],
     ingredients: [],
   };
 }

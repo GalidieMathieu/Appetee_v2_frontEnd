@@ -29,12 +29,12 @@ export type IngredientAdminDetailRequest = {
   name: string;
   basis: number;
   basisUnit: IngredientBasisUnit;
-  price: number | null;
+  price: number;
   caloriesKcal: number;
   image: File;
-  proteinG: number | null;
+  proteinG: number;
   fatG: number | null;
-  carbsG: number | null;
+  carbsG: number;
   sugarG: number | null;
   fiberG: number | null;
   sodiumMg: number | null;

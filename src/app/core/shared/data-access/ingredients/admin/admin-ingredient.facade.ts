@@ -49,15 +49,15 @@ export class AdminIngredientFacade extends AbstractLoadFacade<null, AdminIngredi
     formData.append('basis', ingredient.basis.toString());
     formData.append('basisUnit', ingredient.basisUnit);
     formData.append('caloriesKcal', ingredient.caloriesKcal.toString());
+    formData.append('price', ingredient.price.toString());
+    formData.append('proteinG', ingredient.proteinG.toString());
+    formData.append('carbsG', ingredient.carbsG.toString());
     formData.append('image', ingredient.image);
 
     const optionalNumbers: ReadonlyArray<
       readonly [string, number | null]
     > = [
-      ['price', ingredient.price],
-      ['proteinG', ingredient.proteinG],
       ['fatG', ingredient.fatG],
-      ['carbsG', ingredient.carbsG],
       ['sugarG', ingredient.sugarG],
       ['fiberG', ingredient.fiberG],
       ['sodiumMg', ingredient.sodiumMg],
