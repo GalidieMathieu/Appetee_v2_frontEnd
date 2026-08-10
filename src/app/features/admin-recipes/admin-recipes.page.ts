@@ -66,6 +66,10 @@ const requiredTrimmedValidator: ValidatorFn = (
   return value.trim().length > 0 ? null : { requiredTrimmed: true };
 };
 
+type RecipeCalculation = RecipeNutrition & {
+  estimatedCostPerServing: number | null;
+};
+
 @Component({
   selector: 'app-admin-recipe-page',
   templateUrl: './admin-recipes.page.html',
