@@ -4,6 +4,16 @@
 
 Work safely and incrementally in the Appetee Angular frontend.
 
+## Repository Boundary
+
+This agent is frontend-only. Work exclusively inside the `appetee_front` repository.
+
+- Never read, inspect, edit, build, test, or run commands against the sibling `Backend` repository.
+- Never implement server-side behavior, database changes, migrations, or backend tests from a feature specification.
+- Treat backend contracts as external dependencies and implement only the Angular side of those contracts.
+- If completing a requested phase requires backend work, finish all safe frontend work and report the backend dependency as deferred.
+- Only an explicit user instruction that clearly overrides this repository boundary may authorize backend work.
+
 Implement exactly one documented phase per task. The task prompt must provide:
 
 ```text
@@ -44,7 +54,7 @@ Implement only the requested phase.
 
 Do not implement later phases, unrelated UI cleanup, speculative abstractions, or opportunistic refactors.
 
-Do not modify the backend repository.
+Do not access or modify the backend repository.
 
 If a minimal out-of-phase change is required for compilation, routing, or testing, make only that change and report it.
 

@@ -4,17 +4,19 @@
             <div class = "logIn-shell_content">
                 <h2>{{title}}</h2>
                 <p>{{subTitle}}</p>
-                @if (errorMessage(); as errorMessage) {
-                    <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
+                @if (displayError(); as errorMessage) {
+                    <div #errorSummary class="text-error subtitle-error" role="alert" tabindex="-1">{{ errorMessage }}</div>
                 }
             </div>
-            <form [formGroup]="loginForm" novalidate class = "account-form-div">
+            <form [formGroup]="loginForm" (ngSubmit)="signIn()" novalidate class="account-form-div">
                 <div class = "email-input-div">
                     <label for="email">{{email_Label}}</label>
                     <input id="email"
                     class="input--primary"
                     formControlName="email"
                     placeholder="you@example.com"
+                    type="email"
+                    autocomplete="email"
                     [attr.aria-invalid]="email.invalid && email.touched"
                     />
                     @if (email.touched && email.hasError('required')) {
@@ -26,42 +28,61 @@
                 </div>
                 <div class = "password-input-div">
                     <label for="password">{{password_Label}}</label>
-                    <input id="password"
-                    class="input--primary"
-                    formControlName="password"
-                    placeholder="********"
-                    type="password"
-                    />
+                    <div class="password-control">
+                        <input id="password"
+                        class="input--primary"
+                        formControlName="password"
+                        placeholder="********"
+                        [type]="passwordVisible() ? 'text' : 'password'"
+                        autocomplete="current-password"
+                        [attr.aria-invalid]="password.invalid && password.touched"
+                        />
+                        <button
+                            type="button"
+                            class="password-toggle"
+                            [attr.aria-label]="passwordVisible() ? 'Hide password' : 'Show password'"
+                            [attr.aria-pressed]="passwordVisible()"
+                            (click)="togglePasswordVisibility()"
+                        >
+                            {{ passwordVisible() ? 'Hide' : 'Show' }}
+                        </button>
+                    </div>
                     @if (password.touched && password.hasError('required')) {
                         <small role="alert">{{ required_password_error_label }}</small>
                     }
                 </div>
+                <div class="login-options">
+                    <label class="remember-me" for="rememberMe">
+                        <input id="rememberMe" type="checkbox" formControlName="rememberMe" />
+                        <span>{{ rememberMe_label }}</span>
+                    </label>
+                    <a class="forgot-password-link" [routerLink]="['/auth/forgot-password']">{{ forgotPassword_text }}</a>
+                </div>
+                <div class="bottom_button_div">
+                    <button
+                        type="submit"
+                        class="btn-link--primary button_nav text-button-white"
+                        [disabled]="isSubmitting()"
+                        [attr.aria-busy]="isSubmitting()"
+                    >
+                        <span class="btn-loading__content">
+                            @if (isSubmitting()) {
+                                <span class="btn-loading__spinner" aria-hidden="true"></span>
+                            }
+                            <span>{{ isSubmitting() ? signingIn_str : SignIn_str }}</span>
+                        </span>
+                    </button>
+                </div>
             </form>
-            <div class = "bottom_button_div">
-                <button 
-                    type="button" 
-                    class = "btn-link--primary button_nav text-button-white"
-                    [disabled]="!loginForm.valid || isSubmitting()"
-                    [attr.aria-busy]="isSubmitting()"
-                    (click)="SignIn()"
-                >
-                    <span class="btn-loading__content">
-                        @if (isSubmitting()) {
-                            <span class="btn-loading__spinner" aria-hidden="true"></span>
-                        }
-                        <span>{{ isSubmitting() ? signingIn_str : SignIn_str }}</span>
-                    </span>
-                </button>
-            </div>
             <div class="signUp-cta">
-                <p> {{signUp_cta_text}}<a class="signUp-cta_link" [routerLink]="['/auth/sign-up']">{{signUp_cta_link_text}}</a></p>
+                <p> {{signUp_cta_text}}<a class="signUp-cta_link" [routerLink]="['/auth/sign-up/account']">{{signUp_cta_link_text}}</a></p>
             </div>
         </main>
 
         <div class="HomePage-cta">
-            <a class="HomePage-cta__link" [routerLink]="['/']">
-            <span class="HomePage-cta__icon" aria-hidden="true">←</span>
-            <span>Home Page</span>
+            <a class="btn-link--back text-link-muted" [routerLink]="['/']">
+            <span class="btn-link--back__icon" aria-hidden="true">←</span>
+            <span>{{ homePageText }}</span>
             </a>
         </div>
     </div>

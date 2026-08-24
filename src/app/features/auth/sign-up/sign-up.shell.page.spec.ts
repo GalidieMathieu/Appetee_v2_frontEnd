@@ -100,11 +100,17 @@ describe('SignUpShellPage', () => {
   it('renders the account step content for the first sign-up route', async () => {
     await harness.navigateByUrl('/auth/sign-up/account', SignUpShellPage);
 
-    const text = harness.routeNativeElement?.textContent ?? '';
+    const root = harness.routeNativeElement!;
+    const text = root.textContent ?? '';
+    const loginLink = Array.from(root.querySelectorAll('a')).find(link =>
+      normalizeText(link.textContent).includes('Log In')
+    );
 
     expect(text).toContain('Step 1 of 3');
     expect(text).toContain('Create Your Account');
     expect(text).toContain('Set up your Appetee account with your email and password');
+    expect(loginLink?.getAttribute('href')).toBe('/auth/login');
+    expect(loginLink?.classList.contains('btn-link--back')).toBe(true);
   });
 
   it('destroys the route-scoped wizard draft after leaving the sign-up flow', async () => {

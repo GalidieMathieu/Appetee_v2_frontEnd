@@ -6,6 +6,7 @@ export type UserSession = {
 export type LoginRequest = { 
   email: string;
   password: string;
+  rememberMe: boolean;
 };
 
 export interface SignUpRequest {
@@ -14,4 +15,13 @@ export interface SignUpRequest {
   password: string;
   dietIds?: readonly number[] | null;
   ingredientRestrictionIds?: readonly number[] | null;
+}
+
+export interface PasswordRecoveryRequest {
+  email: string;
+}
+
+export interface PasswordRecoveryConfirmRequest {
+  token: string;
+  newPassword: string;
 }
