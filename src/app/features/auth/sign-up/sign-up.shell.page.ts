@@ -38,6 +38,7 @@ export class SignUpShellPage {
     next_str : string = "Next";
     account_creation_str : string = "create account";
     account_creation_loading_str : string = "Creating Account...";
+    logInLinkText: string = "Log In";
     get currentIndex(): number {
         return this.currentStepOverride ?? this.resolveStepIndex();
     }

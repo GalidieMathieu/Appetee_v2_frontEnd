@@ -1,11 +1,24 @@
-import { inject, Injectable } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { DOCUMENT } from '@angular/common';
+import { inject, Injectable, signal } from '@angular/core';
 import { AbstractLoadFacade } from '@app/core/shared/data-access/generic-template/abstractLoadFacade';
-import { catchError, EMPTY, finalize, map, Observable, of, switchMap, tap } from 'rxjs';
-import { LoginRequest, SignUpRequest, UserSession } from './auth.model';
+import { catchError, EMPTY, finalize, map, Observable, of, switchMap, take, tap } from 'rxjs';
+import {
+  LoginRequest,
+  PasswordRecoveryConfirmRequest,
+  PasswordRecoveryRequest,
+  SignUpRequest,
+  UserSession,
+} from './auth.model';
 import { AuthApi } from './auth.api';
 import { AuthStore } from './auth.store';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { SessionService } from '@app/core/session/session.service';
+import { SessionExpirationService } from '../session-expiration.service';
+import {
+  toPasswordRecoveryConfirmMessage,
+  toPasswordRecoveryRequestMessage,
+} from './password-recovery-error-message';
 
 @Injectable({ providedIn: 'root' })
 export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore> {
@@ -25,8 +38,16 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
   }
 
   private readonly session = inject(SessionService);
+  private readonly sessionExpiration = inject(SessionExpirationService);
+  private readonly document = inject(DOCUMENT);
+  private readonly passwordRecoveryLoadingState = signal(false);
+  private readonly passwordRecoveryErrorState = signal<string | null>(null);
+
+  readonly isPasswordRecoveryLoading = this.passwordRecoveryLoadingState.asReadonly();
+  readonly passwordRecoveryError = this.passwordRecoveryErrorState.asReadonly();
 
   private setAuthenticatedSession(session: UserSession): void {
+    this.sessionExpiration.clear();
     this.setSuccess(session);
     this.store.isAuthenticated.set(true);
   }
@@ -55,8 +76,17 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
 
     return this.api.refreshSession().pipe(
       switchMap((session: UserSession) => this.hydrateSession$(session)),
-      catchError(() => {
-        this.session.resetAll();
+      catchError(error => {
+        if (this.isExpiredSessionResponse(error)) {
+          if (this.isPasswordRecoveryLocation()) {
+            this.session.resetAll();
+            this.sessionExpiration.clear();
+          } else {
+            this.sessionExpiration.handleExpiration();
+          }
+        } else {
+          this.session.resetAll();
+        }
         return EMPTY;
       })
     );
@@ -82,10 +112,40 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     return this.api.login(request).pipe(
       switchMap((session: UserSession) => this.hydrateSession$(session)),
       catchError(err => {
-        this.store.setError(this.toUserMessage(err));
+        this.store.setError(this.toLoginMessage(err));
         return EMPTY;
       })
     );
+  }
+
+  private toLoginMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 401) {
+        return 'Invalid email or password.';
+      }
+
+      if (error.status === 429) {
+        return 'Too many login attempts. Please try again later.';
+      }
+    }
+
+    return this.toUserMessage(error);
+  }
+
+  private isExpiredSessionResponse(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse) || error.status !== 401) {
+      return false;
+    }
+
+    const payload = error.error;
+    return !!payload
+      && typeof payload === 'object'
+      && (payload as Record<string, unknown>)['code'] === 'session_expired';
+  }
+
+  private isPasswordRecoveryLocation(): boolean {
+    const path = this.document.location?.pathname;
+    return path === '/auth/forgot-password' || path === '/auth/reset-password';
   }
 
   /**
@@ -114,6 +174,46 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     );
   }
 
+  requestPasswordRecovery$(request: PasswordRecoveryRequest): Observable<void> {
+    if (this.passwordRecoveryLoadingState()) {
+      return EMPTY;
+    }
+
+    this.passwordRecoveryErrorState.set(null);
+    this.passwordRecoveryLoadingState.set(true);
+
+    return this.api.requestPasswordRecovery(request).pipe(
+      take(1),
+      catchError(error => {
+        this.passwordRecoveryErrorState.set(toPasswordRecoveryRequestMessage(error));
+        return EMPTY;
+      }),
+      finalize(() => this.passwordRecoveryLoadingState.set(false))
+    );
+  }
+
+  confirmPasswordRecovery$(request: PasswordRecoveryConfirmRequest): Observable<void> {
+    if (this.passwordRecoveryLoadingState()) {
+      return EMPTY;
+    }
+
+    this.passwordRecoveryErrorState.set(null);
+    this.passwordRecoveryLoadingState.set(true);
+
+    return this.api.confirmPasswordRecovery(request).pipe(
+      take(1),
+      catchError(error => {
+        this.passwordRecoveryErrorState.set(toPasswordRecoveryConfirmMessage(error));
+        return EMPTY;
+      }),
+      finalize(() => this.passwordRecoveryLoadingState.set(false))
+    );
+  }
+
+  clearPasswordRecoveryError(): void {
+    this.passwordRecoveryErrorState.set(null);
+  }
+
 
 
   /**
@@ -129,6 +229,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
       }),
       finalize(() =>{
         this.session.resetAll();
+        this.sessionExpiration.clear();
         this.store.notifyLoggedOut();
       }),
       map(() => void 0)

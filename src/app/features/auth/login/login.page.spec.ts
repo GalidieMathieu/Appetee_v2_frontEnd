@@ -7,6 +7,7 @@ import { vi } from 'vitest';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 import { LoginPage } from './login.page';
+import { SessionExpirationService } from '@app/core/auth/session-expiration.service';
 
 @Component({
   standalone: true,
@@ -17,7 +18,8 @@ class DummyPageComponent {}
 const LOGIN_TEST_ROUTES: Routes = [
   { path: '', component: DummyPageComponent },
   { path: 'auth/login', component: LoginPage },
-  { path: 'auth/sign-up', component: DummyPageComponent },
+  { path: 'auth/sign-up/account', component: DummyPageComponent },
+  { path: 'auth/forgot-password', component: DummyPageComponent },
   { path: 'home', component: DummyPageComponent },
 ];
 
@@ -27,11 +29,13 @@ describe('LoginPage', () => {
   let authError$: BehaviorSubject<string | null>;
   let authLoading$: BehaviorSubject<boolean>;
   let loginSpy: ReturnType<typeof vi.fn>;
+  let consumeExpirationMessage: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     authError$ = new BehaviorSubject<string | null>(null);
     authLoading$ = new BehaviorSubject<boolean>(false);
     loginSpy = vi.fn((request: LoginRequest) => of(void 0));
+    consumeExpirationMessage = vi.fn(() => null);
 
     await TestBed.configureTestingModule({
       imports: [LoginPage],
@@ -45,6 +49,10 @@ describe('LoginPage', () => {
             login$: loginSpy,
           },
         },
+        {
+          provide: SessionExpirationService,
+          useValue: { consumeMessage: consumeExpirationMessage },
+        },
       ],
     }).compileComponents();
 
@@ -52,8 +60,8 @@ describe('LoginPage', () => {
     harness = await RouterTestingHarness.create();
   });
 
-  // Verifies that the login page renders the expected copy, fields, and disabled submit state on first load.
-  it('renders the login form content and initial disabled state', async () => {
+  // Verifies that the login page renders the expected copy, fields, and default Remember Me choice.
+  it('renders the login form content and initial state', async () => {
     const { root, emailInput, passwordInput, submitButton } = await navigateToLoginPage();
 
     expect(root.textContent).toContain('Log In');
@@ -62,15 +70,37 @@ describe('LoginPage', () => {
     expect(emailInput.placeholder).toBe('you@example.com');
     expect(passwordInput.placeholder).toBe('********');
     expect(passwordInput.type).toBe('password');
-    expect(submitButton.disabled).toBe(true);
+    expect(emailInput.autocomplete).toBe('email');
+    expect(passwordInput.autocomplete).toBe('current-password');
+    expect(getInputById(root, 'rememberMe').checked).toBe(false);
+    expect(submitButton.disabled).toBe(false);
   });
 
   // Verifies that the login page points users to the sign-up flow and back to the landing page with real router links.
   it('exposes the expected navigation links', async () => {
     const { root } = await navigateToLoginPage();
+    const homeLink = getLinkContainingText(root, 'Home Page');
 
-    expect(getLinkContainingText(root, 'Sign Up').getAttribute('href')).toBe('/auth/sign-up');
-    expect(getLinkContainingText(root, 'Home Page').getAttribute('href')).toBe('/');
+    expect(getLinkContainingText(root, 'Forgot Password?').getAttribute('href')).toBe('/auth/forgot-password');
+    expect(getLinkContainingText(root, 'Sign Up').getAttribute('href')).toBe('/auth/sign-up/account');
+    expect(homeLink.getAttribute('href')).toBe('/');
+    expect(homeLink.classList.contains('btn-link--back')).toBe(true);
+  });
+
+  it('toggles password visibility with accessible state text', async () => {
+    const { root, passwordInput } = await navigateToLoginPage();
+    const toggle = getButtonByText(root, 'Show');
+
+    expect(toggle.getAttribute('aria-label')).toBe('Show password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('false');
+
+    toggle.click();
+    harness.detectChanges();
+
+    expect(passwordInput.type).toBe('text');
+    expect(normalizeText(toggle.textContent)).toBe('Hide');
+    expect(toggle.getAttribute('aria-label')).toBe('Hide password');
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
   });
 
   // Verifies that touched invalid controls show the required validation feedback and malformed email input shows the format error.
@@ -84,7 +114,7 @@ describe('LoginPage', () => {
     expect(getAlertTexts(root)).toContain('Email is required');
     expect(getAlertTexts(root)).toContain('Password is required');
     expect(emailInput.getAttribute('aria-invalid')).toBe('true');
-    expect(submitButton.disabled).toBe(true);
+    expect(submitButton.disabled).toBe(false);
 
     setInputValue(emailInput, 'not-an-email');
     harness.detectChanges();
@@ -95,19 +125,22 @@ describe('LoginPage', () => {
     expect(emailInput.getAttribute('aria-invalid')).toBe('true');
   });
 
-  // Verifies that invalid form state prevents the facade call so partial or malformed credentials are never submitted.
-  it('does not submit while the form is invalid', async () => {
-    const { emailInput, submitButton } = await navigateToLoginPage();
+  // Verifies that invalid form state focuses feedback and prevents partial credentials from reaching the facade.
+  it('shows and focuses validation without submitting an invalid form', async () => {
+    const { root, emailInput, passwordInput, submitButton } = await navigateToLoginPage();
 
     setInputValue(emailInput, 'chef@appetee.dev');
     harness.detectChanges();
 
-    expect(submitButton.disabled).toBe(true);
+    expect(submitButton.disabled).toBe(false);
 
     submitButton.click();
     await harness.fixture.whenStable();
+    harness.detectChanges();
 
     expect(loginSpy).not.toHaveBeenCalled();
+    expect(getAlertTexts(root)).toContain('Password is required');
+    expect(document.activeElement).toBe(passwordInput);
     expect(router.url).toBe('/auth/login');
   });
 
@@ -117,8 +150,24 @@ describe('LoginPage', () => {
 
     authError$.next('Invalid email or password.');
     harness.detectChanges();
+    await harness.fixture.whenStable();
 
     expect(getAlertTexts(root)).toContain('Invalid email or password.');
+    expect(document.activeElement?.textContent).toContain('Invalid email or password.');
+  });
+
+  it('announces a session-expiration message once after redirect', async () => {
+    consumeExpirationMessage.mockReturnValue('Your session expired. Please log in again.');
+
+    const { root } = await navigateToLoginPage();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    expect(getAlertTexts(root)).toContain('Your session expired. Please log in again.');
+    expect(consumeExpirationMessage).toHaveBeenCalledTimes(1);
+    expect(document.activeElement?.textContent).toContain(
+      'Your session expired. Please log in again.'
+    );
   });
 
   // Verifies that typing into the DOM updates the reactive form model, submits the exact payload, and redirects on success.
@@ -126,12 +175,14 @@ describe('LoginPage', () => {
     const expectedRequest: LoginRequest = {
       email: 'chef@appetee.dev',
       password: 'strong-password',
+      rememberMe: true,
     };
 
-    const { component, emailInput, passwordInput, submitButton } = await navigateToLoginPage();
+    const { component, root, emailInput, passwordInput, submitButton } = await navigateToLoginPage();
 
     setInputValue(emailInput, expectedRequest.email);
     setInputValue(passwordInput, expectedRequest.password);
+    getInputById(root, 'rememberMe').click();
     harness.detectChanges();
 
     expect(component.loginForm.getRawValue()).toEqual(expectedRequest);
@@ -167,6 +218,7 @@ describe('LoginPage', () => {
     expect(loginSpy).toHaveBeenCalledWith({
       email: 'chef@appetee.dev',
       password: 'strong-password',
+      rememberMe: false,
     });
     expect(submitButton.disabled).toBe(true);
     expect(normalizeText(submitButton.textContent)).toContain('Signing In...');
