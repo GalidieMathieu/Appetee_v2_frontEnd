@@ -1,60 +1,35 @@
-import { Injectable } from '@angular/core';
-import { Signal } from '@angular/core';
+import { Injectable, Signal } from '@angular/core';
 import {
   EMPTY,
   Observable,
+  Subject,
   catchError,
   filter,
   finalize,
-  map,
   of,
   shareReplay,
   tap,
   timeout,
 } from 'rxjs';
 
-import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
 import { EntityRequestState } from '../generic-template/entity-cache-store';
-import { RecipeCardDto, RecipeDetailDto } from './recipe.model';
+import { toApiErrorMessage } from '../generic-template/api-error-message';
+import { RecipeDetailDto } from './recipe.model';
 import { RecipesApi } from './recipe.api';
 import { RecipeDetailsStore } from './recipe-details.store';
-import { RecipesStore } from './recipes.store';
 
+/** Shared by-ID recipe behavior; discovery query/list ownership lives in the Recipes feature. */
 @Injectable({ providedIn: 'root' })
-export class RecipesFacade extends AbstractLoadFacade<RecipeCardDto[], RecipesStore> {
+export class RecipesFacade {
   private readonly detailRequests = new Map<string, Observable<RecipeDetailDto>>();
+  private readonly queryInvalidatedSubject = new Subject<void>();
+
+  readonly queryInvalidated$ = this.queryInvalidatedSubject.asObservable();
 
   constructor(
     private readonly api: RecipesApi,
-    private readonly detailsStore: RecipeDetailsStore,
-    store: RecipesStore
-  ) {
-    super(store);
-  }
-
-  readonly recipes$ = this.data$.pipe(map(recipes => recipes as readonly RecipeCardDto[]));
-
-  loadIfNeeded(): void {
-    if (!this.isLoaded()) this.load();
-  }
-
-  reload(): void {
-    this.reset();
-    this.load();
-  }
-
-  load(): void {
-    if (this.store.isLoading()) return;
-    this.setLoading();
-
-    this.api.getAll().pipe(
-      timeout(10000),
-      catchError((error: unknown) => {
-        this.setError(this.toUserMessage(error));
-        return EMPTY;
-      })
-    ).subscribe(data => this.setSuccess(data));
-  }
+    private readonly detailsStore: RecipeDetailsStore
+  ) {}
 
   /** Returns a cached complete detail or coalesces the one in-flight request for this id. */
   getRecipeWithDetails(id: number): Observable<RecipeDetailDto> {
@@ -73,7 +48,7 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeCardDto[], RecipesSt
       tap(detail => this.detailsStore.upsert(detail)),
       catchError((error: unknown) => {
         if (this.detailsStore.generation() === generation) {
-          this.detailsStore.setError(id, this.toUserMessage(error));
+          this.detailsStore.setError(id, toApiErrorMessage(error));
         }
         return EMPTY;
       }),
@@ -99,6 +74,6 @@ export class RecipesFacade extends AbstractLoadFacade<RecipeCardDto[], RecipesSt
   }
 
   invalidateQueries(): void {
-    this.store.reset();
+    this.queryInvalidatedSubject.next();
   }
 }

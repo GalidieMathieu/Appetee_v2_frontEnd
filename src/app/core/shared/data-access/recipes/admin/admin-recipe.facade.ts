@@ -4,7 +4,7 @@ import { EMPTY, Observable, catchError, finalize, tap } from 'rxjs';
 import { AbstractLoadFacade } from '../../generic-template/abstractLoadFacade';
 import { AdminRecipeApi } from './admin-recipe.api';
 import { AdminRecipeStore } from './admin-recipe.store';
-import { RecipeCardDto, RecipeDetailRequest } from '../recipe.model';
+import { RecipeDetailRequest, RecipeSummaryDto } from '../recipe.model';
 import { RecipesFacade } from '../recipe.facade';
 
 @Injectable({ providedIn: 'root' })
@@ -17,21 +17,21 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
     super(store);
   }
 
-  createRecipeWithDetails(recipe: RecipeDetailRequest): Observable<RecipeCardDto> {
+  createRecipeWithDetails(recipe: RecipeDetailRequest): Observable<RecipeSummaryDto> {
     return this.runMutation(this.api.create(this.toRecipeFormData(recipe)));
   }
 
   updateRecipeWithDetails(
     id: number,
     recipe: RecipeDetailRequest
-  ): Observable<RecipeCardDto> {
+  ): Observable<RecipeSummaryDto> {
     return this.runMutation(this.api.update(id, this.toRecipeFormData(recipe)), id);
   }
 
   private runMutation(
-    request$: Observable<RecipeCardDto>,
+    request$: Observable<RecipeSummaryDto>,
     changedId?: number
-  ): Observable<RecipeCardDto> {
+  ): Observable<RecipeSummaryDto> {
     if (this.store.isLoading()) return EMPTY;
     this.setLoading();
 
@@ -53,7 +53,10 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
   private toRecipeFormData(recipe: RecipeDetailRequest): FormData {
     const formData = new FormData();
     formData.append('name', recipe.name);
+    formData.append('description', recipe.description);
     formData.append('prepTimeMinutes', recipe.prepTimeMinutes.toString());
+    formData.append('cookTimeMinutes', recipe.cookTimeMinutes.toString());
+    formData.append('totalTimeMinutes', recipe.totalTimeMinutes.toString());
     formData.append('servings', recipe.servings.toString());
     formData.append('difficulty', recipe.difficulty);
     if (recipe.image) formData.append('image', recipe.image);
@@ -71,6 +74,12 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
         formData.append(`ingredients[${index}].quantity`, value.quantity.toString());
       }
       if (value.unit !== null) formData.append(`ingredients[${index}].unit`, value.unit);
+      if (value.featuredOrder !== null) {
+        formData.append(
+          `ingredients[${index}].featuredOrder`,
+          value.featuredOrder.toString()
+        );
+      }
     });
     return formData;
   }

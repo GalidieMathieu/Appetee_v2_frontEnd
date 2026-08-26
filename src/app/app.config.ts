@@ -13,11 +13,11 @@ import { AuthStore } from './core/auth/data-access/auth.store';
 import { authInterceptor } from './core/auth/auth.interceptor';
 import { UserStore } from './core/shared/data-access/user/user.store';
 import { AuthFacade } from './core/auth/data-access/auth.facade';
-import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
 import { RecipeDetailsStore } from './core/shared/data-access/recipes/recipe-details.store';
 import { AdminRecipeStore } from './core/shared/data-access/recipes/admin/admin-recipe.store';
 import { IngredientDetailsStore } from './core/shared/data-access/ingredients/admin/ingredient-details.store';
 import { AdminIngredientStore } from './core/shared/data-access/ingredients/admin/admin-ingredient.store';
+import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [

@@ -6,9 +6,8 @@ import { RecipeDetailDto } from './recipe.model';
 import { RecipesApi } from './recipe.api';
 import { RecipeDetailsStore } from './recipe-details.store';
 import { RecipesFacade } from './recipe.facade';
-import { RecipesStore } from './recipes.store';
 
-describe('RecipesFacade detail cache', () => {
+describe('RecipesFacade', () => {
   const getDetail = vi.fn();
 
   beforeEach(() => {
@@ -16,14 +15,22 @@ describe('RecipesFacade detail cache', () => {
     TestBed.configureTestingModule({
       providers: [
         RecipesFacade,
-        RecipesStore,
         RecipeDetailsStore,
         {
           provide: RecipesApi,
-          useValue: { getAll: vi.fn(), getRecipeWithDetails: getDetail },
+          useValue: { getRecipeWithDetails: getDetail },
         },
       ],
     });
+  });
+
+  it('announces discovery invalidation without owning discovery state', async () => {
+    const facade = TestBed.inject(RecipesFacade);
+    const invalidated = firstValueFrom(facade.queryInvalidated$);
+
+    facade.invalidateQueries();
+
+    await expect(invalidated).resolves.toBeUndefined();
   });
 
   it('caches the first detail and does not duplicate a later request', async () => {
@@ -87,8 +94,11 @@ function createDetail(id: number): RecipeDetailDto {
   return {
     id,
     name: `Recipe ${id}`,
-    imageUrl: null,
+    description: 'A complete recipe description.',
+    previewImageUrl: `https://cdn.example.com/previews/recipe-${id}.jpg`,
     prepTimeMinutes: 10,
+    cookTimeMinutes: 20,
+    totalTimeMinutes: 35,
     servings: 2,
     difficulty: 'Easy',
     badges: null,
@@ -97,6 +107,8 @@ function createDetail(id: number): RecipeDetailDto {
     caloriesTotal: 100,
     proteinTotal: 10,
     carbsTotal: 20,
+    caloriesPerServing: 50,
+    proteinPerServing: 5,
     instructions: [{ title: 'Prepare', instruction: 'Cook' }],
     ingredients: [],
   };

@@ -9,8 +9,8 @@ import { IngredientDetailsFacade } from '@app/core/shared/data-access/ingredient
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
 import { AdminRecipeFacade } from '@app/core/shared/data-access/recipes/admin/admin-recipe.facade';
 import {
-  RecipeCardDto,
   RecipeDetailDto,
+  RecipeSummaryDto,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
 
@@ -68,17 +68,27 @@ describe('AdminRecipesPageComponent authoring', () => {
     const fixture = TestBed.createComponent(AdminRecipesPageComponent);
     fixture.detectChanges();
     const component = fixture.componentInstance;
+    const root = fixture.nativeElement as HTMLElement;
+    const previewImage = () => root
+      .querySelector<HTMLImageElement>('.recipe-summary__image img')
+      ?.getAttribute('src');
 
     expect(component.totalCalories).toBe(999);
+    expect(component.caloriesPerServing).toBe(500);
+    expect(component.proteinPerServing).toBe(50);
+    expect(previewImage()).toBe('https://cdn.example.com/previews/detail-soup.jpg');
 
     component.form.controls.servings.setValue(4);
 
     expect(component.totalCalories).toBe(200);
     expect(component.totalProtein).toBe(20);
+    expect(component.caloriesPerServing).toBe(50);
+    expect(component.proteinPerServing).toBe(5);
     expect(component.totalCarbs).toBe(40);
     expect(component.estimatedCostPerServing).toBe(2);
 
     component.saveRecipe();
+    fixture.detectChanges();
 
     expect(updateRecipeWithDetails).toHaveBeenCalledWith(
       42,
@@ -86,13 +96,18 @@ describe('AdminRecipesPageComponent authoring', () => {
         caloriesTotal: expect.anything(),
         proteinTotal: expect.anything(),
         carbsTotal: expect.anything(),
+        caloriesPerServing: expect.anything(),
+        proteinPerServing: expect.anything(),
         estimatedCostPerServing: expect.anything(),
       })
     );
     expect(component.totalCalories).toBe(321);
     expect(component.totalProtein).toBe(32);
+    expect(component.caloriesPerServing).toBe(161);
+    expect(component.proteinPerServing).toBe(16);
     expect(component.totalCarbs).toBe(64);
     expect(component.estimatedCostPerServing).toBeNull();
+    expect(previewImage()).toBe('https://cdn.example.com/previews/updated-soup.jpg');
   });
 
   it('initializes create mode with one required instruction step', () => {
@@ -229,14 +244,134 @@ describe('AdminRecipesPageComponent authoring', () => {
     expect(component.ingredientCount).toBe(2);
     expect(getIngredientDetail).toHaveBeenCalledWith(8);
   });
+
+  it('requires canonical description and valid prep/cook/total times', () => {
+    const fixture = TestBed.createComponent(AdminRecipesPageComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.form.patchValue({
+      description: '   ',
+      prepTimeMinutes: 20,
+      cookTimeMinutes: 30,
+      totalTimeMinutes: 15,
+    });
+    component.saveRecipe();
+    fixture.detectChanges();
+    fixture.detectChanges();
+
+    expect(updateRecipeWithDetails).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Recipe description is required.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Total time must be at least the prep time and cook time.'
+    );
+  });
+
+  it('submits trimmed source fields and sequential featured ingredient orders', () => {
+    dialogOpen.mockReturnValueOnce({
+      afterClosed: () => of({ ingredientId: 8, quantity: 50, unit: 'g' }),
+    });
+    getIngredientDetail.mockReturnValueOnce(of({
+      ...createDetail().ingredients[0].ingredient,
+      id: 8,
+      name: 'Onion',
+    }));
+    const fixture = TestBed.createComponent(AdminRecipesPageComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+    component.form.patchValue({
+      description: '  A comforting soup.  ',
+      cookTimeMinutes: 20,
+      totalTimeMinutes: 40,
+      badges: ['High Protein', 'Budget Friendly'],
+    });
+
+    component.openIngredientDialog();
+    component.toggleFeaturedIngredient(1);
+    component.toggleFeaturedIngredient(0);
+    component.toggleFeaturedIngredient(0);
+    component.saveRecipe();
+
+    expect(updateRecipeWithDetails).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        description: 'A comforting soup.',
+        prepTimeMinutes: 15,
+        cookTimeMinutes: 20,
+        totalTimeMinutes: 40,
+        badges: ['High Protein', 'Budget Friendly'],
+        ingredients: [
+          expect.objectContaining({ ingredientId: 7, featuredOrder: 2 }),
+          expect.objectContaining({ ingredientId: 8, featuredOrder: 1 }),
+        ],
+      })
+    );
+  });
+
+  it('limits authoring to three featured ingredients', () => {
+    for (const ingredientId of [8, 9, 10]) {
+      dialogOpen.mockReturnValueOnce({
+        afterClosed: () => of({ ingredientId, quantity: 50, unit: 'g' }),
+      });
+    }
+    getIngredientDetail.mockImplementation((ingredientId: number) => of({
+      ...createDetail().ingredients[0].ingredient,
+      id: ingredientId,
+      name: `Ingredient ${ingredientId}`,
+    }));
+    const fixture = TestBed.createComponent(AdminRecipesPageComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.openIngredientDialog();
+    component.openIngredientDialog();
+    component.openIngredientDialog();
+    component.toggleFeaturedIngredient(1);
+    component.toggleFeaturedIngredient(2);
+    component.toggleFeaturedIngredient(3);
+    component.saveRecipe();
+
+    expect(updateRecipeWithDetails).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        ingredients: [
+          expect.objectContaining({ ingredientId: 7, featuredOrder: 1 }),
+          expect.objectContaining({ ingredientId: 8, featuredOrder: 2 }),
+          expect.objectContaining({ ingredientId: 9, featuredOrder: 3 }),
+          expect.objectContaining({ ingredientId: 10, featuredOrder: null }),
+        ],
+      })
+    );
+  });
+
+  it('requires at least one featured ingredient', () => {
+    const fixture = TestBed.createComponent(AdminRecipesPageComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.toggleFeaturedIngredient(0);
+    component.saveRecipe();
+    fixture.detectChanges();
+
+    expect(updateRecipeWithDetails).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Choose between one and three featured ingredients before saving.'
+    );
+  });
 });
 
 function createDetail(): RecipeDetailDto {
   return {
     ...createSummary(),
+    previewImageUrl: 'https://cdn.example.com/previews/detail-soup.jpg',
+    description: 'A warming vegetable soup.',
+    cookTimeMinutes: 20,
+    totalTimeMinutes: 35,
     caloriesTotal: 999,
     proteinTotal: 99,
     carbsTotal: 199,
+    caloriesPerServing: 499.5,
+    proteinPerServing: 49.5,
     estimatedCostPerServing: 9,
     instructions: [{ title: 'Prepare', instruction: 'Cook' }],
     ingredients: [
@@ -244,6 +379,7 @@ function createDetail(): RecipeDetailDto {
         ingredientId: 7,
         quantity: 200,
         unit: 'g',
+        featuredOrder: 1,
         ingredient: {
           id: 7,
           name: 'Carrot',
@@ -266,11 +402,11 @@ function createDetail(): RecipeDetailDto {
   };
 }
 
-function createSummary(): RecipeCardDto {
+function createSummary(): RecipeSummaryDto {
   return {
     id: 42,
     name: 'Soup',
-    imageUrl: null,
+    previewImageUrl: 'https://cdn.example.com/previews/updated-soup.jpg',
     prepTimeMinutes: 15,
     servings: 2,
     difficulty: 'Easy',
@@ -280,6 +416,8 @@ function createSummary(): RecipeCardDto {
     caloriesTotal: 321,
     proteinTotal: 32,
     carbsTotal: 64,
+    caloriesPerServing: 160.5,
+    proteinPerServing: 16,
     estimatedCostPerServing: null,
   };
 }

@@ -292,6 +292,22 @@
   font-size: 0.78rem;
 }
 
+.recipe-ingredients__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.recipe-ingredients__featured {
+  min-width: 6.5rem;
+}
+
+.recipe-ingredients__featured:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .recipe-ingredients__remove {
   border: none;
   background: transparent;
@@ -449,4 +465,12 @@
   .recipe-ingredients__remove {
     text-align: left;
   }
+
+  .recipe-ingredients__actions {
+    justify-content: space-between;
+  }
+}
+
+.recipe-summary__calculation-note {
+  margin-top: 1rem;
 }

@@ -20,13 +20,23 @@ function isRecipeSummary(value: unknown): value is RecipeSummary {
   const summary = value as Partial<RecipeSummary>;
   return Number.isInteger(summary.id)
     && typeof summary.name === 'string'
+    && (summary.previewImageUrl === null || typeof summary.previewImageUrl === 'string')
     && Number.isFinite(summary.prepTimeMinutes)
     && Number.isFinite(summary.servings)
+    && Number.isFinite(summary.caloriesPerServing)
+    && Number.isFinite(summary.proteinPerServing)
     && typeof summary.difficulty === 'string';
 }
 
 function toRecipeSummary(detail: RecipeDetailDto): RecipeSummary {
-  const { instructions, ingredients, ...summary } = detail;
+  const {
+    instructions,
+    ingredients,
+    description,
+    cookTimeMinutes,
+    totalTimeMinutes,
+    ...summary
+  } = detail;
 
   return {
     ...summary,
@@ -62,8 +72,8 @@ export class AdminRecipesSuccessPageComponent implements OnInit {
       emptyImage: 'No image uploaded',
     },
     stats: {
-      calories: 'Calories',
-      protein: 'Protein',
+      caloriesPerServing: 'Calories / Serving',
+      proteinPerServing: 'Protein / Serving',
       carbs: 'Carbs',
       costPerServing: 'Cost / Serving',
       pendingPrices: 'Pending prices',
@@ -134,14 +144,7 @@ export class AdminRecipesSuccessPageComponent implements OnInit {
   }
 
   protected formatBadgeLabel(badge: RecipeBadge): string {
-    switch (badge) {
-      case 'freezer-friendly':
-        return 'Freezer-friendly';
-      case 'budget-focused':
-        return 'Budget-focused';
-      case 'high-protein':
-        return 'High-protein';
-    }
+    return badge;
   }
 
   protected buildHeroDescription(recipeName: string): string {

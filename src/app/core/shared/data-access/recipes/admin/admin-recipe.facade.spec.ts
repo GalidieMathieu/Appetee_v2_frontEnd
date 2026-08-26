@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
-import { RecipeCardDto, RecipeDetailRequest } from '../recipe.model';
+import { RecipeDetailRequest, RecipeSummaryDto } from '../recipe.model';
 import { RecipesFacade } from '../recipe.facade';
 import { AdminRecipeApi } from './admin-recipe.api';
 import { AdminRecipeFacade } from './admin-recipe.facade';
@@ -47,11 +47,18 @@ describe('AdminRecipeFacade', () => {
         'caloriesTotal',
         'proteinTotal',
         'carbsTotal',
+        'caloriesPerServing',
+        'proteinPerServing',
         'estimatedCostPerServing',
       ])
     );
     expect(formData.get('name')).toBe('Soup');
+    expect(formData.get('description')).toBe('A warming vegetable soup.');
+    expect(formData.get('prepTimeMinutes')).toBe('15');
+    expect(formData.get('cookTimeMinutes')).toBe('25');
+    expect(formData.get('totalTimeMinutes')).toBe('45');
     expect(formData.get('ingredients[0].ingredientId')).toBe('7');
+    expect(formData.get('ingredients[0].featuredOrder')).toBe('1');
     expect(formData.get('instructions[0].title')).toBe('Prepare');
     expect(formData.get('instructions[0].instruction')).toBe('Cook');
     expect(formData.has('instructions[0]')).toBe(false);
@@ -88,22 +95,25 @@ describe('AdminRecipeFacade', () => {
 function createRequest(): RecipeDetailRequest {
   return {
     name: 'Soup',
+    description: 'A warming vegetable soup.',
     image: null,
     instructions: [{ title: 'Prepare', instruction: 'Cook' }],
     prepTimeMinutes: 15,
+    cookTimeMinutes: 25,
+    totalTimeMinutes: 45,
     servings: 2,
     difficulty: 'Easy',
     badges: [],
     dietIds: [],
-    ingredients: [{ ingredientId: 7, quantity: 100, unit: 'g' }],
+    ingredients: [{ ingredientId: 7, quantity: 100, unit: 'g', featuredOrder: 1 }],
   };
 }
 
-function createSummary(): RecipeCardDto {
+function createSummary(): RecipeSummaryDto {
   return {
     id: 42,
     name: 'Soup',
-    imageUrl: null,
+    previewImageUrl: 'https://cdn.example.com/previews/soup.jpg',
     prepTimeMinutes: 15,
     servings: 2,
     difficulty: 'Easy',
@@ -113,6 +123,8 @@ function createSummary(): RecipeCardDto {
     caloriesTotal: 120,
     proteinTotal: 4,
     carbsTotal: 20,
+    caloriesPerServing: 60,
+    proteinPerServing: 2,
     estimatedCostPerServing: 1.5,
   };
 }

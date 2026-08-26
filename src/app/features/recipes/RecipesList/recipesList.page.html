@@ -1,155 +1,110 @@
-<main class="home-page">
-  <section class="home-controls" aria-label="Recipe search and filters">
-    <div class="home-page__container home-controls__inner">
-      <div class="ingredient-callout">
-        <mat-icon class="ingredient-callout__icon" aria-hidden="true">eco</mat-icon>
-
-        <div class="ingredient-callout__copy">
-          <p class="text-label ingredient-callout__title">{{ ingredientCtaTitle }}</p>
-          <p class="text-body-secondary">{{ ingredientCtaDescription }}</p>
-        </div>
-
-        <button
-          type="button"
-          class="btn-link--primary text-button-white home-action-button"
-          (click)="onIngredientCtaClick()"
-        >
-          Add Ingredients
-        </button>
-      </div>
-
-      <form class="home-search" role="search" (submit)="onSearchSubmit($event)">
-        <div class="input_with_icon--primary home-search__field">
-          <mat-icon class="home-search__icon" aria-hidden="true">search</mat-icon>
-          <input
-            #searchInput
-            type="search"
-            [placeholder]="searchPlaceholder"
-            aria-label="Search recipes and ingredients"
-            (input)="onSearchInput($event)"
-          />
-        </div>
-
-        <button
-          type="submit"
-          class="btn-link--primary text-button-white home-search__button"
-        >
-          Search
-        </button>
-      </form>
-
-      <div class="filter-row" aria-label="Recipe view">
-        <span class="text-label filter-row__label">View:</span>
-
-        @for (filter of viewFilters(); track filter.value) {
-          <button
-            type="button"
-            class="btn-selection text-label filter-row__button"
-            [class.is-selected]="selectedViewFilter() === filter.value"
-            [attr.aria-pressed]="selectedViewFilter() === filter.value"
-            (click)="onViewFilterSelect(filter.value)"
-          >
-            @if (filter.icon) {
-              <mat-icon aria-hidden="true">{{ filter.icon }}</mat-icon>
-            }
-            {{ filter.label }}
-          </button>
-        }
-      </div>
-
-      <div class="meal-filter" aria-label="Meal type">
-        <p class="text-label meal-filter__label">Meal Type</p>
-
-        <div class="meal-filter__options">
-          @for (filter of mealTypeFilters; track filter.value) {
-            <button
-              type="button"
-              class="btn-selection text-label meal-filter__button"
-              [class.is-selected]="selectedMealTypeFilter() === filter.value"
-              [attr.aria-pressed]="selectedMealTypeFilter() === filter.value"
-              (click)="onMealTypeFilterSelect(filter.value)"
-            >
-              {{ filter.label }}
-            </button>
-          }
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section
-    #resultsSection
-    class="recipe-results"
-    aria-labelledby="recipes-title"
-    aria-live="polite"
-  >
-    <div class="home-page__container">
+<main class="recipes-page">
+  <section class="recipe-results" aria-labelledby="recipes-title">
+    <div class="recipes-page__container">
       <header class="recipe-results__header">
-        <h1 id="recipes-title" class="text-section-title">Recipes</h1>
-        @if (!isLoading() && !error()) {
-          <p class="text-body-secondary">
-            {{ recipes().length }} recipe@if (recipes().length !== 1) {s} found
+        <p class="text-eyebrow">Recipe discovery</p>
+        <h1 id="recipes-title" class="text-section-title">Browse compatible recipes</h1>
+        <p class="text-body-secondary">
+          Recipes are matched to your saved dietary needs and ingredient restrictions.
+        </p>
+
+        @if (!isInitialLoading() && !initialError()) {
+          <p class="text-small recipe-results__loaded-count">
+            {{ recipes().length }} recipe@if (recipes().length !== 1) {s} loaded
           </p>
         }
       </header>
 
-      @if (isLoading()) {
-        <div class="recipe-results__status" role="status">
-          <span class="btn-loading__spinner" aria-hidden="true"></span>
-          <p class="text-body-secondary">Loading recipes...</p>
+      @if (isInitialLoading()) {
+        <div
+          class="recipe-results__grid"
+          aria-label="Loading recipes"
+          aria-busy="true"
+          role="status"
+        >
+          @for (_ of skeletonCards; track $index) {
+            <div class="recipe-skeleton" aria-hidden="true">
+              <div class="recipe-skeleton__image"></div>
+              <div class="recipe-skeleton__body">
+                <span class="recipe-skeleton__line recipe-skeleton__line--title"></span>
+                <span class="recipe-skeleton__line recipe-skeleton__line--badges"></span>
+                <span class="recipe-skeleton__line recipe-skeleton__line--meta"></span>
+                <span class="recipe-skeleton__line recipe-skeleton__line--ingredients"></span>
+              </div>
+            </div>
+          }
+          <span class="visually-hidden">Loading recipes…</span>
         </div>
-      } @else if (error(); as errorMessage) {
+      } @else if (initialError(); as errorMessage) {
         <div class="recipe-results__status recipe-results__status--error" role="alert">
           <mat-icon aria-hidden="true">error_outline</mat-icon>
           <h2 class="text-title">Recipes could not be loaded</h2>
           <p class="text-body-secondary">{{ errorMessage }}</p>
           <button
             type="button"
-            class="btn-link--primary text-button-white recipe-results__retry"
-            (click)="onRetryClick()"
+            class="btn-link--primary text-button-white recipe-results__action"
+            (click)="retryInitial()"
           >
-            Try Again
+            Try again
           </button>
         </div>
       } @else if (recipes().length > 0) {
         <div class="recipe-results__grid">
-          @for (recipe of recipes(); track recipe.id) {
+          @for (recipe of recipes(); track recipe.id; let index = $index) {
             <app-recipe-card
               [recipe]="recipe"
-              [showIngredientMatch]="recipe.ownedIngredientCount > 0"
-              (favoriteToggled)="onRecipeFavoriteToggle($event)"
+              [imageLoading]="index < 4 ? 'eager' : 'lazy'"
             />
+          }
+        </div>
+
+        <div class="recipe-results__continuation">
+          @if (hasMore()) {
+            <div #loadMoreSentinel class="recipe-results__sentinel" aria-hidden="true"></div>
+          }
+
+          @if (isLoadingMore()) {
+            <div class="recipe-results__loading-more text-body-secondary" role="status">
+              <span class="btn-loading__spinner" aria-hidden="true"></span>
+              Loading more recipes…
+            </div>
+          }
+
+          @if (loadMoreError(); as errorMessage) {
+            <div class="recipe-results__load-error" role="alert">
+              <p class="text-body-secondary">{{ errorMessage }}</p>
+              <button
+                type="button"
+                class="btn-selection text-button recipe-results__load-button"
+                (click)="retryLoadMore()"
+              >
+                Retry loading more
+              </button>
+            </div>
+          } @else if (hasMore()) {
+            <button
+              type="button"
+              class="btn-selection text-button recipe-results__load-button"
+              [disabled]="isLoadingMore()"
+              (click)="loadNextPage()"
+            >
+              {{ isLoadingMore() ? 'Loading…' : 'Load more recipes' }}
+            </button>
+          } @else {
+            <p class="text-body-secondary recipe-results__end" role="status">
+              You’ve reached the end of the compatible recipes.
+            </p>
           }
         </div>
       } @else {
         <div class="recipe-results__empty">
           <mat-icon aria-hidden="true">eco</mat-icon>
-          <h2 class="text-title">No recipes found</h2>
+          <h2 class="text-title">No compatible recipes available</h2>
           <p class="text-body-secondary">
-            Try adjusting your search or filters to find more recipes.
+            No recipes currently match your saved dietary needs and ingredient restrictions.
           </p>
         </div>
       }
-    </div>
-  </section>
-
-  <section class="recipe-collection-cta" aria-labelledby="recipe-collection-title">
-    <div class="home-page__container recipe-collection-cta__inner">
-      <h2 id="recipe-collection-title" class="text-section-title">
-        {{ recipeCollectionTitle }}
-      </h2>
-      <p class="text-lead recipe-collection-cta__description">
-        {{ recipeCollectionDescription }}
-      </p>
-
-      <button
-        type="button"
-        class="btn-link--primary text-button-white recipe-collection-cta__button"
-        (click)="onExploreRecipesClick()"
-      >
-        Explore All Recipes
-        <mat-icon aria-hidden="true">arrow_forward</mat-icon>
-      </button>
     </div>
   </section>
 </main>

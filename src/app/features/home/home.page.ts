@@ -1,10 +1,8 @@
 import { Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import {
-  RecipeCardComponent,
-  RecipeCardData,
-} from '@app/core/shared/ui/recipe-card/recipe-card.component';
+import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model';
+import { RecipeCardComponent } from '@app/core/shared/ui/recipe-card/recipe-card.component';
 
 type ViewFilter = 'all' | 'saved';
 type MealTypeFilter = 'all' | 'prep' | 'day';
@@ -44,22 +42,22 @@ export class HomePageComponent {
   ];
   protected selectedMealTypeFilter: MealTypeFilter = 'all';
 
-  protected readonly recipes: readonly RecipeCardData[] = [
+  protected readonly recipes: readonly RecipeCardDto[] = [
     {
       id: 4,
       name: 'Creamy Pasta Primavera',
-      mealType: 'day',
-      imageUrl:
+      cardImageUrl:
         'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=340&fit=crop',
-      prepTimeMinutes: 20,
-      servings: 3,
-      caloriesTotal: 450,
-      difficulty: 'Easy',
-      badges: ['budget-focused'],
-      diets: ['Vegetarian', 'Dairy-free'],
+      totalTimeMinutes: 20,
+      caloriesPerServing: 450,
+      estimatedCostPerServing: 3.25,
+      badges: ['Budget Friendly'],
+      featuredIngredients: [
+        { id: 1, name: 'Pasta', featuredOrder: 1 },
+        { id: 2, name: 'Tomato', featuredOrder: 2 },
+        { id: 3, name: 'Zucchini', featuredOrder: 3 },
+      ],
       isSaved: false,
-      ownedIngredientCount: 0,
-      totalIngredientCount: 4,
     },
   ];
 
