@@ -1,0 +1,30 @@
+<!-- Shared presentation only: feature pages decide when and which recipe projections render. -->
+<div
+  class="recipe-card-grid"
+  [attr.aria-label]="loading() ? ariaLabel() : null"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  [attr.role]="loading() ? 'status' : null"
+>
+  @if (loading()) {
+    @for (_ of skeletons(); track $index) {
+      <div class="recipe-skeleton" aria-hidden="true">
+        <div class="recipe-skeleton__image"></div>
+        <div class="recipe-skeleton__body">
+          <span class="recipe-skeleton__line recipe-skeleton__line--title"></span>
+          <span class="recipe-skeleton__line recipe-skeleton__line--badges"></span>
+          <span class="recipe-skeleton__line recipe-skeleton__line--meta"></span>
+          <span class="recipe-skeleton__line recipe-skeleton__line--ingredients"></span>
+        </div>
+      </div>
+    }
+    <span class="visually-hidden">{{ loadingLabel() }}</span>
+  } @else {
+    @for (recipe of recipes(); track recipe.id; let index = $index) {
+      <app-recipe-card
+        class="recipe-card--portrait-mobile"
+        [recipe]="recipe"
+        [imageLoading]="index < eagerImageCount() ? 'eager' : 'lazy'"
+      />
+    }
+  }
+</div>

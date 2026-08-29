@@ -1,6 +1,6 @@
 /**
  * Shared recipe facade tests for Preview/detail caching and optimistic favorite membership.
- * Phase 13 also protects favorite behavior for shared Preview consumers outside Discovery.
+ * Confirmed change events protect list synchronization for Card and Preview consumers.
  */
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -241,6 +241,50 @@ describe('RecipesFacade', () => {
     expect(saveFavorite).not.toHaveBeenCalled();
     expect(store.card(1)?.isSaved).toBe(false);
     expect(previewStore.get(1)?.isSaved).toBe(false);
+  });
+
+  it('announces a favorite change only after its mutation succeeds', () => {
+    const pending = new Subject<void>();
+    removeFavorite.mockReturnValue(pending);
+    const changes: { recipeId: number; isSaved: boolean }[] = [];
+    const facade = TestBed.inject(RecipesFacade);
+    facade.favoriteChanged$.subscribe(change => changes.push(change));
+
+    facade.toggleFavorite(8, true);
+    expect(changes).toEqual([]);
+
+    pending.next();
+    pending.complete();
+    expect(changes).toEqual([{ recipeId: 8, isSaved: false }]);
+  });
+
+  it('does not announce a favorite change when its mutation fails', () => {
+    removeFavorite.mockReturnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+    const changes: { recipeId: number; isSaved: boolean }[] = [];
+    const facade = TestBed.inject(RecipesFacade);
+    facade.favoriteChanged$.subscribe(change => changes.push(change));
+
+    facade.toggleFavorite(8, true);
+
+    expect(changes).toEqual([]);
+  });
+
+  it('does not announce a completed mutation from a previous identity generation', () => {
+    const pending = new Subject<void>();
+    removeFavorite.mockReturnValue(pending);
+    const changes: { recipeId: number; isSaved: boolean }[] = [];
+    const facade = TestBed.inject(RecipesFacade);
+    facade.favoriteChanged$.subscribe(change => changes.push(change));
+
+    facade.toggleFavorite(8, true);
+    TestBed.inject(RecipesStore).reset();
+    TestBed.inject(RecipePreviewStore).reset();
+    pending.next();
+    pending.complete();
+
+    expect(changes).toEqual([]);
   });
 
   it('toggles a cached Preview favorite when no discovery card is loaded', () => {

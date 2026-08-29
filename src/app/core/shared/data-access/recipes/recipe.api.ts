@@ -1,6 +1,6 @@
 /**
  * HTTP owner for recipe reads and mutations at the configured Appetee API boundary.
- * F-008 Phase 12 adds the dedicated lightweight Preview read beside discovery and full details.
+ * Discovery, Favorites, Preview, and detail consumers share this credential-scoped boundary.
  */
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Inject, Injectable } from '@angular/core';
@@ -8,6 +8,7 @@ import { Observable } from 'rxjs';
 
 import { API_URL } from '@app/core/api/api.config';
 import {
+  RecipeCardDto,
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
@@ -61,6 +62,17 @@ export class RecipesApi {
 
   removeFavorite(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/recipes/${id}/favorite`);
+  }
+
+  /** Reads the current user's compatible favorites without sending browser-owned identity data. */
+  getFavorites(limit?: number): Observable<readonly RecipeCardDto[]> {
+    const params = limit === undefined
+      ? undefined
+      : new HttpParams().set('limit', limit);
+    return this.http.get<readonly RecipeCardDto[]>(
+      `${this.apiUrl}/recipes/favorites`,
+      params ? { params } : {}
+    );
   }
 
   getPreview(id: number): Observable<RecipePreviewDto> {

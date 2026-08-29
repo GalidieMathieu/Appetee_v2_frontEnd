@@ -28,7 +28,7 @@ import {
   RecipeDiscoveryCriteria,
   RecipeMaximumDifficulty,
 } from '@app/core/shared/data-access/recipes/recipe.model';
-import { RecipeCardComponent } from '@app/core/shared/ui/recipe-experience/recipe-card/recipe-card.component';
+import { RecipeCardGridComponent } from '@app/core/shared/ui/recipe-card-grid/recipe-card-grid.component';
 import { IngredientAutocompleteComponent } from './ingredient-autocomplete.component';
 import { RecipeDiscoveryFacade } from '../state/recipe-discovery.facade';
 import {
@@ -53,7 +53,7 @@ import {
     IngredientAutocompleteComponent,
     MatIconModule,
     ReactiveFormsModule,
-    RecipeCardComponent,
+    RecipeCardGridComponent,
   ],
 })
 export class RecipesListComponent implements OnInit, OnDestroy {
@@ -84,7 +84,6 @@ export class RecipesListComponent implements OnInit, OnDestroy {
   protected readonly initialError = this.discoveryFacade.initialError;
   protected readonly isLoadingMore = this.discoveryFacade.isLoadingMore;
   protected readonly loadMoreError = this.discoveryFacade.loadMoreError;
-  protected readonly skeletonCards = Array.from({ length: 8 });
   protected readonly searchMaxLength = RECIPE_SEARCH_MAX_LENGTH;
   protected readonly badgeOptions = RECIPE_BADGE_OPTIONS;
   protected readonly maxTotalMinutesOptions = RECIPE_MAX_TOTAL_MINUTES_OPTIONS;

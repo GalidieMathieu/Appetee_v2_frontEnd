@@ -19,9 +19,6 @@
             role="search"
             (submit)="submitSearch($event)"
           >
-            <label class="visually-hidden" for="recipe-search-input">
-              Search recipes by recipe or ingredient name
-            </label>
             <div class="recipe-search__field">
               <mat-icon aria-hidden="true">search</mat-icon>
               <input
@@ -276,25 +273,11 @@
       </header>
 
       @if (isInitialLoading()) {
-        <div
-          class="recipe-results__grid"
-          aria-label="Loading recipes"
-          aria-busy="true"
-          role="status"
-        >
-          @for (_ of skeletonCards; track $index) {
-            <div class="recipe-skeleton" aria-hidden="true">
-              <div class="recipe-skeleton__image"></div>
-              <div class="recipe-skeleton__body">
-                <span class="recipe-skeleton__line recipe-skeleton__line--title"></span>
-                <span class="recipe-skeleton__line recipe-skeleton__line--badges"></span>
-                <span class="recipe-skeleton__line recipe-skeleton__line--meta"></span>
-                <span class="recipe-skeleton__line recipe-skeleton__line--ingredients"></span>
-              </div>
-            </div>
-          }
-          <span class="visually-hidden">Loading recipes…</span>
-        </div>
+        <app-recipe-card-grid
+          [recipes]="[]"
+          [loading]="true"
+          ariaLabel="Loading recipes"
+        />
       } @else if (initialError(); as errorMessage) {
         <div class="recipe-results__status recipe-results__status--error" role="alert">
           <mat-icon aria-hidden="true">error_outline</mat-icon>
@@ -309,15 +292,7 @@
           </button>
         </div>
       } @else if (recipes().length > 0) {
-        <div class="recipe-results__grid">
-          @for (recipe of recipes(); track recipe.id; let index = $index) {
-            <app-recipe-card
-              class="recipe-card--portrait-mobile"
-              [recipe]="recipe"
-              [imageLoading]="index < 4 ? 'eager' : 'lazy'"
-            />
-          }
-        </div>
+        <app-recipe-card-grid [recipes]="recipes()" />
 
         <div class="recipe-results__continuation">
           @if (hasMore()) {

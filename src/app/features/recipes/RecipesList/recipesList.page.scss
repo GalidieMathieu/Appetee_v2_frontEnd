@@ -260,12 +260,6 @@
   cursor: pointer;
 }
 
-.recipe-results__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
-}
-
 .recipe-results__status,
 .recipe-results__empty {
   display: grid;
@@ -334,93 +328,9 @@
   text-align: center;
 }
 
-.recipe-skeleton {
-  height: 20rem;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-surface);
-}
-
-.recipe-skeleton__image,
-.recipe-skeleton__line {
-  position: relative;
-  overflow: hidden;
-  background: var(--color-muted-light);
-}
-
-.recipe-skeleton__image::after,
-.recipe-skeleton__line::after {
-  position: absolute;
-  inset: 0;
-  content: '';
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--color-surface) 72%, transparent),
-    transparent
-  );
-  transform: translateX(-100%);
-  animation: recipe-skeleton-shimmer 1.3s ease-in-out infinite;
-}
-
-.recipe-skeleton__image {
-  height: 9.25rem;
-}
-
-.recipe-skeleton__body {
-  display: grid;
-  gap: 0.6rem;
-  padding: 0.8rem;
-}
-
-.recipe-skeleton__line {
-  display: block;
-  height: 1.25rem;
-  border-radius: 999px;
-}
-
-.recipe-skeleton__line--title {
-  width: 78%;
-  height: 2.35rem;
-}
-
-.recipe-skeleton__line--badges {
-  width: 68%;
-}
-
-.recipe-skeleton__line--meta {
-  width: 100%;
-  height: 2.2rem;
-}
-
-.recipe-skeleton__line--ingredients {
-  width: 74%;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-@keyframes recipe-skeleton-shimmer {
-  to {
-    transform: translateX(100%);
-  }
-}
-
 @media (min-width: 640px) {
   .recipes-page__container {
     padding-inline: 1.5rem;
-  }
-
-  .recipe-results__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -472,19 +382,10 @@
   .recipes-page__container {
     padding-inline: 2rem;
   }
-
-  .recipe-results__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .recipe-filters__switch span {
     transition: none;
-  }
-
-  .recipe-skeleton__image::after,
-  .recipe-skeleton__line::after {
-    animation: none;
   }
 }
