@@ -1,0 +1,48 @@
+<!-- Favorites owns list states only and delegates every recipe interaction to the shared Cards. -->
+<main class="favorites-page">
+  <section class="favorites-results" aria-labelledby="favorites-title">
+    <div class="favorites-page__container">
+      <header class="favorites-results__header">
+        <p class="text-eyebrow">Saved recipes</p>
+        <h1 id="favorites-title" class="text-section-title">Your Favorite Recipes</h1>
+        <p class="text-body-secondary">Recipes you've saved for later.</p>
+      </header>
+
+      @if (isLoading()) {
+        <app-recipe-card-grid
+          [recipes]="[]"
+          [loading]="true"
+          ariaLabel="Loading favorite recipes"
+          loadingLabel="Loading favorite recipes…"
+        />
+      } @else if (error(); as errorMessage) {
+        <div class="favorites-results__state favorites-results__state--error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <h2 class="text-title">Favorites could not be loaded</h2>
+          <p class="text-body-secondary">{{ errorMessage }}</p>
+          <button
+            type="button"
+            class="btn-link--primary text-button-white favorites-results__action"
+            (click)="retry()"
+          >
+            Try again
+          </button>
+        </div>
+      } @else if (isLoaded() && recipes().length > 0) {
+        <app-recipe-card-grid [recipes]="recipes()" />
+      } @else if (isLoaded()) {
+        <div class="favorites-results__state favorites-results__state--empty">
+          <mat-icon aria-hidden="true">favorite_border</mat-icon>
+          <h2 class="text-title">You haven't saved any recipes yet.</h2>
+          <p class="text-body-secondary">Save recipes you like and they'll appear here.</p>
+          <a
+            class="btn-link--primary text-button-white favorites-results__action"
+            routerLink="/recipes"
+          >
+            Explore Recipes
+          </a>
+        </div>
+      }
+    </div>
+  </section>
+</main>

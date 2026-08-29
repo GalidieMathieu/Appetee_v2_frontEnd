@@ -1,6 +1,6 @@
 /**
- * Root Angular provider configuration, including identity-scoped stores reset on session changes.
- * Phase 12 registers the shared Preview cache without changing discovery-store ownership.
+ * Root Angular provider configuration, including every identity-scoped store reset on session changes.
+ * Favorites joins shared recipe caches in the existing cookie-session reset workflow.
  */
 import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -23,6 +23,7 @@ import { IngredientDetailsStore } from './core/shared/data-access/ingredients/ad
 import { AdminIngredientStore } from './core/shared/data-access/ingredients/admin/admin-ingredient.store';
 import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
 import { RecipePreviewStore } from './core/shared/data-access/recipes/recipe-preview.store';
+import { FavoritesStore } from './features/favorites/state/favorites.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -38,6 +39,7 @@ export const appConfig: ApplicationConfig = {
     { provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipePreviewStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipeDetailsStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: FavoritesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: AdminRecipeStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: DietsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: IngredientsStore, multi: true },

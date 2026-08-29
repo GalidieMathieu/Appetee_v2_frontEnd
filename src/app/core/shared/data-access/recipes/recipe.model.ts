@@ -118,6 +118,12 @@ export interface FavoriteMutationFeedback {
   readonly message: string;
 }
 
+/** Successful shared favorite mutation notification for identity-scoped list consumers. */
+export interface RecipeFavoriteChange {
+  readonly recipeId: number;
+  readonly isSaved: boolean;
+}
+
 /** Applied user-visible criteria for the currently cached discovery chain. */
 export interface RecipeDiscoveryCriteria {
   readonly search: string;

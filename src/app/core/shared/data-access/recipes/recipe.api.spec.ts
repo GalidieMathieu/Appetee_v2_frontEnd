@@ -1,6 +1,6 @@
 /**
  * Contract tests for recipe HTTP methods and their exact query/body representation.
- * Phase 12 coverage protects the dedicated lightweight Preview route from full-detail reuse.
+ * Favorites coverage protects the current-user route and its optional bounded preview limit.
  */
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -8,6 +8,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { API_URL } from '@app/core/api/api.config';
 import {
+  RecipeCardDto,
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
@@ -34,6 +35,32 @@ describe('RecipesApi', () => {
   });
 
   afterEach(() => http.verify());
+
+  it('requests all current-user favorites without browser-owned identity parameters', () => {
+    const favorites: readonly RecipeCardDto[] = [];
+    let response: readonly RecipeCardDto[] | undefined;
+
+    api.getFavorites().subscribe(value => response = value);
+
+    const request = http.expectOne('/api/recipes/favorites');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual([]);
+    request.flush(favorites);
+    expect(response).toEqual(favorites);
+  });
+
+  it('adds only the bounded limit parameter for a Favorites preview consumer', () => {
+    api.getFavorites(4).subscribe();
+
+    const request = http.expectOne(candidate =>
+      candidate.url === '/api/recipes/favorites'
+      && candidate.params.get('limit') === '4'
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['limit']);
+    expect(request.request.params.has('userId')).toBe(false);
+    request.flush([]);
+  });
 
   it('requests the bounded discovery page contract from the recipes route', () => {
     const page: RecipeDiscoveryPageDto = {

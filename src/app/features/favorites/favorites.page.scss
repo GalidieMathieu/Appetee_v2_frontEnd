@@ -1,0 +1,67 @@
+/* Favorites mirrors the Recipe Discovery shell and consumes its extracted full-page grid. */
+.favorites-page {
+  min-height: 100%;
+  background: var(--color-surface);
+}
+
+.favorites-page__container {
+  width: min(100%, 1254px);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.favorites-results {
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0 clamp(2.5rem, 6vw, 5rem);
+}
+
+.favorites-results__header {
+  display: grid;
+  gap: 0.55rem;
+  margin-bottom: 2rem;
+}
+
+.favorites-results__state {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  min-height: 18rem;
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.favorites-results__state mat-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  color: var(--color-primary);
+  font-size: 3.5rem;
+}
+
+.favorites-results__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  margin-top: 0.35rem;
+  border: 0;
+  border-radius: var(--radius);
+  padding-inline: 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.favorites-results__action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .favorites-page__container {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .favorites-page__container {
+    padding-inline: 2rem;
+  }
+}

@@ -1,6 +1,6 @@
 /**
  * Shared by-ID recipe data orchestration for Preview/detail caches and favorite membership.
- * Discovery criteria/order remain feature-owned while Phase 12 Preview data stays session-scoped.
+ * Confirmed mutation notifications synchronize feature-owned lists without exposing raw requests.
  */
 import { Injectable, Signal, computed, signal } from '@angular/core';
 import {
@@ -26,6 +26,7 @@ import {
   RecipeCardDto,
   RecipeDetailDto,
   RecipePreviewDto,
+  RecipeFavoriteChange,
 } from './recipe.model';
 import { RecipesApi } from './recipe.api';
 import { RecipeDetailsStore } from './recipe-details.store';
@@ -48,8 +49,11 @@ export class RecipesFacade {
     (FavoriteMutationFeedback & { readonly generation: number }) | null
   >(null);
   private readonly queryInvalidatedSubject = new Subject<void>();
+  private readonly favoriteChangedSubject = new Subject<RecipeFavoriteChange>();
 
   readonly queryInvalidated$ = this.queryInvalidatedSubject.asObservable();
+  /** Emits only after the server confirms a favorite mutation. */
+  readonly favoriteChanged$ = this.favoriteChangedSubject.asObservable();
   readonly favoriteFeedback = computed<FavoriteMutationFeedback | null>(() => {
     const feedback = this.favoriteFeedbackSignal();
     return feedback?.generation === this.recipesStore.state().generation
@@ -215,6 +219,14 @@ export class RecipesFacade {
 
     request$.pipe(
       timeout(10000),
+      tap(() => {
+        if (
+          this.recipesStore.state().generation === recipeGeneration
+          && this.previewStore.generation() === previewGeneration
+        ) {
+          this.favoriteChangedSubject.next({ recipeId, isSaved: desiredSaved });
+        }
+      }),
       catchError((error: unknown) => {
         if (this.recipesStore.state().generation === recipeGeneration) {
           this.recipesStore.updateSaved(recipeId, previousSaved);

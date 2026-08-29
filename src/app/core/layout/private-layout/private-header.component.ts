@@ -41,7 +41,7 @@ export class PrivateHeaderComponent {
   nav: NavItem[] = [
     { label: 'Home', path: '/home', exact: true },
     { label: 'Recipes', path: '/recipes' },
-    { label: 'Diet & Needs', path: '/diet-needs' },
+    { label: 'Favorites', path: '/favorites' },
     { label: 'Profile', path: '/profile' },
     { label: 'Create Recipes', path: '/admin-recipes/create' },
 
