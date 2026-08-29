@@ -1,12 +1,22 @@
+/**
+ * Authenticated-session recipe discovery cache with normalized card ordering and request state.
+ * Phase 11 retains matching SPA queries and rejects responses from invalidated generations.
+ */
 import { Injectable, computed, signal } from '@angular/core';
 
 import { EntityRequestState } from '../generic-template/entity-cache-store';
 import { ResettableStore } from '../../utils/resettable-store';
-import { RecipeCardDto, RecipeDiscoveryPageDto } from './recipe.model';
+import {
+  RecipeCardDto,
+  RecipeDiscoveryCriteria,
+  RecipeDiscoveryPageDto,
+} from './recipe.model';
 
 const IDLE_REQUEST: EntityRequestState = { status: 'idle', error: null };
 
 export interface RecipesState {
+  readonly criteria: RecipeDiscoveryCriteria;
+  readonly queryKey: string | null;
   readonly cardsById: Readonly<Record<number, RecipeCardDto>>;
   readonly orderedIds: readonly number[];
   readonly nextCursor: string | null;
@@ -21,8 +31,23 @@ export interface RecipeDiscoveryContinuation {
   readonly generation: number;
 }
 
-function initialState(generation = 0): RecipesState {
+/** Creates an empty discovery chain while preserving an explicit identity/query generation. */
+function initialState(
+  generation = 0,
+  criteria: RecipeDiscoveryCriteria = {
+    search: '',
+    ingredientIds: [],
+    requireAllIngredients: true,
+    badges: [],
+    maxTotalMinutes: null,
+    maxDifficulty: null,
+    savedOnly: false,
+  },
+  queryKey: string | null = null
+): RecipesState {
   return {
+    criteria,
+    queryKey,
     cardsById: {},
     orderedIds: [],
     nextCursor: null,
@@ -38,6 +63,31 @@ export class RecipesStore implements ResettableStore {
   private readonly stateSignal = signal<RecipesState>(initialState());
 
   readonly state = this.stateSignal.asReadonly();
+  readonly criteria = computed(() => this.stateSignal().criteria);
+  readonly appliedSearch = computed(() => this.stateSignal().criteria.search);
+  readonly appliedIngredientIds = computed(
+    () => this.stateSignal().criteria.ingredientIds
+  );
+  readonly appliedRequireAllIngredients = computed(
+    () => this.stateSignal().criteria.requireAllIngredients
+  );
+  readonly appliedBadges = computed(() => this.stateSignal().criteria.badges);
+  readonly appliedMaxTotalMinutes = computed(
+    () => this.stateSignal().criteria.maxTotalMinutes
+  );
+  readonly appliedMaxDifficulty = computed(
+    () => this.stateSignal().criteria.maxDifficulty
+  );
+  readonly appliedSavedOnly = computed(() => this.stateSignal().criteria.savedOnly);
+  readonly hasAppliedAdvancedFilters = computed(() => {
+    const criteria = this.stateSignal().criteria;
+    return criteria.ingredientIds.length > 0
+      || criteria.badges.length > 0
+      || criteria.maxTotalMinutes !== null
+      || criteria.maxDifficulty !== null
+      || criteria.savedOnly;
+  });
+  readonly queryKey = computed(() => this.stateSignal().queryKey);
   readonly cards = computed<readonly RecipeCardDto[]>(() => {
     const state = this.stateSignal();
     return state.orderedIds.flatMap(id => {
@@ -54,18 +104,34 @@ export class RecipesStore implements ResettableStore {
   readonly isLoadingMore = computed(() => this.loadMoreRequest().status === 'loading');
   readonly loadMoreError = computed(() => this.loadMoreRequest().error);
 
-  beginInitialRequest(): number | null {
+  /** Reuses loaded cards only when canonical applied intent matches the cached query key. */
+  reuseQuery(criteria: RecipeDiscoveryCriteria, queryKey: string): boolean {
     const current = this.stateSignal();
-    if (current.initialRequest.status === 'loading') return null;
+    if (current.queryKey !== queryKey || current.initialRequest.status === 'idle') return false;
+
+    this.stateSignal.update(state => ({ ...state, criteria }));
+    return true;
+  }
+
+  /** Replaces the current chain and increments generation so older responses become stale. */
+  beginQuery(criteria: RecipeDiscoveryCriteria, queryKey: string): number | null {
+    const current = this.stateSignal();
+    if (
+      current.initialRequest.status === 'loading'
+      && current.queryKey === queryKey
+    ) {
+      return null;
+    }
 
     const generation = current.generation + 1;
     this.stateSignal.set({
-      ...initialState(generation),
+      ...initialState(generation, criteria, queryKey),
       initialRequest: { status: 'loading', error: null },
     });
     return generation;
   }
 
+  /** Accepts page one only for the active generation and preserves backend ordering. */
   replacePage(page: RecipeDiscoveryPageDto, generation: number): boolean {
     if (this.stateSignal().generation !== generation) return false;
 
@@ -91,6 +157,7 @@ export class RecipesStore implements ResettableStore {
     return true;
   }
 
+  /** Returns one continuation token only when another next-page request cannot compete. */
   beginLoadMoreRequest(): RecipeDiscoveryContinuation | null {
     const state = this.stateSignal();
     if (
@@ -109,6 +176,7 @@ export class RecipesStore implements ResettableStore {
     return { cursor: state.nextCursor, generation: state.generation };
   }
 
+  /** Appends an active-generation page in server order while defensively de-duplicating IDs. */
   appendPage(page: RecipeDiscoveryPageDto, generation: number): boolean {
     if (this.stateSignal().generation !== generation) return false;
 
@@ -147,6 +215,26 @@ export class RecipesStore implements ResettableStore {
     return true;
   }
 
+  /** Patches one loaded projection for optimistic favorite synchronization without refetching. */
+  updateSaved(recipeId: number, isSaved: boolean): boolean {
+    const existing = this.stateSignal().cardsById[recipeId];
+    if (!existing) return false;
+
+    this.stateSignal.update(state => ({
+      ...state,
+      cardsById: {
+        ...state.cardsById,
+        [recipeId]: { ...existing, isSaved },
+      },
+    }));
+    return true;
+  }
+
+  card(recipeId: number): RecipeCardDto | null {
+    return this.stateSignal().cardsById[recipeId] ?? null;
+  }
+
+  /** Clears all identity-scoped discovery data and invalidates every outstanding response. */
   reset(): void {
     this.stateSignal.update(state => initialState(state.generation + 1));
   }

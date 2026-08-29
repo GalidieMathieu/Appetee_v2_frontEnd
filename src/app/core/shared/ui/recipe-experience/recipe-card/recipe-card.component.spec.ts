@@ -1,14 +1,42 @@
+/*
+ * Recipe-experience Card tests protect canonical rendering and direct Preview/favorite delegation.
+ * Feature consumers must not recreate these interactions through output bindings.
+ */
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 
 import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model';
+import { RecipeExperienceFacade } from '../recipe-experience.facade';
 
 import { RecipeCardComponent } from './recipe-card.component';
 
 describe('RecipeCardComponent', () => {
+  const openPreview = vi.fn();
+  const toggleFavorite = vi.fn();
+  const favoriteSavedState = vi.fn((_id: number, fallback: boolean) => fallback);
+  const isFavoritePending = vi.fn(() => false);
+  const favoriteFeedbackFor = vi.fn(() => null);
+
   beforeEach(async () => {
+    openPreview.mockReset();
+    toggleFavorite.mockReset();
+    favoriteSavedState.mockClear();
+    isFavoritePending.mockReset();
+    isFavoritePending.mockReturnValue(false);
+    favoriteFeedbackFor.mockReset();
+    favoriteFeedbackFor.mockReturnValue(null);
     await TestBed.configureTestingModule({
       imports: [RecipeCardComponent],
+      providers: [{
+        provide: RecipeExperienceFacade,
+        useValue: {
+          openPreview,
+          toggleFavorite,
+          favoriteSavedState,
+          isFavoritePending,
+          favoriteFeedbackFor,
+        },
+      }],
     }).compileComponents();
   });
 
@@ -27,12 +55,15 @@ describe('RecipeCardComponent', () => {
     expect(root.textContent).not.toContain('meal type');
 
     const cardStyle = getComputedStyle(root.querySelector('.recipe-card')!);
+    const hostStyle = getComputedStyle(root);
     const badgesStyle = getComputedStyle(root.querySelector('.recipe-card__badge-row')!);
     const ingredientsStyle = getComputedStyle(root.querySelector('.recipe-card__featured')!);
     const metaItemStyle = getComputedStyle(root.querySelector('.recipe-card__meta > span')!);
     const badgeStyle = getComputedStyle(root.querySelector('.recipe-card__badge')!);
     const ingredientStyle = getComputedStyle(root.querySelector('.recipe-card__ingredient')!);
-    expect(cardStyle.height).toBe('20rem');
+    expect(cardStyle.height).toBe('var(--recipe-card-height, 20rem)');
+    expect(hostStyle.display).toBe('block');
+    expect(hostStyle.width).toBe('100%');
     expect(badgesStyle.flexWrap).toBe('nowrap');
     expect(badgesStyle.justifyContent).toBe('flex-start');
     expect(ingredientsStyle.flexWrap).toBe('nowrap');
@@ -73,10 +104,8 @@ describe('RecipeCardComponent', () => {
     expect(visibleChips(ingredients)).toHaveLength(3);
   });
 
-  it('emits selection for click, Enter, and Space', () => {
+  it('opens Preview directly for click, Enter, and Space', () => {
     const fixture = createFixture(createCard());
-    const selected = vi.fn();
-    fixture.componentInstance.recipeSelected.subscribe(selected);
     const selection = fixture.nativeElement.querySelector(
       '.recipe-card__selection'
     ) as HTMLElement;
@@ -85,21 +114,35 @@ describe('RecipeCardComponent', () => {
     selection.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     selection.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
 
-    expect(selected).toHaveBeenCalledTimes(3);
-    expect(selected).toHaveBeenNthCalledWith(1, 42);
+    expect(openPreview).toHaveBeenCalledTimes(3);
+    expect(openPreview).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ id: 42, isSaved: false })
+    );
   });
 
   it('keeps favorite activation independent from card selection', () => {
     const fixture = createFixture(createCard());
-    const selected = vi.fn();
-    const favorite = vi.fn();
-    fixture.componentInstance.recipeSelected.subscribe(selected);
-    fixture.componentInstance.favoriteSelected.subscribe(favorite);
 
     (fixture.nativeElement.querySelector('.recipe-card__favorite') as HTMLButtonElement).click();
 
-    expect(favorite).toHaveBeenCalledWith(42);
-    expect(selected).not.toHaveBeenCalled();
+    expect(toggleFavorite).toHaveBeenCalledWith(42, false);
+    expect(openPreview).not.toHaveBeenCalled();
+  });
+
+  it('disables favorite activation while that recipe mutation is pending', () => {
+    isFavoritePending.mockReturnValue(true);
+    const fixture = createFixture(createCard());
+    const button = fixture.nativeElement.querySelector(
+      '.recipe-card__favorite'
+    ) as HTMLButtonElement;
+
+    button.click();
+
+    expect(button.disabled).toBe(true);
+    expect(button.getAttribute('aria-busy')).toBe('true');
+    expect(button.textContent).toContain('hourglass_top');
+    expect(toggleFavorite).not.toHaveBeenCalled();
   });
 
   it('uses the placeholder for a null image and respects requested loading priority', () => {

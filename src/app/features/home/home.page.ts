@@ -1,8 +1,12 @@
+/**
+ * Home renders the public Recipe Card entry point without coordinating Preview or favorite UI.
+ * Recommendation/search behavior remains unchanged and outside this shared-experience refactor.
+ */
 import { Component } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model';
-import { RecipeCardComponent } from '@app/core/shared/ui/recipe-card/recipe-card.component';
+import { RecipeCardComponent } from '@app/core/shared/ui/recipe-experience/recipe-card/recipe-card.component';
 
 type ViewFilter = 'all' | 'saved';
 type MealTypeFilter = 'all' | 'prep' | 'day';
@@ -74,8 +78,6 @@ export class HomePageComponent {
   protected onMealTypeFilterSelect(filter: MealTypeFilter): void {
     this.selectedMealTypeFilter = filter;
   }
-
-  protected onRecipeFavoriteToggle(_recipeId: number): void {}
 
   protected onExploreRecipesClick(): void {}
 }

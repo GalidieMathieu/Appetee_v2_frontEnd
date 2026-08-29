@@ -1,3 +1,4 @@
+<!-- Home supplies Recipe Card data only; the Card owns the complete shared interaction flow. -->
 <main class="home-page">
   <section class="home-controls" aria-label="Recipe search and filters">
     <div class="home-page__container home-controls__inner">
@@ -92,7 +93,6 @@
             <app-recipe-card
               [recipe]="recipe"
               [imageLoading]="index === 0 ? 'eager' : 'lazy'"
-              (favoriteSelected)="onRecipeFavoriteToggle($event)"
             />
           }
         </div>

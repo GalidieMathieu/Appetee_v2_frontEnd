@@ -1,3 +1,8 @@
+<!--
+  Recipe Discovery view for Phase 11 canonical search, responsive filters, result states, and cards.
+  One logical panel expands inline on desktop and becomes a focus-trapped full-screen mobile dialog.
+-->
+<!-- Recipe Discovery owns query/list rendering; each shared Card owns its interaction experience. -->
 <main class="recipes-page">
   <section class="recipe-results" aria-labelledby="recipes-title">
     <div class="recipes-page__container">
@@ -7,6 +12,261 @@
         <p class="text-body-secondary">
           Recipes are matched to your saved dietary needs and ingredient restrictions.
         </p>
+
+        <div class="recipe-discovery-controls">
+          <form
+            class="recipe-search text-control-small"
+            role="search"
+            (submit)="submitSearch($event)"
+          >
+            <label class="visually-hidden" for="recipe-search-input">
+              Search recipes by recipe or ingredient name
+            </label>
+            <div class="recipe-search__field">
+              <mat-icon aria-hidden="true">search</mat-icon>
+              <input
+                id="recipe-search-input"
+                name="search"
+                type="search"
+                autocomplete="off"
+                placeholder="Search recipes or ingredients"
+                [formControl]="searchControl"
+                [attr.maxlength]="searchMaxLength"
+              />
+            </div>
+            <button
+              type="submit"
+              class="btn-link--primary text-button-white text-control-small recipe-search__submit"
+            >
+              <span class="btn-loading__content">
+                <mat-icon aria-hidden="true">search</mat-icon>
+                Search
+              </span>
+            </button>
+            <button
+              #filtersTrigger
+              type="button"
+              class="btn-selection text-button text-control-small recipe-search__filters"
+              aria-controls="recipe-advanced-filters"
+              [attr.aria-expanded]="filtersExpanded()"
+              (click)="toggleFilters()"
+            >
+              <mat-icon aria-hidden="true">tune</mat-icon>
+              Filters@if (appliedFilterCount() > 0) { ({{ appliedFilterCount() }}) }
+            </button>
+          </form>
+
+          @if (filtersExpanded()) {
+            <section
+              id="recipe-advanced-filters"
+              class="recipe-filters"
+              aria-label="Advanced recipe filters"
+              [attr.role]="mobileFiltersActive() ? 'dialog' : 'region'"
+              [attr.aria-modal]="mobileFiltersActive() ? 'true' : null"
+              [cdkTrapFocus]="mobileFiltersActive()"
+              [cdkTrapFocusAutoCapture]="mobileFiltersActive()"
+              (keydown.escape)="toggleFilters()"
+            >
+              <header class="recipe-filters__header">
+                <div>
+                  <p class="text-eyebrow">Advanced filters</p>
+                  <h2 id="recipe-filters-title" class="text-title text-control-small">
+                    Narrow your recipes
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  class="btn-selection recipe-filters__close"
+                  aria-label="Close filters without applying changes"
+                  (click)="toggleFilters()"
+                >
+                  <mat-icon aria-hidden="true">close</mat-icon>
+                </button>
+              </header>
+
+              <app-ingredient-autocomplete
+                [selectedIngredients]="draftIngredients()"
+                (selectedIngredientsChange)="updateDraftIngredients($event)"
+              />
+
+              <div class="recipe-filters__saved recipe-filters__ingredient-mode">
+                <p class="text-button text-control-small">Require all selected ingredients</p>
+                <button
+                  type="button"
+                  class="recipe-filters__switch"
+                  role="switch"
+                  [class.is-selected]="draftRequireAllIngredients()"
+                  [attr.aria-checked]="draftRequireAllIngredients()"
+                  aria-label="Require all selected ingredients"
+                  (click)="toggleDraftRequireAllIngredients()"
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+              </div>
+
+              <fieldset class="recipe-filters__group recipe-filters__group--badges">
+                <legend class="text-button text-control-small">Categories</legend>
+                <div class="recipe-filters__badge-options">
+                  @for (badge of badgeOptions; track badge) {
+                    <button
+                      type="button"
+                      class="btn-selection text-button text-control-small recipe-filters__badge"
+                      [class.is-selected]="isDraftBadgeSelected(badge)"
+                      [attr.aria-pressed]="isDraftBadgeSelected(badge)"
+                      (click)="toggleDraftBadge(badge)"
+                    >
+                      {{ badge }}
+                    </button>
+                  }
+                </div>
+              </fieldset>
+
+              <div class="recipe-filters__selectors">
+                <section class="recipe-filters__range-card">
+                  <div class="recipe-filters__range-heading">
+                    <label
+                      for="recipe-max-total-minutes"
+                      class="text-button text-control-small"
+                    >
+                      Maximum total time
+                    </label>
+                    <output class="text-button text-control-small">
+                      {{ draftMaxTotalMinutesLabel() }}
+                    </output>
+                  </div>
+                  <p class="text-small text-body-secondary">
+                    Recipes taking this amount of time or less
+                  </p>
+                  <input
+                    id="recipe-max-total-minutes"
+                    class="input-range--primary"
+                    name="maxTotalMinutes"
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="1"
+                    [value]="draftMaxTotalMinutesIndex()"
+                    [style.--input-range-progress]="draftMaxTotalMinutesIndex() * 20 + '%'"
+                    [attr.aria-valuetext]="draftMaxTotalMinutesLabel()"
+                    (input)="updateDraftMaxTotalMinutes($event)"
+                  />
+                  <div class="recipe-filters__range-labels text-small" aria-hidden="true">
+                    <span>Any</span><span>15m</span><span>30m</span>
+                    <span>45m</span><span>60m</span><span>90m+</span>
+                  </div>
+                </section>
+
+                <section class="recipe-filters__range-card">
+                  <div class="recipe-filters__range-heading">
+                    <label
+                      for="recipe-max-difficulty"
+                      class="text-button text-control-small"
+                    >
+                      Maximum difficulty
+                    </label>
+                    <output class="text-button text-control-small">
+                      {{ draftMaxDifficultyLabel() }}
+                    </output>
+                  </div>
+                  <p class="text-small text-body-secondary">
+                    I don't want anything harder than this
+                  </p>
+                  <input
+                    id="recipe-max-difficulty"
+                    class="input-range--primary"
+                    name="maxDifficulty"
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="1"
+                    [value]="draftMaxDifficultyIndex()"
+                    [style.--input-range-progress]="draftMaxDifficultyIndex() * 50 + '%'"
+                    [attr.aria-valuetext]="draftMaxDifficultyLabel()"
+                    (input)="updateDraftMaxDifficulty($event)"
+                  />
+                  <div class="recipe-filters__range-labels text-small" aria-hidden="true">
+                    <span>Easy</span><span>Medium</span><span>Hard</span>
+                  </div>
+                </section>
+              </div>
+
+              <div class="recipe-filters__saved">
+                <p class="text-button text-control-small">Saved recipes only</p>
+                <button
+                  type="button"
+                  class="recipe-filters__switch"
+                  role="switch"
+                  [class.is-selected]="draftSavedOnly()"
+                  [attr.aria-checked]="draftSavedOnly()"
+                  aria-label="Saved recipes only"
+                  (click)="toggleDraftSavedOnly()"
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+              </div>
+
+              <footer class="recipe-filters__actions">
+                <button
+                  type="button"
+                  class="recipe-filters__clear text-button text-control-small"
+                  (click)="clearDraftFilters()"
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  class="btn-link--primary text-button-white text-control-small recipe-filters__apply"
+                  (click)="applyFilters()"
+                >
+                  Apply filters
+                </button>
+              </footer>
+            </section>
+          }
+        </div>
+
+        @if (hasVisibleAppliedFilters()) {
+          <div class="recipe-applied-filters" aria-label="Applied recipe filters">
+            <span class="text-small">Applied:</span>
+            @for (ingredient of appliedIngredients(); track ingredient.id) {
+              <button
+                type="button"
+                class="btn-selection recipe-applied-filter text-chip"
+                [attr.aria-label]="'Remove ' + ingredient.name + ' filter'"
+                (click)="removeAppliedIngredient(ingredient.id)"
+              >
+                {{ ingredient.name }} <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            }
+            @for (badge of appliedBadges(); track badge) {
+              <button
+                type="button"
+                class="btn-selection recipe-applied-filter text-chip"
+                [attr.aria-label]="'Remove ' + badge + ' filter'"
+                (click)="removeAppliedBadge(badge)"
+              >
+                {{ badge }} <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            }
+            @if (appliedSavedOnly()) {
+              <button
+                type="button"
+                class="btn-selection recipe-applied-filter text-chip"
+                aria-label="Remove saved recipes only filter"
+                (click)="toggleSavedOnly()"
+              >
+                Saved only <mat-icon aria-hidden="true">close</mat-icon>
+              </button>
+            }
+            <button
+              type="button"
+              class="recipe-applied-filters__clear text-button"
+              (click)="clearAllAppliedFilters()"
+            >
+              Clear all
+            </button>
+          </div>
+        }
 
         @if (!isInitialLoading() && !initialError()) {
           <p class="text-small recipe-results__loaded-count">
@@ -52,6 +312,7 @@
         <div class="recipe-results__grid">
           @for (recipe of recipes(); track recipe.id; let index = $index) {
             <app-recipe-card
+              class="recipe-card--portrait-mobile"
               [recipe]="recipe"
               [imageLoading]="index < 4 ? 'eager' : 'lazy'"
             />
@@ -98,11 +359,45 @@
         </div>
       } @else {
         <div class="recipe-results__empty">
-          <mat-icon aria-hidden="true">eco</mat-icon>
-          <h2 class="text-title">No compatible recipes available</h2>
-          <p class="text-body-secondary">
-            No recipes currently match your saved dietary needs and ingredient restrictions.
-          </p>
+          @if (appliedSavedOnly()) {
+            <mat-icon aria-hidden="true">favorite_border</mat-icon>
+            <h2 class="text-title">No saved recipes match your criteria</h2>
+            <p class="text-body-secondary">
+              Show all compatible recipes or change your search.
+            </p>
+            <button
+              type="button"
+              class="btn-selection text-button recipe-results__action"
+              (click)="toggleSavedOnly()"
+            >
+              Show all recipes
+            </button>
+          } @else if (hasAppliedAdvancedFilters()) {
+            <mat-icon aria-hidden="true">filter_alt_off</mat-icon>
+            <h2 class="text-title">No recipes match your filters</h2>
+            <p class="text-body-secondary">
+              Remove one or more filters to see additional compatible recipes.
+            </p>
+            <button
+              type="button"
+              class="btn-selection text-button recipe-results__action"
+              (click)="clearAllAppliedFilters()"
+            >
+              Clear filters
+            </button>
+          } @else if (appliedSearch(); as search) {
+            <mat-icon aria-hidden="true">search_off</mat-icon>
+            <h2 class="text-title">No recipes found for “{{ search }}”</h2>
+            <p class="text-body-secondary">
+              Try a different recipe or ingredient name.
+            </p>
+          } @else {
+            <mat-icon aria-hidden="true">eco</mat-icon>
+            <h2 class="text-title">No compatible recipes available</h2>
+            <p class="text-body-secondary">
+              No recipes currently match your saved dietary needs and ingredient restrictions.
+            </p>
+          }
         </div>
       }
     </div>

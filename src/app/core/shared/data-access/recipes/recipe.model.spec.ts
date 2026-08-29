@@ -1,9 +1,14 @@
+/**
+ * Compile-time and runtime contract assertions for purpose-specific recipe response models.
+ * Phase 12 protects the lightweight Preview shape from ambiguous images and complete-detail data.
+ */
 import { IngredientAdminDetailDto } from '../ingredients/ingredient.model';
 import { User } from '../user/user.model';
 import {
   RecipeCardDto,
   RecipeDetailDto,
   RecipeDiscoveryPageDto,
+  RecipePreviewDto,
   RecipeSummaryDto,
 } from './recipe.model';
 
@@ -20,15 +25,17 @@ describe('recipe image contracts', () => {
       HasKey<RecipeCardDto, 'cardImageUrl'>,
       HasKey<RecipeSummaryDto, 'previewImageUrl'>,
       HasKey<RecipeDetailDto, 'previewImageUrl'>,
-    ] = [true, true, true];
+      HasKey<RecipePreviewDto, 'previewImageUrl'>,
+    ] = [true, true, true, true];
     const ambiguousImageKeys: [
       HasKey<RecipeCardDto, 'imageUrl'>,
       HasKey<RecipeSummaryDto, 'imageUrl'>,
       HasKey<RecipeDetailDto, 'imageUrl'>,
-    ] = [false, false, false];
+      HasKey<RecipePreviewDto, 'imageUrl'>,
+    ] = [false, false, false, false];
 
-    expect(explicitImageKeys).toEqual([true, true, true]);
-    expect(ambiguousImageKeys).toEqual([false, false, false]);
+    expect(explicitImageKeys).toEqual([true, true, true, true]);
+    expect(ambiguousImageKeys).toEqual([false, false, false, false]);
   });
 
   it('retains imageUrl on unrelated ingredient and user contracts', () => {
@@ -38,6 +45,26 @@ describe('recipe image contracts', () => {
     ] = [true, true];
 
     expect(unrelatedImageKeys).toEqual([true, true]);
+  });
+});
+
+describe('recipe Preview contract', () => {
+  it('keeps lightweight ingredients and excludes complete authoring/cooking fields', () => {
+    const previewKeys: [
+      HasKey<RecipePreviewDto, 'description'>,
+      HasKey<RecipePreviewDto, 'proteinPerServing'>,
+      HasKey<RecipePreviewDto, 'isSaved'>,
+    ] = [true, true, true];
+    const completeDetailKeys: [
+      HasKey<RecipePreviewDto, 'instructions'>,
+      HasKey<RecipePreviewDto, 'servings'>,
+      HasKey<RecipePreviewDto, 'difficulty'>,
+      HasKey<RecipePreviewDto['ingredients'][number], 'quantity'>,
+      HasKey<RecipePreviewDto['ingredients'][number], 'imageUrl'>,
+    ] = [false, false, false, false, false];
+
+    expect(previewKeys).toEqual([true, true, true]);
+    expect(completeDetailKeys).toEqual([false, false, false, false, false]);
   });
 });
 

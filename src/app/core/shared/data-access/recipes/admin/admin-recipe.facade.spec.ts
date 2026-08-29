@@ -1,3 +1,7 @@
+/**
+ * Admin mutation tests protect multipart authority boundaries and shared cache invalidation.
+ * Phase 12 verifies an updated recipe cannot leave a stale lightweight Preview cached.
+ */
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, of, throwError } from 'rxjs';
@@ -12,10 +16,16 @@ import { AdminRecipeStore } from './admin-recipe.store';
 describe('AdminRecipeFacade', () => {
   const create = vi.fn();
   const update = vi.fn();
+  const invalidateDetail = vi.fn();
+  const invalidatePreview = vi.fn();
+  const invalidateQueries = vi.fn();
 
   beforeEach(() => {
     create.mockReset();
     update.mockReset();
+    invalidateDetail.mockReset();
+    invalidatePreview.mockReset();
+    invalidateQueries.mockReset();
     create.mockReturnValue(of(createSummary()));
     update.mockReturnValue(of(createSummary()));
 
@@ -29,7 +39,7 @@ describe('AdminRecipeFacade', () => {
         },
         {
           provide: RecipesFacade,
-          useValue: { invalidateDetail: vi.fn(), invalidateQueries: vi.fn() },
+          useValue: { invalidateDetail, invalidatePreview, invalidateQueries },
         },
       ],
     });
@@ -89,6 +99,16 @@ describe('AdminRecipeFacade', () => {
     expect(await firstValueFrom(facade.createRecipeWithDetails(createRequest())))
       .toEqual(createSummary());
     expect(await firstValueFrom(facade.error$)).toBeNull();
+  });
+
+  it('invalidates detail, Preview, and discovery data after updating one recipe', async () => {
+    const facade = TestBed.inject(AdminRecipeFacade);
+
+    await firstValueFrom(facade.updateRecipeWithDetails(42, createRequest()));
+
+    expect(invalidateDetail).toHaveBeenCalledWith(42);
+    expect(invalidatePreview).toHaveBeenCalledWith(42);
+    expect(invalidateQueries).toHaveBeenCalledOnce();
   });
 });
 

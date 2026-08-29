@@ -1,3 +1,7 @@
+/**
+ * Public UI entry point for the shared recipe experience used by every Recipe Card surface.
+ * It owns accessible Card interaction while UI orchestration stays in RecipeExperienceFacade.
+ */
 import { CurrencyPipe, DecimalPipe, isPlatformBrowser } from '@angular/common';
 import {
   AfterViewInit,
@@ -10,12 +14,12 @@ import {
   computed,
   inject,
   input,
-  output,
   signal,
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model';
+import { RecipeExperienceFacade } from '../recipe-experience.facade';
 
 export type RecipeCardImageLoading = 'eager' | 'lazy';
 
@@ -29,6 +33,7 @@ export type RecipeCardImageLoading = 'eager' | 'lazy';
 })
 export class RecipeCardComponent implements AfterViewInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly recipeExperience = inject(RecipeExperienceFacade);
   private resizeObserver: ResizeObserver | null = null;
 
   @ViewChild('badgeRow') private badgeRow?: ElementRef<HTMLElement>;
@@ -37,8 +42,18 @@ export class RecipeCardComponent implements AfterViewInit, OnDestroy {
   readonly recipe = input.required<RecipeCardDto>();
   readonly imageLoading = input<RecipeCardImageLoading>('lazy');
 
-  readonly recipeSelected = output<number>();
-  readonly favoriteSelected = output<number>();
+  protected readonly isSaved = computed(() =>
+    this.recipeExperience.favoriteSavedState(
+      this.recipe().id,
+      this.recipe().isSaved
+    )
+  );
+  protected readonly favoritePending = computed(() =>
+    this.recipeExperience.isFavoritePending(this.recipe().id)
+  );
+  protected readonly favoriteFeedback = computed(() =>
+    this.recipeExperience.favoriteFeedbackFor(this.recipe().id)
+  );
 
   protected readonly resolvedImageUrl = computed(() =>
     this.recipe().cardImageUrl ?? 'assets/icons/chef-hat.png'
@@ -68,7 +83,7 @@ export class RecipeCardComponent implements AfterViewInit, OnDestroy {
   }
 
   protected selectRecipe(): void {
-    this.recipeSelected.emit(this.recipe().id);
+    this.recipeExperience.openPreview({ ...this.recipe(), isSaved: this.isSaved() });
   }
 
   protected onSelectionKeydown(event: KeyboardEvent): void {
@@ -79,7 +94,8 @@ export class RecipeCardComponent implements AfterViewInit, OnDestroy {
 
   protected onFavoriteClick(event: MouseEvent): void {
     event.stopPropagation();
-    this.favoriteSelected.emit(this.recipe().id);
+    if (this.favoritePending()) return;
+    this.recipeExperience.toggleFavorite(this.recipe().id, this.isSaved());
   }
 
   private recalculateVisibleItems(): void {

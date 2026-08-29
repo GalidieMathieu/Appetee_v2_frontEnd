@@ -1,0 +1,159 @@
+<!--
+  Recipe-experience Preview keeps compact metric labels/values while Preview-only content moves
+  through loading, error, and success states; total-time wording mirrors the response contract.
+-->
+<article class="recipe-quick-preview">
+  <header class="recipe-quick-preview__media">
+    <img
+      class="recipe-quick-preview__image"
+      [src]="imageUrl()"
+      [alt]="name()"
+      width="720"
+      height="300"
+    />
+    <button
+      type="button"
+      class="recipe-quick-preview__close"
+      aria-label="Close recipe preview"
+      (click)="close()"
+    >
+      <mat-icon aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <div class="recipe-quick-preview__body">
+    <section class="recipe-quick-preview__summary">
+      <div class="recipe-quick-preview__title-row">
+        <h2 id="recipe-quick-preview-title" class="text-section-title">
+          {{ name() }}
+        </h2>
+      </div>
+
+      @if (preview(); as loadedPreview) {
+        <p class="text-body-secondary recipe-quick-preview__description">
+          {{ loadedPreview.description || 'No description is available for this recipe.' }}
+        </p>
+      } @else if (requestState().status === 'loading') {
+        <div
+          class="recipe-quick-preview__skeleton recipe-quick-preview__skeleton--description"
+          aria-label="Loading recipe description"
+        ></div>
+      }
+
+      @if (badges().length > 0) {
+        <div class="recipe-quick-preview__badges" aria-label="Recipe categories">
+          @for (badge of badges(); track badge) {
+            <span class="text-chip recipe-quick-preview__badge">{{ badge }}</span>
+          }
+        </div>
+      }
+    </section>
+
+    <dl class="recipe-quick-preview__metrics" aria-label="Recipe details">
+      <div>
+        <dt class="text-small"><mat-icon inline aria-hidden="true">schedule</mat-icon>Total time</dt>
+        <dd class="text-label text-metric-value">
+          {{ totalTimeMinutes() === null ? 'Unavailable' : totalTimeMinutes() + ' min' }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-small"><mat-icon inline aria-hidden="true">local_fire_department</mat-icon> Calories</dt>
+        <dd class="text-label text-metric-value">
+          {{ caloriesPerServing() === null ? 'Unavailable' : (caloriesPerServing() | number: '1.0-0') + ' cal' }}
+        </dd>
+      </div>
+      <div>
+        <dt class="text-small"><mat-icon inline aria-hidden="true">fitness_center</mat-icon> Protein</dt>
+        <dd class="text-label text-metric-value">
+          @if (preview(); as loadedPreview) {
+            {{ loadedPreview.proteinPerServing | number: '1.0-1' }} g
+          } @else if (requestState().status === 'loading') {
+            <span class="recipe-quick-preview__skeleton recipe-quick-preview__skeleton--metric" aria-label="Loading protein"></span>
+          } @else {
+            Unavailable
+          }
+        </dd>
+      </div>
+      <div>
+        <dt class="text-small"><mat-icon inline aria-hidden="true">attach_money</mat-icon> Price</dt>
+        <dd class="text-label text-metric-value">
+          {{ estimatedCostPerServing() === null
+            ? 'Unavailable'
+            : (estimatedCostPerServing() | currency: 'USD' : 'symbol' : '1.2-2') }}
+        </dd>
+      </div>
+    </dl>
+
+    <section class="recipe-quick-preview__ingredients" aria-labelledby="recipe-preview-ingredients">
+      <h3 id="recipe-preview-ingredients" class="text-subtitle">Ingredients</h3>
+      @if (preview()) {
+        @if (visibleIngredients().length > 0) {
+          <ul class="recipe-quick-preview__ingredient-list">
+            @for (ingredient of visibleIngredients(); track ingredient.id) {
+              <li class="text-body-secondary">
+                <mat-icon aria-hidden="true">check</mat-icon>{{ ingredient.name }}
+              </li>
+            }
+          </ul>
+          @if (remainingIngredientCount() > 0) {
+            <p class="text-small recipe-quick-preview__remaining">
+              + {{ remainingIngredientCount() }} more ingredients
+            </p>
+          }
+        } @else {
+          <p class="text-body-secondary">No ingredients are available.</p>
+        }
+      } @else if (requestState().status === 'loading') {
+        <div class="recipe-quick-preview__ingredient-skeletons" aria-label="Loading ingredients">
+          @for (_ of [1, 2, 3, 4]; track $index) {
+            <span class="recipe-quick-preview__skeleton recipe-quick-preview__skeleton--ingredient"></span>
+          }
+        </div>
+      }
+    </section>
+
+    @if (requestState().status === 'error') {
+      <div class="recipe-quick-preview__error" role="alert">
+        <div>
+          <p class="text-body-strong">Preview details are unavailable.</p>
+          <p class="text-small">{{ requestState().error }}</p>
+        </div>
+        <button type="button" class="btn-selection text-label" (click)="retry()">
+          Try again
+        </button>
+      </div>
+    }
+
+    @if (favoriteFeedback(); as message) {
+      <div class="recipe-quick-preview__favorite-error" role="alert">
+        <span class="text-small">{{ message }}</span>
+        <button type="button" aria-label="Dismiss favorite error" (click)="dismissFavoriteFeedback()">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      </div>
+    }
+
+    <footer class="recipe-quick-preview__actions">
+      <button
+        type="button"
+        class="btn-link-secondary text-button-on-secondary recipe-quick-preview__action"
+        disabled
+        aria-describedby="recipe-preview-cooking-reason"
+      >
+        Start Cooking
+      </button>
+      <span id="recipe-preview-cooking-reason" class="recipe-quick-preview__sr-only">
+        Cooking Mode is not available yet.
+      </span>
+      <button
+        type="button"
+        class="btn-link--primary text-button-white recipe-quick-preview__action"
+        [disabled]="isFavoritePending() || !canFavorite()"
+        (click)="toggleFavorite()"
+      >
+        <mat-icon aria-hidden="true">{{ isSaved() ? 'favorite' : 'favorite_border' }}</mat-icon>
+        {{ isSaved() ? 'Saved' : 'Save Recipe' }}
+      </button>
+    </footer>
+  </div>
+</article>

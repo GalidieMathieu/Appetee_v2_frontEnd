@@ -1,3 +1,7 @@
+/**
+ * Coordinates Admin recipe multipart mutations and invalidates affected shared recipe caches.
+ * Phase 12 invalidates the lightweight Preview independently from complete detail/discovery data.
+ */
 import { Injectable } from '@angular/core';
 import { EMPTY, Observable, catchError, finalize, tap } from 'rxjs';
 
@@ -37,7 +41,10 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
 
     return request$.pipe(
       tap(() => {
-        if (changedId !== undefined) this.recipesFacade.invalidateDetail(changedId);
+        if (changedId !== undefined) {
+          this.recipesFacade.invalidateDetail(changedId);
+          this.recipesFacade.invalidatePreview(changedId);
+        }
         this.recipesFacade.invalidateQueries();
       }),
       catchError((error: unknown) => {

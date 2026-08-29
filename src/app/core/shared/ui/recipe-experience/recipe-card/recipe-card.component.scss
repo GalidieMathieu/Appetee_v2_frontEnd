@@ -1,9 +1,19 @@
+/*
+ * Recipe-experience Card presentation keeps its information region stable and exposes an explicit
+ * portrait-mobile host variant for collections that need an image-led phone layout.
+ */
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
 .recipe-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 20rem;
-  min-width: 0;
+  height: var(--recipe-card-height, 20rem);
+  aspect-ratio: var(--recipe-card-aspect-ratio, auto);
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -34,7 +44,7 @@
 
 .recipe-card__media {
   position: relative;
-  flex: 0 0 9.25rem;
+  flex: var(--recipe-card-media-flex, 0 0 9.25rem);
   overflow: hidden;
   background: var(--color-muted-light);
 }
@@ -71,6 +81,12 @@
   background: var(--color-surface);
 }
 
+.recipe-card__favorite:disabled,
+.recipe-card__favorite.is-pending {
+  cursor: wait;
+  opacity: 0.78;
+}
+
 .recipe-card__favorite:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   outline-offset: 2px;
@@ -87,8 +103,7 @@
   grid-template-rows: 2.2rem 1.35rem 2.15rem 1.35rem;
   align-content: start;
   gap: 0.65rem;
-  flex: 1;
-  min-height: 0;
+  flex: var(--recipe-card-body-flex, 1);
   padding: 0.8rem;
 }
 
@@ -97,7 +112,6 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  line-clamp: 2;
   font-size: 0.95rem;
   line-height: 1.15;
 }
@@ -150,7 +164,6 @@
   border-bottom: 1px solid var(--color-border);
   color: var(--color-muted);
   font-size: 0.66rem;
-  line-height: 1;
 }
 
 .recipe-card__meta > span {
@@ -185,6 +198,18 @@
   background: var(--color-muted-light);
   color: var(--color-muted);
   font-size: 0.68rem;
+}
+
+@media (max-width: 639px) {
+  :host(.recipe-card--portrait-mobile) {
+    --recipe-card-height: auto;
+    --recipe-card-aspect-ratio: 4 / 5;
+    --recipe-card-media-flex: 1 1 auto;
+    --recipe-card-body-flex: 0 0 10.75rem;
+
+    max-width: 28rem;
+    margin-inline: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

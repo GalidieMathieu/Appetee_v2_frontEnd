@@ -1,3 +1,4 @@
+<!-- The Card directly enters the shared recipe experience; consumers bind only recipe data. -->
 <article class="recipe-card">
   <div
     class="recipe-card__selection"
@@ -21,12 +22,18 @@
     <button
       type="button"
       class="recipe-card__favorite"
-      [class.is-saved]="recipe().isSaved"
-      [attr.aria-label]="recipe().isSaved ? 'Remove saved recipe' : 'Save recipe'"
+      [class.is-saved]="isSaved()"
+      [class.is-pending]="favoritePending()"
+      [class.has-error]="favoriteFeedback()"
+      [disabled]="favoritePending()"
+      [attr.aria-busy]="favoritePending()"
+      [attr.aria-live]="favoriteFeedback() ? 'polite' : null"
+      [attr.aria-label]="favoriteFeedback() ?? (isSaved() ? 'Remove saved recipe' : 'Save recipe')"
+      [attr.title]="favoriteFeedback()"
       (click)="onFavoriteClick($event)"
     >
       <mat-icon aria-hidden="true">
-        {{ recipe().isSaved ? 'favorite' : 'favorite_border' }}
+        {{ favoriteFeedback() ? 'error_outline' : favoritePending() ? 'hourglass_top' : isSaved() ? 'favorite' : 'favorite_border' }}
       </mat-icon>
     </button>
   </div>

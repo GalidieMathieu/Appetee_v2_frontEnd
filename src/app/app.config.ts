@@ -1,3 +1,7 @@
+/**
+ * Root Angular provider configuration, including identity-scoped stores reset on session changes.
+ * Phase 12 registers the shared Preview cache without changing discovery-store ownership.
+ */
 import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
@@ -18,6 +22,7 @@ import { AdminRecipeStore } from './core/shared/data-access/recipes/admin/admin-
 import { IngredientDetailsStore } from './core/shared/data-access/ingredients/admin/ingredient-details.store';
 import { AdminIngredientStore } from './core/shared/data-access/ingredients/admin/admin-ingredient.store';
 import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
+import { RecipePreviewStore } from './core/shared/data-access/recipes/recipe-preview.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -31,6 +36,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AuthFacade).restoreSession$()),
     // Register stores for resetAll()
     { provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: RecipePreviewStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipeDetailsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: AdminRecipeStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: DietsStore, multi: true },
