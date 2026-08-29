@@ -1,0 +1,127 @@
+/*
+ * Ingredient autocomplete layout keeps the suggestion list anchored to its field and usable at
+ * phone widths while reusing global input, button, theme, and typography primitives.
+ */
+:host {
+  display: block;
+}
+
+.ingredient-autocomplete__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.4rem;
+  margin-top: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0 0.75rem;
+  background: var(--color-surface);
+}
+
+.ingredient-autocomplete__control:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.ingredient-autocomplete__control > mat-icon {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-muted);
+  font-size: 1rem;
+}
+
+.ingredient-autocomplete__control input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.ingredient-autocomplete__control input::placeholder {
+  color: var(--color-muted);
+}
+
+.ingredient-autocomplete__control input[readonly] {
+  cursor: not-allowed;
+}
+
+.ingredient-autocomplete__panel {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: 0;
+  display: grid;
+  max-height: 15rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.3rem;
+  background: var(--color-surface);
+  box-shadow: var(--shadow);
+}
+
+.ingredient-autocomplete__option {
+  border: 0;
+  border-radius: 0.35rem;
+  padding: 0.65rem;
+  background: transparent;
+  color: var(--color-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ingredient-autocomplete__option:hover,
+.ingredient-autocomplete__option.is-active {
+  background: var(--color-secondary);
+}
+
+.ingredient-autocomplete__option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.ingredient-autocomplete__status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem;
+}
+
+.ingredient-autocomplete__status button {
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.ingredient-autocomplete__selected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.ingredient-autocomplete__chip {
+  gap: 0.25rem;
+  min-height: 1.7rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: var(--color-secondary);
+}
+
+.ingredient-autocomplete__chip mat-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  font-size: 0.85rem;
+}
+
+#ingredient-selection-limit {
+  margin-top: 0.45rem;
+}

@@ -1,174 +1,455 @@
-import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { MatIconModule } from '@angular/material/icon';
-
-import { RecipeSummary } from '@app/core/shared/data-access/recipes/recipe.model';
-import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
+/**
+ * Recipe Discovery page controller for canonical URL criteria, responsive filter drafts, and cards.
+ * Shared Recipe Cards now own Preview/favorite interaction; this page remains discovery-only.
+ */
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import {
-  RecipeCardComponent,
-  RecipeCardData,
-  RecipeCardMealType,
-} from '@app/core/shared/ui/recipe-card/recipe-card.component';
+  Component,
+  DestroyRef,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  PLATFORM_ID,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
+import { ActivatedRoute, Router } from '@angular/router';
 
-type ViewFilter = 'all' | 'saved';
-type MealTypeFilter = 'all' | RecipeCardMealType;
-
-type FilterButton<T extends string> = {
-  value: T;
-  label: string;
-  icon?: string;
-};
+import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
+import { Ingredient } from '@app/core/shared/data-access/ingredients/ingredient.model';
+import {
+  RecipeBadge,
+  RecipeDiscoveryCriteria,
+  RecipeMaximumDifficulty,
+} from '@app/core/shared/data-access/recipes/recipe.model';
+import { RecipeCardComponent } from '@app/core/shared/ui/recipe-experience/recipe-card/recipe-card.component';
+import { IngredientAutocompleteComponent } from './ingredient-autocomplete.component';
+import { RecipeDiscoveryFacade } from '../state/recipe-discovery.facade';
+import {
+  RECIPE_SEARCH_MAX_LENGTH,
+  RECIPE_BADGE_OPTIONS,
+  RECIPE_MAX_DIFFICULTY_OPTIONS,
+  RECIPE_MAX_TOTAL_MINUTES_OPTIONS,
+  normalizeRecipeSearch,
+  parseRequireAllIngredients,
+  parseSavedOnly,
+  recipeDiscoveryCriteria,
+  recipeDiscoveryQueryParams,
+} from '../state/recipe-discovery-search';
 
 @Component({
   selector: 'app-recipes-list',
   templateUrl: './recipesList.page.html',
   styleUrls: ['./recipesList.page.scss'],
   standalone: true,
-  imports: [MatIconModule, RecipeCardComponent],
+  imports: [
+    CdkTrapFocus,
+    IngredientAutocompleteComponent,
+    MatIconModule,
+    ReactiveFormsModule,
+    RecipeCardComponent,
+  ],
 })
-export class RecipesListComponent implements OnInit {
-  private readonly recipesFacade = inject(RecipesFacade);
-  private readonly recipeSummaries = toSignal(this.recipesFacade.recipes$, { initialValue: [] });
-  private readonly savedRecipeIds = signal<ReadonlySet<number>>(new Set());
-  private readonly searchQuery = signal('');
+export class RecipesListComponent implements OnInit, OnDestroy {
+  private readonly discoveryFacade = inject(RecipeDiscoveryFacade);
+  private readonly ingredientsFacade = inject(IngredientsFacade);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
+  private loadMoreObserver: IntersectionObserver | null = null;
+  private previousBodyOverflow: string | null = null;
 
-  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
-  @ViewChild('resultsSection') private resultsSection?: ElementRef<HTMLElement>;
+  protected readonly recipes = this.discoveryFacade.cards;
+  protected readonly appliedSearch = this.discoveryFacade.appliedSearch;
+  protected readonly appliedIngredientIds = this.discoveryFacade.appliedIngredientIds;
+  protected readonly appliedRequireAllIngredients =
+    this.discoveryFacade.appliedRequireAllIngredients;
+  protected readonly appliedBadges = this.discoveryFacade.appliedBadges;
+  protected readonly appliedMaxTotalMinutes =
+    this.discoveryFacade.appliedMaxTotalMinutes;
+  protected readonly appliedMaxDifficulty = this.discoveryFacade.appliedMaxDifficulty;
+  protected readonly appliedSavedOnly = this.discoveryFacade.appliedSavedOnly;
+  protected readonly hasAppliedAdvancedFilters =
+    this.discoveryFacade.hasAppliedAdvancedFilters;
+  protected readonly hasMore = this.discoveryFacade.hasMore;
+  protected readonly isInitialLoading = this.discoveryFacade.isInitialLoading;
+  protected readonly initialError = this.discoveryFacade.initialError;
+  protected readonly isLoadingMore = this.discoveryFacade.isLoadingMore;
+  protected readonly loadMoreError = this.discoveryFacade.loadMoreError;
+  protected readonly skeletonCards = Array.from({ length: 8 });
+  protected readonly searchMaxLength = RECIPE_SEARCH_MAX_LENGTH;
+  protected readonly badgeOptions = RECIPE_BADGE_OPTIONS;
+  protected readonly maxTotalMinutesOptions = RECIPE_MAX_TOTAL_MINUTES_OPTIONS;
+  protected readonly maxDifficultyOptions = RECIPE_MAX_DIFFICULTY_OPTIONS;
+  protected readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly filtersExpanded = signal(false);
+  protected readonly mobileFiltersActive = signal(false);
+  protected readonly draftIngredients = signal<readonly Ingredient[]>([]);
+  protected readonly draftRequireAllIngredients = signal(true);
+  private readonly knownIngredientNames = signal<Readonly<Record<number, string>>>({});
+  protected readonly draftBadges = signal<readonly RecipeBadge[]>([]);
+  protected readonly draftMaxTotalMinutes = signal<number | null>(null);
+  protected readonly draftMaxDifficulty = signal<RecipeMaximumDifficulty | null>(null);
+  protected readonly draftSavedOnly = signal(false);
+  protected readonly appliedIngredients = computed<readonly Ingredient[]>(() =>
+    this.ingredientsForIds(this.appliedIngredientIds())
+  );
+  protected readonly appliedFilterCount = computed(
+    () => this.appliedIngredientIds().length
+      + this.appliedBadges().length
+      + (this.appliedMaxTotalMinutes() === null ? 0 : 1)
+      + (this.appliedMaxDifficulty() === null ? 0 : 1)
+      + (this.appliedSavedOnly() ? 1 : 0)
+  );
+  protected readonly hasVisibleAppliedFilters = computed(
+    () => this.appliedIngredientIds().length > 0
+      || this.appliedBadges().length > 0
+      || this.appliedSavedOnly()
+  );
 
-  protected readonly ingredientCtaTitle = 'Tell us what ingredients you have';
-  protected readonly ingredientCtaDescription =
-    'Help us recommend recipes you can make right now';
-  protected readonly searchPlaceholder = 'Search recipes, ingredients...';
-  protected readonly recipeCollectionTitle = 'Find More Recipes';
-  protected readonly recipeCollectionDescription =
-    'Browse our full collection of recipes tailored to your preferences.';
+  @ViewChild('filtersTrigger')
+  private filtersTrigger: ElementRef<HTMLButtonElement> | undefined;
 
-  protected readonly isLoading = toSignal(this.recipesFacade.isLoading$, { initialValue: false });
-  protected readonly error = toSignal(this.recipesFacade.error$, { initialValue: null });
+  /** Rebinds the browser-only continuation observer as the sentinel enters/leaves the view. */
+  @ViewChild('loadMoreSentinel')
+  set loadMoreSentinel(element: ElementRef<HTMLElement> | undefined) {
+    this.loadMoreObserver?.disconnect();
+    this.loadMoreObserver = null;
 
-  protected readonly viewFilters = computed<readonly FilterButton<ViewFilter>[]>(() => [
-    { value: 'all', label: 'All Recipes' },
-    {
-      value: 'saved',
-      label: `Saved (${this.savedRecipeIds().size})`,
-      icon: 'favorite_border',
-    },
-  ]);
-  protected readonly selectedViewFilter = signal<ViewFilter>('all');
+    if (
+      !element
+      || !isPlatformBrowser(this.platformId)
+      || typeof IntersectionObserver === 'undefined'
+    ) {
+      return;
+    }
 
-  protected readonly mealTypeFilters: readonly FilterButton<MealTypeFilter>[] = [
-    { value: 'all', label: 'All Recipes' },
-    { value: 'prep', label: 'Prep Meal (Batch Cooking)' },
-    { value: 'day', label: 'Day Meal' },
-  ];
-  protected readonly selectedMealTypeFilter = signal<MealTypeFilter>('all');
+    this.loadMoreObserver = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        this.discoveryFacade.loadNextPage();
+      }
+    }, { rootMargin: '240px 0px' });
+    this.loadMoreObserver.observe(element.nativeElement);
+  }
 
-  protected readonly recipes = computed<readonly RecipeCardData[]>(() => {
-    const query = this.searchQuery().trim().toLocaleLowerCase();
-    const viewFilter = this.selectedViewFilter();
-    const mealTypeFilter = this.selectedMealTypeFilter();
-    const savedIds = this.savedRecipeIds();
-
-    return this.recipeSummaries()
-      .filter((recipe) => {
-        if (viewFilter === 'saved' && !savedIds.has(recipe.id)) {
-          return false;
-        }
-
-        const mealType = this.getMealType(recipe);
-        if (mealTypeFilter !== 'all' && mealType !== mealTypeFilter) {
-          return false;
-        }
-
-        if (!query) {
-          return true;
-        }
-
-        const searchableText = [
-          recipe.name,
-          ...(recipe.ingredients ?? []).map((ingredient) => ingredient.name),
-          ...(recipe.diets ?? []).map((diet) => diet.name),
-          ...(recipe.badges ?? []),
-        ]
-          .join(' ')
-          .toLocaleLowerCase();
-
-        return searchableText.includes(query);
-      })
-      .map((recipe) => this.toCardData(recipe, savedIds));
-  });
-
+  /** Restores applied URL intent and replaces malformed/default parameters canonically. */
   ngOnInit(): void {
-    this.recipesFacade.loadIfNeeded();
+    // The URL intentionally stores IDs only; the shared catalogue restores names after refresh.
+    this.ingredientsFacade.ingredients$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(ingredients => this.rememberIngredientNames(ingredients));
+
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const rawSearch = params.get('search');
+        const rawIngredientIds = params.getAll('ingredientIds');
+        const rawRequireAllIngredients = params.get('requireAllIngredients');
+        const rawSavedOnly = params.get('savedOnly');
+        const rawBadges = params.getAll('badges');
+        const rawMaxTotalMinutes = params.get('maxTotalMinutes');
+        const rawMaxDifficulty = params.get('maxDifficulty');
+        const criteria = recipeDiscoveryCriteria({
+          search: rawSearch,
+          ingredientIds: rawIngredientIds,
+          requireAllIngredients: parseRequireAllIngredients(rawRequireAllIngredients),
+          badges: rawBadges,
+          maxTotalMinutes: rawMaxTotalMinutes,
+          maxDifficulty: rawMaxDifficulty,
+          savedOnly: parseSavedOnly(rawSavedOnly),
+        });
+
+        this.searchControl.setValue(criteria.search, { emitEvent: false });
+        if (criteria.ingredientIds.length > 0) this.ingredientsFacade.loadIfNeeded();
+        this.discoveryFacade.initializeFromUrl(criteria);
+        if (!this.filtersExpanded()) this.syncDraftFrom(criteria);
+
+        if (
+          params.has('cursor')
+          || params.has('seed')
+          || (rawSearch ?? '') !== criteria.search
+          || !this.sameValues(
+            rawIngredientIds,
+            criteria.ingredientIds.map(String)
+          )
+          || rawRequireAllIngredients !== (
+            criteria.ingredientIds.length > 0 && !criteria.requireAllIngredients
+              ? 'false'
+              : null
+          )
+          || (rawSavedOnly !== null && rawSavedOnly !== 'true')
+          || !this.sameValues(rawBadges, criteria.badges)
+          || rawMaxTotalMinutes !== this.canonicalNumber(criteria.maxTotalMinutes)
+          || rawMaxDifficulty !== criteria.maxDifficulty
+        ) {
+          void this.router.navigate([], {
+            relativeTo: this.route,
+            queryParams: recipeDiscoveryQueryParams(criteria),
+            replaceUrl: true,
+          });
+        }
+      });
   }
 
-  protected onIngredientCtaClick(): void {
-    this.searchInput?.nativeElement.focus();
+  ngOnDestroy(): void {
+    this.loadMoreObserver?.disconnect();
+    this.restorePageScroll();
   }
 
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
+  protected retryInitial(): void {
+    this.discoveryFacade.retryInitial();
   }
 
-  protected onSearchSubmit(event: Event): void {
+  protected loadNextPage(): void {
+    this.discoveryFacade.loadNextPage();
+  }
+
+  protected retryLoadMore(): void {
+    this.discoveryFacade.retryLoadMore();
+  }
+
+  /** Commits normalized search while preserving every already-applied advanced filter. */
+  protected submitSearch(event: Event): void {
     event.preventDefault();
-    this.resultsSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const normalizedSearch = normalizeRecipeSearch(this.searchControl.value);
+    this.searchControl.setValue(normalizedSearch, { emitEvent: false });
+    if (normalizedSearch === this.appliedSearch()) return;
+
+    this.navigateToCriteria(this.currentAppliedCriteria(normalizedSearch));
   }
 
-  protected onViewFilterSelect(filter: ViewFilter): void {
-    this.selectedViewFilter.set(filter);
+  /** Opens from an applied-state clone or closes while discarding uncommitted draft edits. */
+  protected toggleFilters(): void {
+    if (this.filtersExpanded()) {
+      this.syncDraftFrom(this.currentAppliedCriteria());
+      this.collapseFilters();
+      return;
+    }
+
+    this.syncDraftFrom(this.currentAppliedCriteria());
+    const mobile = this.isMobileViewport();
+    this.mobileFiltersActive.set(mobile);
+    if (mobile) this.lockPageScroll();
+    this.filtersExpanded.set(true);
   }
 
-  protected onMealTypeFilterSelect(filter: MealTypeFilter): void {
-    this.selectedMealTypeFilter.set(filter);
+  protected isDraftBadgeSelected(badge: RecipeBadge): boolean {
+    return this.draftBadges().includes(badge);
   }
 
-  protected onRecipeFavoriteToggle(recipeId: number): void {
-    this.savedRecipeIds.update((current) => {
-      const next = new Set(current);
-      next.has(recipeId) ? next.delete(recipeId) : next.add(recipeId);
-      return next;
+  /** Toggles draft membership while retaining the documented canonical badge order. */
+  protected toggleDraftBadge(badge: RecipeBadge): void {
+    this.draftBadges.update(selected => selected.includes(badge)
+      ? selected.filter(value => value !== badge)
+      : this.badgeOptions.filter(value => [...selected, badge].includes(value))
+    );
+  }
+
+  /** Maps the six visual slider stops to null/15/30/45/60/90 criteria values. */
+  protected draftMaxTotalMinutesIndex(): number {
+    const minutes = this.draftMaxTotalMinutes();
+    return minutes === null
+      ? 0
+      : this.maxTotalMinutesOptions.findIndex(option => option === minutes) + 1;
+  }
+
+  protected draftMaxTotalMinutesLabel(): string {
+    const minutes = this.draftMaxTotalMinutes();
+    return minutes === null ? 'Any' : minutes === 90 ? '90 min+' : `${minutes} min`;
+  }
+
+  protected updateDraftMaxTotalMinutes(event: Event): void {
+    const index = Number((event.target as HTMLInputElement).value);
+    this.draftMaxTotalMinutes.set(index === 0
+      ? null
+      : this.maxTotalMinutesOptions[index - 1] ?? null
+    );
+  }
+
+  /** Uses Hard as the unrestricted final slider stop, so it serializes as no maximum. */
+  protected draftMaxDifficultyIndex(): number {
+    const difficulty = this.draftMaxDifficulty();
+    return difficulty === null ? 2 : this.maxDifficultyOptions.indexOf(difficulty);
+  }
+
+  protected draftMaxDifficultyLabel(): string {
+    return this.draftMaxDifficulty() ?? 'Hard';
+  }
+
+  protected updateDraftMaxDifficulty(event: Event): void {
+    const index = Number((event.target as HTMLInputElement).value);
+    this.draftMaxDifficulty.set(this.maxDifficultyOptions[index] ?? null);
+  }
+
+  protected toggleDraftSavedOnly(): void {
+    this.draftSavedOnly.update(value => !value);
+  }
+
+  protected clearDraftFilters(): void {
+    this.draftIngredients.set([]);
+    this.draftRequireAllIngredients.set(true);
+    this.draftBadges.set([]);
+    this.draftMaxTotalMinutes.set(null);
+    this.draftMaxDifficulty.set(null);
+    this.draftSavedOnly.set(false);
+  }
+
+  /** De-duplicates IDs defensively while retaining names only as local display metadata. */
+  protected updateDraftIngredients(ingredients: readonly Ingredient[]): void {
+    const unique = new Map<number, Ingredient>();
+    for (const ingredient of ingredients) {
+      if (Number.isSafeInteger(ingredient.id) && ingredient.id > 0) {
+        unique.set(ingredient.id, ingredient);
+      }
+      if (unique.size === 3) break;
+    }
+    const normalized = [...unique.values()];
+    this.draftIngredients.set(normalized);
+    this.knownIngredientNames.update(names => ({
+      ...names,
+      ...Object.fromEntries(normalized.map(ingredient => [ingredient.id, ingredient.name])),
+    }));
+  }
+
+  protected toggleDraftRequireAllIngredients(): void {
+    this.draftRequireAllIngredients.update(value => !value);
+  }
+
+  /** Commits the entire advanced-filter draft through one router navigation. */
+  protected applyFilters(): void {
+    const criteria = recipeDiscoveryCriteria({
+      search: this.appliedSearch(),
+      ingredientIds: this.draftIngredients().map(ingredient => ingredient.id),
+      requireAllIngredients: this.draftRequireAllIngredients(),
+      badges: this.draftBadges(),
+      maxTotalMinutes: this.draftMaxTotalMinutes(),
+      maxDifficulty: this.draftMaxDifficulty(),
+      savedOnly: this.draftSavedOnly(),
+    });
+    this.collapseFilters();
+    this.navigateToCriteria(criteria);
+  }
+
+  protected removeAppliedBadge(badge: RecipeBadge): void {
+    this.navigateToCriteria(recipeDiscoveryCriteria({
+      ...this.currentAppliedCriteria(),
+      badges: this.appliedBadges().filter(value => value !== badge),
+    }));
+  }
+
+  protected removeAppliedIngredient(ingredientId: number): void {
+    this.navigateToCriteria(recipeDiscoveryCriteria({
+      ...this.currentAppliedCriteria(),
+      ingredientIds: this.appliedIngredientIds().filter(id => id !== ingredientId),
+    }));
+  }
+
+  protected toggleSavedOnly(): void {
+    this.navigateToCriteria(recipeDiscoveryCriteria({
+      ...this.currentAppliedCriteria(),
+      savedOnly: !this.appliedSavedOnly(),
+    }));
+  }
+
+  protected clearAllAppliedFilters(): void {
+    this.navigateToCriteria(recipeDiscoveryCriteria({ search: this.appliedSearch() }));
+  }
+
+  /** Reconstructs canonical applied intent from store signals for partial committed actions. */
+  private currentAppliedCriteria(search = this.appliedSearch()): RecipeDiscoveryCriteria {
+    return recipeDiscoveryCriteria({
+      search,
+      ingredientIds: this.appliedIngredientIds(),
+      requireAllIngredients: this.appliedRequireAllIngredients(),
+      badges: this.appliedBadges(),
+      maxTotalMinutes: this.appliedMaxTotalMinutes(),
+      maxDifficulty: this.appliedMaxDifficulty(),
+      savedOnly: this.appliedSavedOnly(),
     });
   }
 
-  protected onRetryClick(): void {
-    this.recipesFacade.reload();
+  /** Clones applied values so draft edits cannot mutate persistent discovery state. */
+  private syncDraftFrom(criteria: RecipeDiscoveryCriteria): void {
+    this.draftIngredients.set(this.ingredientsForIds(criteria.ingredientIds));
+    this.draftRequireAllIngredients.set(criteria.requireAllIngredients);
+    this.draftBadges.set([...criteria.badges]);
+    this.draftMaxTotalMinutes.set(criteria.maxTotalMinutes);
+    this.draftMaxDifficulty.set(criteria.maxDifficulty);
+    this.draftSavedOnly.set(criteria.savedOnly);
   }
 
-  protected onExploreRecipesClick(): void {
-    this.selectedViewFilter.set('all');
-    this.selectedMealTypeFilter.set('all');
-    this.searchQuery.set('');
-
-    if (this.searchInput) {
-      this.searchInput.nativeElement.value = '';
-    }
-
-    this.resultsSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /** Writes applied criteria to the URL; the route subscription owns the resulting reload. */
+  private navigateToCriteria(criteria: RecipeDiscoveryCriteria): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: recipeDiscoveryQueryParams(criteria),
+    });
   }
 
-  private toCardData(
-    recipe: RecipeSummary,
-    savedIds: ReadonlySet<number>
-  ): RecipeCardData {
-    return {
-      id: recipe.id,
-      name: recipe.name,
-      mealType: this.getMealType(recipe),
-      imageUrl: recipe.imageUrl ?? 'assets/icons/chef-hat.png',
-      prepTimeMinutes: recipe.prepTimeMinutes,
-      servings: recipe.servings,
-      caloriesTotal: recipe.caloriesTotal,
-      difficulty: recipe.difficulty,
-      badges: recipe.badges ?? [],
-      diets: (recipe.diets ?? []).map((diet) => diet.name),
-      isSaved: savedIds.has(recipe.id),
-      ownedIngredientCount: 0,
-      totalIngredientCount: recipe.ingredients?.length ?? 0,
-    };
+  /** Collapses either presentation, restores page scrolling, and returns focus to its trigger. */
+  private collapseFilters(): void {
+    this.filtersExpanded.set(false);
+    this.mobileFiltersActive.set(false);
+    this.restorePageScroll();
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    queueMicrotask(() => this.filtersTrigger?.nativeElement.focus());
   }
 
-  private getMealType(recipe: RecipeSummary): RecipeCardMealType {
-    return recipe.badges?.includes('freezer-friendly') ? 'prep' : 'day';
+  /** Uses the same CSS breakpoint to decide when filter controls become a modal experience. */
+  private isMobileViewport(): boolean {
+    return isPlatformBrowser(this.platformId)
+      && this.document.defaultView?.matchMedia?.('(max-width: 639px)').matches === true;
+  }
+
+  /** Prevents the recipe list behind the full-screen mobile filter from scrolling. */
+  private lockPageScroll(): void {
+    if (this.previousBodyOverflow !== null) return;
+    this.previousBodyOverflow = this.document.body.style.overflow;
+    this.document.body.style.overflow = 'hidden';
+  }
+
+  /** Restores the exact inline overflow value that existed before opening mobile filters. */
+  private restorePageScroll(): void {
+    if (this.previousBodyOverflow === null) return;
+    this.document.body.style.overflow = this.previousBodyOverflow;
+    this.previousBodyOverflow = null;
+  }
+
+  /** Detects invalid, duplicate, or noncanonical repeated URL values before replacement. */
+  private sameValues(left: readonly string[], right: readonly string[]): boolean {
+    return left.length === right.length
+      && left.every((value, index) => value === right[index]);
+  }
+
+  private canonicalNumber(value: number | null): string | null {
+    return value === null ? null : String(value);
+  }
+
+  /** Resolves transient display names without expanding canonical criteria beyond ingredient IDs. */
+  private ingredientsForIds(ids: readonly number[]): readonly Ingredient[] {
+    const names = this.knownIngredientNames();
+    return ids.map(id => ({ id, name: names[id] ?? 'Loading ingredient…' }));
+  }
+
+  /** Hydrates URL-restored IDs from the shared catalogue and refreshes any open draft chips. */
+  private rememberIngredientNames(ingredients: readonly Ingredient[]): void {
+    if (ingredients.length === 0) return;
+    const catalogueNames = Object.fromEntries(
+      ingredients.map(ingredient => [ingredient.id, ingredient.name])
+    );
+    this.knownIngredientNames.update(names => ({ ...names, ...catalogueNames }));
+    this.draftIngredients.update(selected => selected.map(ingredient => ({
+      ...ingredient,
+      name: catalogueNames[ingredient.id] ?? ingredient.name,
+    })));
   }
 }

@@ -1,0 +1,86 @@
+<!-- The Card directly enters the shared recipe experience; consumers bind only recipe data. -->
+<article class="recipe-card">
+  <div
+    class="recipe-card__selection"
+    role="button"
+    tabindex="0"
+    [attr.aria-labelledby]="'recipe-card-title-' + recipe().id"
+    (click)="selectRecipe()"
+    (keydown)="onSelectionKeydown($event)"
+  ></div>
+
+  <div class="recipe-card__media">
+    <img
+      class="recipe-card__image"
+      [src]="resolvedImageUrl()"
+      [alt]="recipe().name"
+      [attr.loading]="imageLoading()"
+      width="360"
+      height="196"
+    />
+
+    <button
+      type="button"
+      class="recipe-card__favorite"
+      [class.is-saved]="isSaved()"
+      [class.is-pending]="favoritePending()"
+      [class.has-error]="favoriteFeedback()"
+      [disabled]="favoritePending()"
+      [attr.aria-busy]="favoritePending()"
+      [attr.aria-live]="favoriteFeedback() ? 'polite' : null"
+      [attr.aria-label]="favoriteFeedback() ?? (isSaved() ? 'Remove saved recipe' : 'Save recipe')"
+      [attr.title]="favoriteFeedback()"
+      (click)="onFavoriteClick($event)"
+    >
+      <mat-icon aria-hidden="true">
+        {{ favoriteFeedback() ? 'error_outline' : favoritePending() ? 'hourglass_top' : isSaved() ? 'favorite' : 'favorite_border' }}
+      </mat-icon>
+    </button>
+  </div>
+
+  <div class="recipe-card__body">
+    <h2
+      class="text-heading recipe-card__title"
+      [id]="'recipe-card-title-' + recipe().id"
+    >
+      {{ recipe().name }}
+    </h2>
+
+    <div #badgeRow class="recipe-card__badge-row" aria-label="Recipe badges">
+      @for (badge of candidateBadges(); track $index) {
+        <span
+          class="text-chip recipe-card__badge"
+          data-fit-chip
+          [class.recipe-card__fit-item--hidden]="$index >= fittingBadgeCount()"
+          [attr.aria-hidden]="$index >= fittingBadgeCount()"
+        >{{ badge }}</span>
+      }
+    </div>
+
+    <div class="recipe-card__meta" aria-label="Recipe details">
+      <span>
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        <span>{{ recipe().totalTimeMinutes }} min</span>
+      </span>
+      <span>
+        <mat-icon aria-hidden="true">local_fire_department</mat-icon>
+        <span>{{ recipe().caloriesPerServing | number: '1.0-0' }} cal</span>
+      </span>
+      <span>
+        <mat-icon aria-hidden="true">attach_money</mat-icon>
+        <span>{{ recipe().estimatedCostPerServing | currency: 'USD' : 'symbol' : '1.2-2' }}</span>
+      </span>
+    </div>
+
+    <div #ingredientRow class="recipe-card__featured" aria-label="Featured ingredients">
+      @for (ingredient of candidateFeaturedIngredients(); track ingredient.id) {
+        <span
+          class="text-small recipe-card__ingredient"
+          data-fit-chip
+          [class.recipe-card__fit-item--hidden]="$index >= fittingIngredientCount()"
+          [attr.aria-hidden]="$index >= fittingIngredientCount()"
+        >{{ ingredient.name }}</span>
+      }
+    </div>
+  </div>
+</article>

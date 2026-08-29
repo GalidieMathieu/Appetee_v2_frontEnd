@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { API_URL } from '@app/core/api/api.config';
-import { RecipeCardDto } from '../recipe.model';
+import { RecipeSummaryDto } from '../recipe.model';
 
 @Injectable({ providedIn: 'root' })
 export class AdminRecipeApi {
@@ -12,11 +12,11 @@ export class AdminRecipeApi {
     @Inject(API_URL) private readonly apiUrl: string
   ) {}
 
-  create(recipeDetails: FormData): Observable<RecipeCardDto> {
-    return this.http.post<RecipeCardDto>(`${this.apiUrl}/admin/recipe-details`, recipeDetails);
+  create(recipeDetails: FormData): Observable<RecipeSummaryDto> {
+    return this.http.post<RecipeSummaryDto>(`${this.apiUrl}/admin/recipe-details`, recipeDetails);
   }
 
-  update(id: number, recipeDetails: FormData): Observable<RecipeCardDto> {
-    return this.http.put<RecipeCardDto>(`${this.apiUrl}/admin/recipe-details/${id}`, recipeDetails);
+  update(id: number, recipeDetails: FormData): Observable<RecipeSummaryDto> {
+    return this.http.put<RecipeSummaryDto>(`${this.apiUrl}/admin/recipe-details/${id}`, recipeDetails);
   }
 }

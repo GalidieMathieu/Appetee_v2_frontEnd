@@ -1,3 +1,4 @@
+<!-- Home supplies Recipe Card data only; the Card owns the complete shared interaction flow. -->
 <main class="home-page">
   <section class="home-controls" aria-label="Recipe search and filters">
     <div class="home-page__container home-controls__inner">
@@ -88,11 +89,10 @@
 
       @if (recipes.length > 0) {
         <div class="recipe-results__grid">
-          @for (recipe of recipes; track recipe.id) {
+          @for (recipe of recipes; track recipe.id; let index = $index) {
             <app-recipe-card
               [recipe]="recipe"
-              [showIngredientMatch]="recipe.mealType === 'day'"
-              (favoriteToggled)="onRecipeFavoriteToggle($event)"
+              [imageLoading]="index === 0 ? 'eager' : 'lazy'"
             />
           }
         </div>

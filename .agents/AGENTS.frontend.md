@@ -69,6 +69,18 @@ Keep feature-specific and temporary workflow state inside its feature when pract
 
 Follow existing Angular standalone, strict TypeScript, and typed-form patterns.
 
+## Source Documentation
+
+For every source, template, stylesheet, or test file created or modified:
+
+- keep a concise file-level comment at the beginning that explains the file's responsibility and why the current behavior belongs there;
+- document functions whose normalization, state transitions, concurrency handling, security boundary, or side effects are not obvious from their names;
+- explain contract mirrors and coordinated frontend/backend values so they are not mistaken for database-owned runtime data;
+- prefer comments that explain intent, ownership, and invariants over comments that merely restate the next line of code;
+- update or remove comments when behavior changes so documentation cannot drift from the implementation.
+
+Do not add noisy comments to straightforward getters, event delegates, or self-explanatory tests solely to increase comment count.
+
 ## Security Invariants
 
 Preserve these on every change:

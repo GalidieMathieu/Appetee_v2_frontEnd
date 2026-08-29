@@ -52,6 +52,35 @@
             </div>
 
             <div class="recipe-form-field">
+              <label class="text-label recipe-form-field__label" for="recipe-description">
+                Short Description
+              </label>
+              <textarea
+                id="recipe-description"
+                class="input--primary recipe-form-field__textarea"
+                [class.recipe-form-field__textarea--invalid]="shouldShowControlError(descriptionControl)"
+                formControlName="description"
+                maxlength="500"
+                rows="4"
+                placeholder="Briefly describe the finished recipe"
+                [attr.aria-describedby]="shouldShowControlError(descriptionControl) ? 'recipe-description-error' : 'recipe-description-help'"
+                [attr.aria-invalid]="shouldShowControlError(descriptionControl)"
+              ></textarea>
+              <small id="recipe-description-help" class="text-body-secondary">
+                Required, up to 500 characters.
+              </small>
+              @if (shouldShowControlError(descriptionControl)) {
+                <small id="recipe-description-error" class="text-error recipe-form-field__error" role="alert">
+                  @if (descriptionControl.hasError('maxlength')) {
+                    Description must be 500 characters or fewer.
+                  } @else {
+                    Recipe description is required.
+                  }
+                </small>
+              }
+            </div>
+
+            <div class="recipe-form-field">
               <label class="text-label recipe-form-field__label" for="recipe-image">Image (.avif)</label>
               <div class="recipe-file-field">
                 <button
@@ -146,13 +175,53 @@
                   </small>
                 }
               </div>
+
+              <div class="recipe-form-field">
+                <label class="text-label recipe-form-field__label" for="recipe-cook-time">Cook Time (min)</label>
+                <input
+                  id="recipe-cook-time"
+                  class="input--primary recipe-form-field__input"
+                  [class.recipe-form-field__input--invalid]="shouldShowControlError(cookTimeMinutesControl)"
+                  type="number"
+                  min="0"
+                  step="1"
+                  formControlName="cookTimeMinutes"
+                  [attr.aria-describedby]="shouldShowControlError(cookTimeMinutesControl) ? 'recipe-cook-time-error' : null"
+                  [attr.aria-invalid]="shouldShowControlError(cookTimeMinutesControl)"
+                />
+                @if (shouldShowControlError(cookTimeMinutesControl)) {
+                  <small id="recipe-cook-time-error" class="text-error recipe-form-field__error" role="alert">
+                    Cook time cannot be negative.
+                  </small>
+                }
+              </div>
+
+              <div class="recipe-form-field">
+                <label class="text-label recipe-form-field__label" for="recipe-total-time">Total Time (min)</label>
+                <input
+                  id="recipe-total-time"
+                  class="input--primary recipe-form-field__input"
+                  [class.recipe-form-field__input--invalid]="shouldShowTotalTimeError()"
+                  type="number"
+                  min="1"
+                  step="1"
+                  formControlName="totalTimeMinutes"
+                  [attr.aria-describedby]="shouldShowTotalTimeError() ? 'recipe-total-time-error' : null"
+                  [attr.aria-invalid]="shouldShowTotalTimeError()"
+                />
+                @if (shouldShowTotalTimeError()) {
+                  <small id="recipe-total-time-error" class="text-error recipe-form-field__error" role="alert">
+                    {{ totalTimeErrorMessage() }}
+                  </small>
+                }
+              </div>
             </div>
 
             <section class="recipe-options__section">
               <div class="recipe-options__copy">
                 <h3 class="text-label">Recipe Highlights</h3>
                 <p class="text-body-secondary">
-                  Optional tags like freezer-friendly, budget-focused, and high-protein for filtering later.
+                  Optional canonical tags used by recipe discovery and filtering.
                 </p>
               </div>
 
@@ -241,7 +310,10 @@
               </button>
             </div>
 
-            <div class="recipe-ingredients" [class.recipe-ingredients--invalid]="hasIngredientsError()">
+            <div
+              class="recipe-ingredients"
+              [class.recipe-ingredients--invalid]="hasIngredientsError() || hasFeaturedIngredientsError()"
+            >
               @if (duplicateIngredientError(); as duplicateError) {
                 <small
                   id="recipe-duplicate-ingredient-error"
@@ -268,13 +340,29 @@
                         </span>
                       </div>
 
-                      <button
-                        type="button"
-                        class="recipe-ingredients__remove"
-                        (click)="removeIngredient(index)"
-                      >
-                        Remove
-                      </button>
+                      <div class="recipe-ingredients__actions">
+                        <button
+                          type="button"
+                          class="btn-selection text-label recipe-ingredients__featured"
+                          [class.is-selected]="ingredient.featuredOrder !== null"
+                          [disabled]="!canFeatureIngredient(ingredient)"
+                          [attr.aria-pressed]="ingredient.featuredOrder !== null"
+                          [attr.aria-label]="ingredient.featuredOrder === null
+                            ? 'Feature ' + ingredient.ingredient.name
+                            : 'Remove ' + ingredient.ingredient.name + ' from featured ingredients'"
+                          (click)="toggleFeaturedIngredient(index)"
+                        >
+                          {{ ingredient.featuredOrder === null ? 'Feature' : 'Featured ' + ingredient.featuredOrder }}
+                        </button>
+
+                        <button
+                          type="button"
+                          class="recipe-ingredients__remove"
+                          (click)="removeIngredient(index)"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </article>
                   }
                 </div>
@@ -283,6 +371,12 @@
               @if (hasIngredientsError()) {
                 <small id="recipe-ingredients-error" class="text-error recipe-ingredients__error" role="alert">
                   Add at least one ingredient before saving.
+                </small>
+              }
+
+              @if (hasFeaturedIngredientsError()) {
+                <small id="recipe-featured-ingredients-error" class="text-error recipe-ingredients__error" role="alert">
+                  Choose between one and three featured ingredients before saving.
                 </small>
               }
             </div>
@@ -449,6 +543,10 @@
             </div>
           }
 
+          <p class="text-body-secondary recipe-summary__calculation-note">
+            Live nutrition and cost are estimates. Saved values are recalculated by the server.
+          </p>
+
           <div class="recipe-summary__stats">
             <div class="recipe-summary__stat">
               <span class="text-body-secondary">Total Calories</span>
@@ -458,6 +556,16 @@
             <div class="recipe-summary__stat">
               <span class="text-body-secondary">Total Protein</span>
               <strong>{{ totalProtein }} g</strong>
+            </div>
+
+            <div class="recipe-summary__stat">
+              <span class="text-body-secondary">Calories / Serving</span>
+              <strong>{{ caloriesPerServing }} kcal</strong>
+            </div>
+
+            <div class="recipe-summary__stat">
+              <span class="text-body-secondary">Protein / Serving</span>
+              <strong>{{ proteinPerServing }} g</strong>
             </div>
 
             <div class="recipe-summary__stat">
