@@ -14,32 +14,11 @@
         </p>
 
         <div class="recipe-discovery-controls">
-          <form
-            class="recipe-search text-control-small"
-            role="search"
-            (submit)="submitSearch($event)"
-          >
-            <div class="recipe-search__field">
-              <mat-icon aria-hidden="true">search</mat-icon>
-              <input
-                id="recipe-search-input"
-                name="search"
-                type="search"
-                autocomplete="off"
-                placeholder="Search recipes or ingredients"
-                [formControl]="searchControl"
-                [attr.maxlength]="searchMaxLength"
-              />
-            </div>
-            <button
-              type="submit"
-              class="btn-link--primary text-button-white text-control-small recipe-search__submit"
-            >
-              <span class="btn-loading__content">
-                <mat-icon aria-hidden="true">search</mat-icon>
-                Search
-              </span>
-            </button>
+          <div class="recipe-search">
+            <app-recipe-search-bar
+              [value]="appliedSearch()"
+              (searchSubmitted)="submitSearch($event)"
+            />
             <button
               #filtersTrigger
               type="button"
@@ -51,7 +30,7 @@
               <mat-icon aria-hidden="true">tune</mat-icon>
               Filters@if (appliedFilterCount() > 0) { ({{ appliedFilterCount() }}) }
             </button>
-          </form>
+          </div>
 
           @if (filtersExpanded()) {
             <section

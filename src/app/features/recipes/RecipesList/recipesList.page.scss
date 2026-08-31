@@ -38,57 +38,10 @@
 
 .recipe-search {
   display: flex;
+  width: 100%;
   align-items: stretch;
   gap: 0.75rem;
   padding: 1rem;
-}
-
-.recipe-search__field {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-  min-height: 2.9rem;
-  align-items: center;
-  gap: 0.55rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  padding: 0 0.8rem;
-  background: var(--color-surface);
-}
-
-.recipe-search__field:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
-}
-
-.recipe-search__field mat-icon {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  height: 1.15rem;
-  color: var(--color-muted);
-  font-size: 1.15rem;
-}
-
-.recipe-search__field input {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-}
-
-.recipe-search__field input::placeholder {
-  color: var(--color-muted);
-}
-
-.recipe-search__submit {
-  min-height: 2.9rem;
-  border: 0;
-  border-radius: var(--radius);
-  padding-inline: 1.35rem;
-  cursor: pointer;
 }
 
 .recipe-search__filters {
@@ -337,14 +290,10 @@
 @media (max-width: 639px) {
   .recipe-search {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .recipe-search__field {
-    grid-column: 1 / -1;
-  }
-
-  .recipe-search__submit,
+  .recipe-search app-recipe-search-bar,
   .recipe-search__filters {
     width: 100%;
   }

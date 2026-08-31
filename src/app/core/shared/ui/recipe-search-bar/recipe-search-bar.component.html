@@ -1,0 +1,28 @@
+<!-- Search owns accessible controls only; feature consumers decide what a submitted query means. -->
+<form class="recipe-search-bar text-control-small" role="search" (submit)="submit($event)">
+  <label class="visually-hidden" for="recipe-search-input">
+    Search recipes by recipe or ingredient name
+  </label>
+  <div class="recipe-search-bar__field">
+    <mat-icon aria-hidden="true">search</mat-icon>
+    <input
+      id="recipe-search-input"
+      name="search"
+      type="search"
+      autocomplete="off"
+      [placeholder]="placeholder()"
+      [formControl]="searchControl"
+      [attr.maxlength]="maxLength"
+      (keydown.enter)="submit($event)"
+    />
+  </div>
+  <button
+    type="submit"
+    class="btn-link--primary text-button-white text-control-small recipe-search-bar__submit"
+  >
+    <span class="btn-loading__content">
+      <mat-icon aria-hidden="true">search</mat-icon>
+      Search
+    </span>
+  </button>
+</form>

@@ -17,7 +17,6 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -29,14 +28,13 @@ import {
   RecipeMaximumDifficulty,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipeCardGridComponent } from '@app/core/shared/ui/recipe-card-grid/recipe-card-grid.component';
+import { RecipeSearchBarComponent } from '@app/core/shared/ui/recipe-search-bar/recipe-search-bar.component';
 import { IngredientAutocompleteComponent } from './ingredient-autocomplete.component';
 import { RecipeDiscoveryFacade } from '../state/recipe-discovery.facade';
 import {
-  RECIPE_SEARCH_MAX_LENGTH,
   RECIPE_BADGE_OPTIONS,
   RECIPE_MAX_DIFFICULTY_OPTIONS,
   RECIPE_MAX_TOTAL_MINUTES_OPTIONS,
-  normalizeRecipeSearch,
   parseRequireAllIngredients,
   parseSavedOnly,
   recipeDiscoveryCriteria,
@@ -52,8 +50,8 @@ import {
     CdkTrapFocus,
     IngredientAutocompleteComponent,
     MatIconModule,
-    ReactiveFormsModule,
     RecipeCardGridComponent,
+    RecipeSearchBarComponent,
   ],
 })
 export class RecipesListComponent implements OnInit, OnDestroy {
@@ -84,11 +82,9 @@ export class RecipesListComponent implements OnInit, OnDestroy {
   protected readonly initialError = this.discoveryFacade.initialError;
   protected readonly isLoadingMore = this.discoveryFacade.isLoadingMore;
   protected readonly loadMoreError = this.discoveryFacade.loadMoreError;
-  protected readonly searchMaxLength = RECIPE_SEARCH_MAX_LENGTH;
   protected readonly badgeOptions = RECIPE_BADGE_OPTIONS;
   protected readonly maxTotalMinutesOptions = RECIPE_MAX_TOTAL_MINUTES_OPTIONS;
   protected readonly maxDifficultyOptions = RECIPE_MAX_DIFFICULTY_OPTIONS;
-  protected readonly searchControl = new FormControl('', { nonNullable: true });
   protected readonly filtersExpanded = signal(false);
   protected readonly mobileFiltersActive = signal(false);
   protected readonly draftIngredients = signal<readonly Ingredient[]>([]);
@@ -166,7 +162,6 @@ export class RecipesListComponent implements OnInit, OnDestroy {
           savedOnly: parseSavedOnly(rawSavedOnly),
         });
 
-        this.searchControl.setValue(criteria.search, { emitEvent: false });
         if (criteria.ingredientIds.length > 0) this.ingredientsFacade.loadIfNeeded();
         this.discoveryFacade.initializeFromUrl(criteria);
         if (!this.filtersExpanded()) this.syncDraftFrom(criteria);
@@ -215,11 +210,8 @@ export class RecipesListComponent implements OnInit, OnDestroy {
     this.discoveryFacade.retryLoadMore();
   }
 
-  /** Commits normalized search while preserving every already-applied advanced filter. */
-  protected submitSearch(event: Event): void {
-    event.preventDefault();
-    const normalizedSearch = normalizeRecipeSearch(this.searchControl.value);
-    this.searchControl.setValue(normalizedSearch, { emitEvent: false });
+  /** Commits shared normalized search while preserving every applied advanced filter. */
+  protected submitSearch(normalizedSearch: string): void {
     if (normalizedSearch === this.appliedSearch()) return;
 
     this.navigateToCriteria(this.currentAppliedCriteria(normalizedSearch));

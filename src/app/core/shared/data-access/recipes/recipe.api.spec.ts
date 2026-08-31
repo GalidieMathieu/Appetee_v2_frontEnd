@@ -105,6 +105,19 @@ describe('RecipesApi', () => {
     request.flush({ items: [], nextCursor: null, hasMore: false });
   });
 
+  it('supports a bounded cursorless discovery preview without adding other parameters', () => {
+    api.discover(criteria(), null, 5).subscribe();
+
+    const request = http.expectOne(candidate =>
+      candidate.url === '/api/recipes'
+      && candidate.params.get('limit') === '5'
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['limit']);
+    expect(request.request.params.has('cursor')).toBe(false);
+    request.flush({ items: [], nextCursor: null, hasMore: false });
+  });
+
   it('sends canonical repeated badges and applied limits with the opaque cursor', () => {
     const search = 'chick %_\\ rice';
     const cursor = 'search-cursor._-+/=';

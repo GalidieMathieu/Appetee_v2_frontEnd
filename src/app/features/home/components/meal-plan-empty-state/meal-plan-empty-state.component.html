@@ -1,0 +1,18 @@
+<!-- This domain onboarding remains Home-owned until Meal Planning supplies real upcoming data. -->
+<section class="meal-plan-empty-state" aria-labelledby="meal-plan-empty-title">
+  <div class="meal-plan-empty-state__copy">
+    <h2 id="meal-plan-empty-title" class="text-title">Plan your meals for the week</h2>
+    <p class="text-body-secondary">
+      Create a meal plan based on your preferences and schedule.
+    </p>
+  </div>
+  <button
+    type="button"
+    class="btn-link--primary text-button-white meal-plan-empty-state__action"
+    [disabled]="actionDisabled()"
+    [attr.aria-disabled]="actionDisabled() ? 'true' : null"
+    (click)="triggerAction()"
+  >
+    Start Meal Planning
+  </button>
+</section>
