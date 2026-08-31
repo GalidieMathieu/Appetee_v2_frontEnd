@@ -272,6 +272,16 @@ describe('RecipesListComponent', () => {
     expect(initializeFromUrl).toHaveBeenLastCalledWith(criteria('chicken rice'));
   });
 
+  it('uses the shared search while keeping the Filters control feature-owned', () => {
+    const fixture = createFixture();
+    const root = fixture.nativeElement as HTMLElement;
+    const sharedSearch = root.querySelector('app-recipe-search-bar') as HTMLElement;
+
+    expect(sharedSearch).not.toBeNull();
+    expect(sharedSearch.querySelector('.recipe-search__filters')).toBeNull();
+    expect(root.querySelector('.recipe-search > .recipe-search__filters')).not.toBeNull();
+  });
+
   it('restores and canonicalizes applied search from the URL', () => {
     queryParamMap.next(convertToParamMap({ search: '  Chicken   Rice  ' }));
     const fixture = createFixture();
@@ -717,7 +727,7 @@ function createFixture() {
 
 function submitSearchForm(fixture: ReturnType<typeof createFixture>): Event {
   const event = new Event('submit', { bubbles: true, cancelable: true });
-  (fixture.nativeElement.querySelector('.recipe-search') as HTMLFormElement)
+  (fixture.nativeElement.querySelector('.recipe-search-bar') as HTMLFormElement)
     .dispatchEvent(event);
   return event;
 }

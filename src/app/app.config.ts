@@ -1,6 +1,6 @@
 /**
  * Root Angular provider configuration, including every identity-scoped store reset on session changes.
- * Favorites joins shared recipe caches in the existing cookie-session reset workflow.
+ * Feature query stores join shared caches in the existing cookie-session reset workflow.
  */
 import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -24,6 +24,7 @@ import { AdminIngredientStore } from './core/shared/data-access/ingredients/admi
 import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
 import { RecipePreviewStore } from './core/shared/data-access/recipes/recipe-preview.store';
 import { FavoritesStore } from './features/favorites/state/favorites.store';
+import { HomeStore } from './features/home/state/home.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -40,6 +41,7 @@ export const appConfig: ApplicationConfig = {
     { provide: SESSION_RESETTERS, useExisting: RecipePreviewStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipeDetailsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: FavoritesStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: HomeStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: AdminRecipeStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: DietsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: IngredientsStore, multi: true },

@@ -7,8 +7,12 @@ import {
   RecipeDiscoveryCriteria,
   RecipeMaximumDifficulty,
 } from '@app/core/shared/data-access/recipes/recipe.model';
+import {
+  RECIPE_SEARCH_MAX_LENGTH,
+  normalizeRecipeSearchValue,
+} from '@app/core/shared/ui/recipe-search-bar/recipe-search';
 
-export const RECIPE_SEARCH_MAX_LENGTH = 100;
+export { RECIPE_SEARCH_MAX_LENGTH };
 export const RECIPE_INGREDIENT_LIMIT = 3;
 /**
  * Frontend mirror of the documented API badge enum and presentation priority.
@@ -47,11 +51,7 @@ export interface RecipeDiscoveryCriteriaInput {
 
 /** Bounds and normalizes free text so URL, query key, and API values cannot diverge. */
 export function normalizeRecipeSearch(value: string | null | undefined): string {
-  return (value ?? '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .slice(0, RECIPE_SEARCH_MAX_LENGTH)
-    .trimEnd();
+  return normalizeRecipeSearchValue(value);
 }
 
 /** Converts permissive URL/draft inputs into the one canonical applied-criteria shape. */

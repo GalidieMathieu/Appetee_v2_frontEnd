@@ -33,7 +33,8 @@ export class RecipesApi {
       maxDifficulty: null,
       savedOnly: false,
     },
-    cursor: string | null = null
+    cursor: string | null = null,
+    limit?: number
   ): Observable<RecipeDiscoveryPageDto> {
     let params = new HttpParams();
     if (criteria.search) params = params.set('search', criteria.search);
@@ -52,6 +53,7 @@ export class RecipesApi {
     }
     if (criteria.savedOnly) params = params.set('savedOnly', true);
     if (cursor !== null) params = params.set('cursor', cursor);
+    if (limit !== undefined) params = params.set('limit', limit);
 
     return this.http.get<RecipeDiscoveryPageDto>(`${this.apiUrl}/recipes`, { params });
   }

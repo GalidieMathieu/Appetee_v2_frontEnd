@@ -5,12 +5,13 @@
 import { Component, input } from '@angular/core';
 
 import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model';
+import { RecipeCardSkeletonComponent } from '../recipe-card-skeleton/recipe-card-skeleton.component';
 import { RecipeCardComponent } from '../recipe-experience/recipe-card/recipe-card.component';
 
 @Component({
   selector: 'app-recipe-card-grid',
   standalone: true,
-  imports: [RecipeCardComponent],
+  imports: [RecipeCardComponent, RecipeCardSkeletonComponent],
   templateUrl: './recipe-card-grid.component.html',
   styleUrl: './recipe-card-grid.component.scss',
 })

@@ -7,15 +7,7 @@
 >
   @if (loading()) {
     @for (_ of skeletons(); track $index) {
-      <div class="recipe-skeleton" aria-hidden="true">
-        <div class="recipe-skeleton__image"></div>
-        <div class="recipe-skeleton__body">
-          <span class="recipe-skeleton__line recipe-skeleton__line--title"></span>
-          <span class="recipe-skeleton__line recipe-skeleton__line--badges"></span>
-          <span class="recipe-skeleton__line recipe-skeleton__line--meta"></span>
-          <span class="recipe-skeleton__line recipe-skeleton__line--ingredients"></span>
-        </div>
-      </div>
+      <app-recipe-card-skeleton aria-hidden="true" />
     }
     <span class="visually-hidden">{{ loadingLabel() }}</span>
   } @else {
