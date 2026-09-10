@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import { API_URL } from '@app/core/api/api.config';
 import {
   RecipeCardDto,
+  RecipeCookingViewDto,
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
@@ -79,6 +80,13 @@ export class RecipesApi {
 
   getPreview(id: number): Observable<RecipePreviewDto> {
     return this.http.get<RecipePreviewDto>(`${this.apiUrl}/recipes/${id}/preview`);
+  }
+
+  /** Loads the authenticated user's complete compatible Cooking View without client identity data. */
+  getCookingView(id: number): Observable<RecipeCookingViewDto> {
+    return this.http.get<RecipeCookingViewDto>(
+      `${this.apiUrl}/recipes/${id}/cooking-view`
+    );
   }
 
   getRecipeWithDetails(id: number): Observable<RecipeDetailDto> {

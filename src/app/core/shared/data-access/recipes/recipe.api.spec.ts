@@ -1,6 +1,6 @@
 /**
  * Contract tests for recipe HTTP methods and their exact query/body representation.
- * Favorites coverage protects the current-user route and its optional bounded preview limit.
+ * Current-user coverage protects routes from browser-owned identity or derived cooking inputs.
  */
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -9,6 +9,7 @@ import { TestBed } from '@angular/core/testing';
 import { API_URL } from '@app/core/api/api.config';
 import {
   RecipeCardDto,
+  RecipeCookingViewDto,
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
@@ -214,6 +215,30 @@ describe('RecipesApi', () => {
     expect(response).not.toHaveProperty('instructions');
     expect(response).not.toHaveProperty('servings');
   });
+
+  it('requests the complete Cooking View without identity or selected-servings input', () => {
+    const cookingView = createCookingView();
+    let response: RecipeCookingViewDto | undefined;
+
+    api.getCookingView(42).subscribe(value => response = value);
+
+    const request = http.expectOne('/api/recipes/42/cooking-view');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual([]);
+    expect(request.request.body).toBeNull();
+    request.flush(cookingView);
+    expect(response).toEqual(cookingView);
+    expect(response?.baseServings).toBe(4);
+    expect(response?.ingredients[0]).toEqual({
+      id: 7,
+      name: 'Carrot',
+      quantity: 400,
+      unit: 'g',
+      displayOrder: 1,
+    });
+    expect(response?.ingredients[0]).not.toHaveProperty('ingredient');
+    expect(response).not.toHaveProperty('selectedServings');
+  });
 });
 
 function criteria(
@@ -268,5 +293,28 @@ function createPreview(): RecipePreviewDto {
     badges: ['Quick Meal'],
     ingredients: [{ id: 7, name: 'Carrot' }],
     isSaved: false,
+  };
+}
+
+function createCookingView(): RecipeCookingViewDto {
+  return {
+    id: 42,
+    name: 'Soup',
+    imageUrl: 'https://cdn.example.com/recipes/soup.jpg',
+    description: 'A warming vegetable soup.',
+    totalTimeMinutes: 35,
+    baseServings: 4,
+    caloriesTotal: 240,
+    proteinTotal: 8,
+    carbsTotal: 40,
+    badges: ['Quick Meal'],
+    ingredients: [{
+      id: 7,
+      name: 'Carrot',
+      quantity: 400,
+      unit: 'g',
+      displayOrder: 1,
+    }],
+    steps: [{ order: 1, title: 'Prepare', instruction: 'Cook' }],
   };
 }

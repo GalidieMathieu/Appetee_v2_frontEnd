@@ -2,6 +2,7 @@
  * Shared by-ID recipe data orchestration for Preview/detail caches and favorite membership.
  * Confirmed mutation notifications synchronize feature-owned lists without exposing raw requests.
  */
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, Signal, computed, signal } from '@angular/core';
 import {
   EMPTY,
@@ -24,11 +25,13 @@ import {
   FavoriteMembershipState,
   FavoriteMutationState,
   RecipeCardDto,
+  RecipeCookingViewDto,
   RecipeDetailDto,
   RecipePreviewDto,
   RecipeFavoriteChange,
 } from './recipe.model';
 import { RecipesApi } from './recipe.api';
+import { RecipeCookingStore } from './recipe-cooking.store';
 import { RecipeDetailsStore } from './recipe-details.store';
 import { RecipePreviewStore } from './recipe-preview.store';
 import { RecipesStore } from './recipes.store';
@@ -36,6 +39,7 @@ import { RecipesStore } from './recipes.store';
 /** Shared by-ID recipe behavior; discovery query/list ownership lives in the Recipes feature. */
 @Injectable({ providedIn: 'root' })
 export class RecipesFacade {
+  private readonly cookingRequests = new Map<string, Observable<RecipeCookingViewDto>>();
   private readonly detailRequests = new Map<string, Observable<RecipeDetailDto>>();
   private readonly previewRequests = new Map<string, Observable<RecipePreviewDto>>();
   private readonly favoriteRequests = new Set<string>();
@@ -63,10 +67,55 @@ export class RecipesFacade {
 
   constructor(
     private readonly api: RecipesApi,
+    private readonly cookingStore: RecipeCookingStore,
     private readonly detailsStore: RecipeDetailsStore,
     private readonly recipesStore: RecipesStore,
     private readonly previewStore: RecipePreviewStore
   ) {}
+
+  /** Returns a cached Cooking View or coalesces one same-ID request for the active identity. */
+  getCookingView(id: number): Observable<RecipeCookingViewDto> {
+    const cached = this.cookingStore.get(id);
+    if (cached) return of(cached);
+
+    const generation = this.cookingStore.generation();
+    const invalidationVersion = this.cookingStore.invalidationVersion(id);
+    const requestKey = `${generation}:${id}:${invalidationVersion}`;
+    const inFlight = this.cookingRequests.get(requestKey);
+    if (inFlight) return inFlight;
+
+    this.cookingStore.setLoading(id);
+    const request$ = this.api.getCookingView(id).pipe(
+      timeout(10000),
+      filter(() => this.cookingStore.isRequestCurrent(
+        id,
+        generation,
+        invalidationVersion
+      )),
+      tap(cookingView => this.cookingStore.upsert(cookingView)),
+      catchError((error: unknown) => {
+        if (this.cookingStore.isRequestCurrent(id, generation, invalidationVersion)) {
+          this.cookingStore.setError(
+            id,
+            toApiErrorMessage(error),
+            error instanceof HttpErrorResponse ? error.status : undefined
+          );
+        }
+        return EMPTY;
+      }),
+      finalize(() => this.cookingRequests.delete(requestKey)),
+      shareReplay({ bufferSize: 1, refCount: false })
+    );
+
+    this.cookingRequests.set(requestKey, request$);
+    return request$;
+  }
+
+  /** Clears an error/stale value and starts a fresh Cooking View request. */
+  retryCookingView(id: number): Observable<RecipeCookingViewDto> {
+    this.invalidateCookingView(id);
+    return this.getCookingView(id);
+  }
 
   /** Returns a cached Preview or coalesces one same-ID request for the active identity generation. */
   getPreview(id: number): Observable<RecipePreviewDto> {
@@ -148,6 +197,19 @@ export class RecipesFacade {
 
   invalidatePreview(id: number): void {
     this.previewStore.invalidate(id);
+  }
+
+  invalidateCookingView(id: number): void {
+    this.cookingStore.invalidate(id);
+  }
+
+  cookingViewRequestState(id: number): Signal<EntityRequestState> {
+    return this.cookingStore.requestStateFor(id);
+  }
+
+  /** Exposes one cached Cooking View reactively without leaking mutable store ownership. */
+  cookingViewFor(id: number): Signal<RecipeCookingViewDto | null> {
+    return computed(() => this.cookingStore.get(id));
   }
 
   previewRequestState(id: number): Signal<EntityRequestState> {

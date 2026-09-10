@@ -1,6 +1,6 @@
 <!--
-  Recipe-experience Preview keeps compact metric labels/values while Preview-only content moves
-  through loading, error, and success states; total-time wording mirrors the response contract.
+  Recipe-experience Preview keeps compact metrics while lazy content loads and delegates its
+  enabled Cooking action to the shared orchestration boundary.
 -->
 <article class="recipe-quick-preview">
   <header class="recipe-quick-preview__media">
@@ -137,13 +137,14 @@
       <button
         type="button"
         class="btn-link-secondary text-button-on-secondary recipe-quick-preview__action"
-        disabled
+        [disabled]="!canStartCooking"
         aria-describedby="recipe-preview-cooking-reason"
+        (click)="startCooking()"
       >
         Start Cooking
       </button>
       <span id="recipe-preview-cooking-reason" class="recipe-quick-preview__sr-only">
-        Cooking Mode is not available yet.
+        {{ canStartCooking ? 'Open Cooking Mode.' : 'Cooking Mode is unavailable.' }}
       </span>
       <button
         type="button"

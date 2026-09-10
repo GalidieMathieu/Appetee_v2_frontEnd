@@ -55,21 +55,22 @@ describe('RecipeDiscoveryFacade', () => {
     expect(facade.hasMore()).toBe(true);
   });
 
-  it('reuses shared recipe discovery data after feature navigation', () => {
+  it('reuses every loaded card and the continuation cursor after Cooking navigation', () => {
     const store = TestBed.inject(RecipesStore);
     const appliedCriteria = criteria('chicken');
     const generation = store.beginQuery(
       appliedCriteria,
       recipeDiscoveryQueryKey(appliedCriteria)
     )!;
-    store.replacePage(page([card(1)], 'persisted-cursor'), generation);
+    store.replacePage(page([card(1)], 'first-cursor'), generation);
+    store.appendPage(page([card(2)], 'persisted-cursor'), generation);
 
     const facade = TestBed.inject(RecipeDiscoveryFacade);
     facade.initializeFromUrl(criteria('Chicken'));
 
     expect(discover).not.toHaveBeenCalled();
     expect(facade.appliedSearch()).toBe('Chicken');
-    expect(facade.cards().map(item => item.id)).toEqual([1]);
+    expect(facade.cards().map(item => item.id)).toEqual([1, 2]);
     expect(store.nextCursor()).toBe('persisted-cursor');
   });
 

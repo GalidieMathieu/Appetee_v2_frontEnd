@@ -1,6 +1,6 @@
 /**
- * Admin mutation tests protect multipart authority boundaries and shared cache invalidation.
- * Phase 12 verifies an updated recipe cannot leave a stale lightweight Preview cached.
+ * Admin mutation tests protect multipart authority boundaries and shared read-model invalidation.
+ * An updated recipe cannot leave stale detail, Preview, Cooking View, or query data cached.
  */
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
@@ -18,6 +18,7 @@ describe('AdminRecipeFacade', () => {
   const update = vi.fn();
   const invalidateDetail = vi.fn();
   const invalidatePreview = vi.fn();
+  const invalidateCookingView = vi.fn();
   const invalidateQueries = vi.fn();
 
   beforeEach(() => {
@@ -25,6 +26,7 @@ describe('AdminRecipeFacade', () => {
     update.mockReset();
     invalidateDetail.mockReset();
     invalidatePreview.mockReset();
+    invalidateCookingView.mockReset();
     invalidateQueries.mockReset();
     create.mockReturnValue(of(createSummary()));
     update.mockReturnValue(of(createSummary()));
@@ -39,7 +41,12 @@ describe('AdminRecipeFacade', () => {
         },
         {
           provide: RecipesFacade,
-          useValue: { invalidateDetail, invalidatePreview, invalidateQueries },
+          useValue: {
+            invalidateDetail,
+            invalidatePreview,
+            invalidateCookingView,
+            invalidateQueries,
+          },
         },
       ],
     });
@@ -101,13 +108,14 @@ describe('AdminRecipeFacade', () => {
     expect(await firstValueFrom(facade.error$)).toBeNull();
   });
 
-  it('invalidates detail, Preview, and discovery data after updating one recipe', async () => {
+  it('invalidates detail, Preview, Cooking View, and discovery after an update', async () => {
     const facade = TestBed.inject(AdminRecipeFacade);
 
     await firstValueFrom(facade.updateRecipeWithDetails(42, createRequest()));
 
     expect(invalidateDetail).toHaveBeenCalledWith(42);
     expect(invalidatePreview).toHaveBeenCalledWith(42);
+    expect(invalidateCookingView).toHaveBeenCalledWith(42);
     expect(invalidateQueries).toHaveBeenCalledOnce();
   });
 });

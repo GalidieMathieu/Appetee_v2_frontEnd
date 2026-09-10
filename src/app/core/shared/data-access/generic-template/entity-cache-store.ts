@@ -1,3 +1,7 @@
+/**
+ * Reusable signal-backed cache mechanics for independently loaded, identity-scoped entities.
+ * Domain stores supply only their entity type while sharing request and invalidation guarantees.
+ */
 import { Signal, computed, signal } from '@angular/core';
 
 import { ResettableStore } from '../../utils/resettable-store';
@@ -7,6 +11,8 @@ export type RequestStatus = 'idle' | 'loading' | 'success' | 'error';
 export interface EntityRequestState {
   readonly status: RequestStatus;
   readonly error: string | null;
+  /** Present when a consumer must distinguish a transport status such as an unavailable 404. */
+  readonly httpStatus?: number;
 }
 
 export interface EntityCacheState<TEntity> {
@@ -27,6 +33,7 @@ export abstract class EntityCacheStore<TEntity extends { id: number }>
     requestById: {},
   });
   private readonly generationSignal = signal(0);
+  private readonly invalidationVersionById = new Map<number, number>();
 
   readonly state = this.stateSignal.asReadonly();
   readonly entitiesById = computed(() => this.stateSignal().entitiesById);
@@ -35,6 +42,16 @@ export abstract class EntityCacheStore<TEntity extends { id: number }>
   /** Changes on reset so facades can reject responses started for an earlier identity. */
   generation(): number {
     return this.generationSignal();
+  }
+
+  invalidationVersion(id: number): number {
+    return this.invalidationVersionById.get(id) ?? 0;
+  }
+
+  /** Confirms identity reset and per-ID invalidation have not superseded a request. */
+  isRequestCurrent(id: number, generation: number, invalidationVersion: number): boolean {
+    return this.generation() === generation
+      && this.invalidationVersion(id) === invalidationVersion;
   }
 
   get(id: number): TEntity | null {
@@ -69,19 +86,26 @@ export abstract class EntityCacheStore<TEntity extends { id: number }>
       const { [id]: _request, ...requestById } = state.requestById;
       return { entitiesById, requestById };
     });
+    this.invalidationVersionById.set(id, this.invalidationVersion(id) + 1);
   }
 
   setLoading(id: number): void {
     this.setRequestState(id, { status: 'loading', error: null });
   }
 
-  setError(id: number, message: string): void {
-    this.setRequestState(id, { status: 'error', error: message });
+  setError(id: number, message: string, httpStatus?: number): void {
+    this.setRequestState(
+      id,
+      httpStatus === undefined
+        ? { status: 'error', error: message }
+        : { status: 'error', error: message, httpStatus }
+    );
   }
 
   reset(): void {
     this.generationSignal.update(value => value + 1);
     this.stateSignal.set({ entitiesById: {}, requestById: {} });
+    this.invalidationVersionById.clear();
   }
 
   private setRequestState(id: number, request: EntityRequestState): void {

@@ -1,3 +1,4 @@
+/** Recipes routing tests protect private-layout authentication and feature-local Cooking Mode. */
 import { Routes } from '@angular/router';
 
 import { routes } from '@app/app.routes';
@@ -5,6 +6,7 @@ import { authGuard } from '@app/core/auth/auth.guard';
 import { PrivateLayoutComponent } from '@app/core/layout/private-layout/private-layout.component';
 
 import { RecipesListComponent } from './RecipesList/recipesList.page';
+import { RecipeCookingPageComponent } from './cooking/recipe-cooking.page';
 import { RECIPES_ROUTES } from './recipes.routes';
 
 describe('recipes routing', () => {
@@ -21,12 +23,18 @@ describe('recipes routing', () => {
   });
 
   it('uses the feature root for the recipe discovery page', () => {
-    expect(RECIPES_ROUTES).toEqual([
-      expect.objectContaining({
-        path: '',
-        title: 'Recipes',
-        component: RecipesListComponent,
-      }),
-    ]);
+    expect(RECIPES_ROUTES).toContainEqual(expect.objectContaining({
+      path: '',
+      title: 'Recipes',
+      component: RecipesListComponent,
+    }));
+  });
+
+  it('adds Cooking Mode beneath the already authenticated Recipes namespace', () => {
+    expect(RECIPES_ROUTES).toContainEqual(expect.objectContaining({
+      path: ':id/cooking',
+      title: 'Cooking Mode',
+      component: RecipeCookingPageComponent,
+    }));
   });
 });

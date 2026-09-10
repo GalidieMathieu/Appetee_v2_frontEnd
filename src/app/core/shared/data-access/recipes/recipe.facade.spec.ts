@@ -1,14 +1,20 @@
 /**
- * Shared recipe facade tests for Preview/detail caching and optimistic favorite membership.
- * Confirmed change events protect list synchronization for Card and Preview consumers.
+ * Shared recipe facade tests for Cooking View, Preview/detail caching, and favorite membership.
+ * Identity and per-recipe invalidation prevent stale complete read models from resurfacing.
  */
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
-import { RecipeCardDto, RecipeDetailDto, RecipePreviewDto } from './recipe.model';
+import {
+  RecipeCardDto,
+  RecipeCookingViewDto,
+  RecipeDetailDto,
+  RecipePreviewDto,
+} from './recipe.model';
 import { RecipesApi } from './recipe.api';
+import { RecipeCookingStore } from './recipe-cooking.store';
 import { RecipeDetailsStore } from './recipe-details.store';
 import { RecipesFacade } from './recipe.facade';
 import { RecipePreviewStore } from './recipe-preview.store';
@@ -16,24 +22,28 @@ import { RecipesStore } from './recipes.store';
 
 describe('RecipesFacade', () => {
   const getDetail = vi.fn();
+  const getCookingView = vi.fn();
   const getPreview = vi.fn();
   const saveFavorite = vi.fn();
   const removeFavorite = vi.fn();
 
   beforeEach(() => {
     getDetail.mockReset();
+    getCookingView.mockReset();
     getPreview.mockReset();
     saveFavorite.mockReset();
     removeFavorite.mockReset();
     TestBed.configureTestingModule({
       providers: [
         RecipesFacade,
+        RecipeCookingStore,
         RecipeDetailsStore,
         RecipePreviewStore,
         RecipesStore,
         {
           provide: RecipesApi,
           useValue: {
+            getCookingView,
             getPreview,
             getRecipeWithDetails: getDetail,
             saveFavorite,
@@ -42,6 +52,86 @@ describe('RecipesFacade', () => {
         },
       ],
     });
+  });
+
+  it('returns a cached Cooking View through the reactive selector without another request', async () => {
+    const store = TestBed.inject(RecipeCookingStore);
+    store.upsert(createCookingView(1));
+    const facade = TestBed.inject(RecipesFacade);
+
+    expect(facade.cookingViewFor(1)()).toEqual(createCookingView(1));
+    expect(await firstValueFrom(facade.getCookingView(1))).toEqual(createCookingView(1));
+    expect(facade.cookingViewRequestState(1)()).toEqual({
+      status: 'success',
+      error: null,
+    });
+    expect(getCookingView).not.toHaveBeenCalled();
+  });
+
+  it('coalesces duplicate concurrent Cooking View requests for the same identity and ID', async () => {
+    const pending = new Subject<RecipeCookingViewDto>();
+    getCookingView.mockReturnValue(pending);
+    const facade = TestBed.inject(RecipesFacade);
+
+    const first = firstValueFrom(facade.getCookingView(2));
+    const second = firstValueFrom(facade.getCookingView(2));
+    expect(facade.cookingViewRequestState(2)().status).toBe('loading');
+    pending.next(createCookingView(2));
+    pending.complete();
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      createCookingView(2),
+      createCookingView(2),
+    ]);
+    expect(getCookingView).toHaveBeenCalledOnce();
+  });
+
+  it('retries a failed Cooking View with a fresh request', async () => {
+    getCookingView
+      .mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })))
+      .mockReturnValueOnce(of(createCookingView(3)));
+    const facade = TestBed.inject(RecipesFacade);
+
+    await expect(firstValueFrom(facade.getCookingView(3), { defaultValue: null }))
+      .resolves.toBeNull();
+    expect(facade.cookingViewRequestState(3)().status).toBe('error');
+    expect(facade.cookingViewRequestState(3)().httpStatus).toBe(500);
+
+    await expect(firstValueFrom(facade.retryCookingView(3)))
+      .resolves.toEqual(createCookingView(3));
+    expect(getCookingView).toHaveBeenCalledTimes(2);
+    expect(facade.cookingViewRequestState(3)().status).toBe('success');
+  });
+
+  it('clears Cooking View cache on identity reset and rejects the old response', async () => {
+    const pending = new Subject<RecipeCookingViewDto>();
+    getCookingView.mockReturnValue(pending);
+    const facade = TestBed.inject(RecipesFacade);
+    const store = TestBed.inject(RecipeCookingStore);
+    const result = firstValueFrom(facade.getCookingView(4), { defaultValue: null });
+
+    store.reset();
+    pending.next(createCookingView(4));
+    pending.complete();
+
+    await expect(result).resolves.toBeNull();
+    expect(store.get(4)).toBeNull();
+    expect(facade.cookingViewRequestState(4)().status).toBe('idle');
+  });
+
+  it('invalidates cached Cooking View data and rejects its older in-flight response', async () => {
+    const pending = new Subject<RecipeCookingViewDto>();
+    getCookingView.mockReturnValue(pending);
+    const facade = TestBed.inject(RecipesFacade);
+    const result = firstValueFrom(facade.getCookingView(5), { defaultValue: null });
+
+    facade.invalidateCookingView(5);
+    pending.next(createCookingView(5));
+    pending.complete();
+
+    await expect(result).resolves.toBeNull();
+    expect(facade.cookingViewFor(5)()).toBeNull();
+    expect(facade.cookingViewRequestState(5)().status).toBe('idle');
   });
 
   it('announces discovery invalidation without owning discovery state', async () => {
@@ -451,5 +541,28 @@ function createPreview(id: number, isSaved = false): RecipePreviewDto {
     badges: ['Quick Meal'],
     ingredients: [{ id: 10 + id, name: 'Ingredient' }],
     isSaved,
+  };
+}
+
+function createCookingView(id: number): RecipeCookingViewDto {
+  return {
+    id,
+    name: `Recipe ${id}`,
+    imageUrl: `https://cdn.example.com/recipes/recipe-${id}.jpg`,
+    description: 'A complete Cooking View.',
+    totalTimeMinutes: 35,
+    baseServings: 4,
+    caloriesTotal: 800,
+    proteinTotal: 40,
+    carbsTotal: 100,
+    badges: ['High Protein', 'Meal Prep'],
+    ingredients: [{
+      id: 10 + id,
+      name: 'Ingredient',
+      quantity: 400,
+      unit: 'g',
+      displayOrder: 1,
+    }],
+    steps: [{ order: 1, title: 'Prepare', instruction: 'Cook' }],
   };
 }
