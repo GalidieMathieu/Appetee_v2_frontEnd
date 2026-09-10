@@ -1,7 +1,7 @@
 /**
  * Recipe-experience Quick Preview dialog for card-known and lazily fetched Preview fields.
- * The component renders one responsive desktop/mobile experience and can mutate from its passed
- * Card immediately, even when that Card is not part of the Recipe Discovery store.
+ * The component renders one responsive desktop/mobile experience and delegates Cooking entry
+ * without knowing which feature rendered its Card.
  */
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import {
@@ -26,6 +26,7 @@ import { RecipeCardDto } from '@app/core/shared/data-access/recipes/recipe.model
 export interface RecipeQuickPreviewData {
   readonly recipeId: number;
   readonly card?: RecipeCardDto;
+  readonly startCooking: () => void;
 }
 
 @Component({
@@ -60,6 +61,8 @@ export class RecipeQuickPreviewComponent {
   protected readonly canFavorite = computed(() =>
     this.data.card !== undefined || this.currentCard() !== null || this.preview() !== null
   );
+  protected readonly canStartCooking = Number.isSafeInteger(this.data.recipeId)
+    && this.data.recipeId > 0;
   protected readonly isSaved = computed(() =>
     this.preview()?.isSaved
       ?? this.currentCard()?.isSaved
@@ -112,6 +115,11 @@ export class RecipeQuickPreviewComponent {
   protected toggleFavorite(): void {
     if (this.isFavoritePending() || !this.canFavorite()) return;
     this.recipesFacade.toggleFavorite(this.data.recipeId, this.isSaved());
+  }
+
+  protected startCooking(): void {
+    if (!this.canStartCooking) return;
+    this.data.startCooking();
   }
 
   protected dismissFavoriteFeedback(): void {

@@ -100,6 +100,38 @@ export interface RecipePreviewDto {
   isSaved: boolean;
 }
 
+/** Ordered ingredient projection used only by the complete Cooking View read model. */
+export interface RecipeCookingIngredientDto {
+  id: number;
+  name: string;
+  quantity: number;
+  unit: string;
+  displayOrder: number;
+}
+
+/** Authored Cooking View step with an explicit one-based display order. */
+export interface RecipeCookingStepDto {
+  order: number;
+  title: string;
+  instruction: string;
+}
+
+/**
+ * Server-authorized base recipe values for Cooking Mode.
+ * Temporary servings, scaling, checklist, step, and timer state never belong in this DTO.
+ */
+export interface RecipeCookingViewDto extends RecipeNutrition {
+  id: number;
+  name: string;
+  imageUrl: string | null;
+  description: string;
+  totalTimeMinutes: number;
+  baseServings: number;
+  badges: readonly RecipeBadge[];
+  ingredients: readonly RecipeCookingIngredientDto[];
+  steps: readonly RecipeCookingStepDto[];
+}
+
 /** Internal shared-mutation state kept in the model rather than declared inside a facade. */
 export interface FavoriteMutationState {
   readonly recipeGeneration: number;

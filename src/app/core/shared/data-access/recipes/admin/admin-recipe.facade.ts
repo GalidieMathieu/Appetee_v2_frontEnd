@@ -1,6 +1,6 @@
 /**
- * Coordinates Admin recipe multipart mutations and invalidates affected shared recipe caches.
- * Phase 12 invalidates the lightweight Preview independently from complete detail/discovery data.
+ * Coordinates Admin recipe multipart mutations and invalidates affected shared recipe read models.
+ * Successful updates clear detail, Preview, Cooking View, and dependent query caches together.
  */
 import { Injectable } from '@angular/core';
 import { EMPTY, Observable, catchError, finalize, tap } from 'rxjs';
@@ -44,6 +44,7 @@ export class AdminRecipeFacade extends AbstractLoadFacade<null, AdminRecipeStore
         if (changedId !== undefined) {
           this.recipesFacade.invalidateDetail(changedId);
           this.recipesFacade.invalidatePreview(changedId);
+          this.recipesFacade.invalidateCookingView(changedId);
         }
         this.recipesFacade.invalidateQueries();
       }),

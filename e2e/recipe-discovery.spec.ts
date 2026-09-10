@@ -1,6 +1,6 @@
 /**
- * Browser-level F-008 regression coverage for discovery, applied URL criteria, shared Preview,
- * favorite synchronization, and the explicit cursor-continuation fallback without a real backend.
+ * Browser-level F-008/F-010 coverage for discovery, shared Preview/Cooking, exact history return,
+ * retained pagination, favorite synchronization, and direct-link fallback without a real backend.
  */
 import { expect, test } from '@playwright/test';
 
@@ -54,6 +54,15 @@ test('search, filters, shared Preview, and favorite membership stay in one SPA f
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(preview()),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/recipes/12/cooking-view' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(cookingView(12)),
       });
       return;
     }
@@ -128,8 +137,20 @@ test('search, filters, shared Preview, and favorite membership stay in one SPA f
   await expect(dialog.getByText('A complete lightweight chicken preview.')).toBeVisible();
   await expect(dialog.locator('.recipe-quick-preview__ingredient-list li')).toHaveCount(6);
   await expect(dialog.getByText('+ 2 more ingredients')).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'Start Cooking' })).toBeDisabled();
+  const originUrl = page.url();
+  await expect(dialog.getByRole('button', { name: 'Start Cooking' })).toBeEnabled();
   await expect(dialog.getByText('View Full Recipe')).toHaveCount(0);
+
+  await dialog.getByRole('button', { name: 'Start Cooking' }).click();
+  await expect(page).toHaveURL(/\/recipes\/12\/cooking$/);
+  await expect(page.getByRole('heading', { name: 'Chicken Power Bowl' })).toBeVisible();
+  await page.getByRole('button', { name: 'Exit Cooking Mode' }).click();
+  await expect(page).toHaveURL(originUrl);
+  await expect(page.locator('app-recipe-card')).toHaveCount(1);
+  expect(discoveryUrls).toHaveLength(3);
+
+  await cardSelection.click();
+  await expect(dialog.getByText('A complete lightweight chicken preview.')).toBeVisible();
 
   await dialog.getByRole('button', { name: 'Save Recipe' }).click();
   await expect(dialog.getByRole('button', { name: 'Saved' })).toBeVisible();
@@ -185,6 +206,26 @@ test('the explicit Load More path forwards the opaque cursor and appends cards',
       return;
     }
 
+    if (/^\/api\/recipes\/\d+\/preview$/.test(url.pathname)) {
+      const id = Number(url.pathname.split('/')[3]);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...preview(), id, name: `Recipe ${id}` }),
+      });
+      return;
+    }
+
+    if (/^\/api\/recipes\/\d+\/cooking-view$/.test(url.pathname)) {
+      const id = Number(url.pathname.split('/')[3]);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(cookingView(id)),
+      });
+      return;
+    }
+
     await route.abort('failed');
   });
 
@@ -195,6 +236,14 @@ test('the explicit Load More path forwards the opaque cursor and appends cards',
   expect(recipeUrls).toHaveLength(2);
   expect(recipeUrls[1]?.searchParams.get('cursor')).toBe('opaque.cursor.value');
   await expect(page).not.toHaveURL(/cursor=/);
+
+  await page.locator('.recipe-card__selection').first().click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Start Cooking' }).click();
+  await expect(page).toHaveURL(/\/recipes\/1\/cooking$/);
+  await page.getByRole('button', { name: 'Exit Cooking Mode' }).click();
+
+  await expect(page.locator('app-recipe-card')).toHaveCount(2);
+  expect(recipeUrls).toHaveLength(2);
 });
 
 test('Quick Preview uses the same full-screen experience on a narrow mobile viewport', async ({
@@ -248,11 +297,57 @@ test('Quick Preview uses the same full-screen experience on a narrow mobile view
   const surface = dialog.locator('.mat-mdc-dialog-surface');
   await expect(dialog.getByText('A complete lightweight chicken preview.')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Close recipe preview' })).toBeFocused();
-  await expect(dialog.getByRole('button', { name: 'Start Cooking' })).toBeDisabled();
+  await expect(dialog.getByRole('button', { name: 'Start Cooking' })).toBeEnabled();
   await expect(surface).toHaveCSS('border-radius', '0px');
   const box = await surface.boundingBox();
   expect(box?.width).toBeGreaterThanOrEqual(389);
   expect(box?.height).toBeGreaterThanOrEqual(843);
+});
+
+test('a direct Cooking URL exits to the safe Recipes fallback', async ({ page }) => {
+  await page.route(API_PATTERN, async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === '/api/auth/session') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: 42, username: 'recipe-tester' }),
+      });
+      return;
+    }
+    if (url.pathname === '/api/users/me') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ username: 'recipe-tester', imageUrl: null }),
+      });
+      return;
+    }
+    if (url.pathname === '/api/recipes/12/cooking-view') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(cookingView(12)),
+      });
+      return;
+    }
+    if (url.pathname === '/api/recipes') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [card(12)], nextCursor: null, hasMore: false }),
+      });
+      return;
+    }
+    await route.abort('failed');
+  });
+
+  await page.goto('/recipes/12/cooking');
+  await expect(page.getByRole('heading', { name: 'Chicken Power Bowl' })).toBeVisible();
+  await page.getByRole('button', { name: 'Exit Cooking Mode' }).click();
+  await expect(page).toHaveURL(/\/recipes$/);
 });
 
 function card(id: number) {
@@ -288,5 +383,26 @@ function preview() {
       name: `Ingredient ${index + 1}`,
     })),
     isSaved: false,
+  };
+}
+
+function cookingView(id: number) {
+  return {
+    id,
+    name: id === 12 ? 'Chicken Power Bowl' : `Recipe ${id}`,
+    imageUrl: null,
+    description: 'A complete recipe for Cooking Mode.',
+    totalTimeMinutes: 35,
+    baseServings: 4,
+    caloriesTotal: 1680,
+    proteinTotal: 154,
+    carbsTotal: 180,
+    badges: ['High Protein'],
+    ingredients: [
+      { id: 7, name: 'Chicken Breast', quantity: 600, unit: 'g', displayOrder: 1 },
+    ],
+    steps: [
+      { order: 1, title: 'Cook', instruction: 'Cook until ready.' },
+    ],
   };
 }

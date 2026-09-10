@@ -1,6 +1,6 @@
 /**
  * Root Angular provider configuration, including every identity-scoped store reset on session changes.
- * Feature query stores join shared caches in the existing cookie-session reset workflow.
+ * Feature query stores and transient Recipe Experience context join the cookie-session reset flow.
  */
 import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
 import { provideRouter } from '@angular/router';
@@ -23,8 +23,10 @@ import { IngredientDetailsStore } from './core/shared/data-access/ingredients/ad
 import { AdminIngredientStore } from './core/shared/data-access/ingredients/admin/admin-ingredient.store';
 import { RecipesStore } from './core/shared/data-access/recipes/recipes.store';
 import { RecipePreviewStore } from './core/shared/data-access/recipes/recipe-preview.store';
+import { RecipeCookingStore } from './core/shared/data-access/recipes/recipe-cooking.store';
 import { FavoritesStore } from './features/favorites/state/favorites.store';
 import { HomeStore } from './features/home/state/home.store';
+import { RecipeExperienceFacade } from './core/shared/ui/recipe-experience/recipe-experience.facade';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,6 +41,8 @@ export const appConfig: ApplicationConfig = {
     // Register stores for resetAll()
     { provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipePreviewStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: RecipeCookingStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: RecipeExperienceFacade, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipeDetailsStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: FavoritesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: HomeStore, multi: true },

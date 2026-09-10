@@ -1,6 +1,6 @@
 /**
  * Preview coverage verifies immediate compact metrics, lazy-only skeletons, bounded ingredients,
- * retry/favorite actions from any Card source, and the intentionally disabled Cooking action.
+ * retry/favorite actions from any Card source, and shared Cooking-entry delegation.
  */
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -27,6 +27,7 @@ describe('RecipeQuickPreviewComponent', () => {
   const toggleFavorite = vi.fn();
   const dismissFavoriteFeedback = vi.fn();
   const close = vi.fn();
+  const startCooking = vi.fn();
 
   beforeEach(() => {
     preview.set(null);
@@ -37,11 +38,12 @@ describe('RecipeQuickPreviewComponent', () => {
     toggleFavorite.mockReset();
     dismissFavoriteFeedback.mockReset();
     close.mockReset();
+    startCooking.mockReset();
 
     TestBed.configureTestingModule({
       imports: [RecipeQuickPreviewComponent],
       providers: [
-        { provide: MAT_DIALOG_DATA, useValue: { recipeId: card.id, card } },
+        { provide: MAT_DIALOG_DATA, useValue: { recipeId: card.id, card, startCooking } },
         { provide: MatDialogRef, useValue: { close } },
         {
           provide: RecipesFacade,
@@ -78,6 +80,9 @@ describe('RecipeQuickPreviewComponent', () => {
     expect(root.querySelector('.recipe-quick-preview__skeleton--description')).not.toBeNull();
     expect(root.querySelector('.recipe-quick-preview__skeleton--metric')).not.toBeNull();
     expect(root.querySelector('.recipe-quick-preview__ingredient-skeletons')).not.toBeNull();
+    const cooking = [...root.querySelectorAll('button')]
+      .find(button => button.textContent?.includes('Start Cooking'));
+    expect(cooking?.disabled).toBe(false);
     expect(getPreview).toHaveBeenCalledOnce();
   });
 
@@ -97,7 +102,9 @@ describe('RecipeQuickPreviewComponent', () => {
     expect(root.textContent).not.toContain('Servings');
     const cooking = [...root.querySelectorAll('button')]
       .find(button => button.textContent?.includes('Start Cooking'));
-    expect(cooking?.disabled).toBe(true);
+    expect(cooking?.disabled).toBe(false);
+    cooking?.click();
+    expect(startCooking).toHaveBeenCalledOnce();
   });
 
   it('retries failed lazy details without removing immediate card content', () => {
