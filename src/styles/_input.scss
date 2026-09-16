@@ -1,3 +1,7 @@
+/*
+ * Shared text, icon, and range input primitives keep interactive fields visually consistent.
+ * The themed range owns its track states globally so feature styles do not depend on browser colors.
+ */
 /* ------- Input without icon ------- */
 /* 
     if you change anything in that input, apply the correction to  input with icon.
@@ -82,4 +86,62 @@
     line-height: 1rem;  
     color: var(--color-muted);
   }
-  
+
+/* ------- Themed range input ------- */
+
+.input-range--primary {
+  --input-range-progress: 0%;
+
+  width: 100%;
+  height: 1.15rem;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.input-range--primary::-webkit-slider-runnable-track {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0 var(--input-range-progress),
+    var(--color-secondary) var(--input-range-progress) 100%
+  );
+}
+
+.input-range--primary::-webkit-slider-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: -0.35rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 50%;
+  appearance: none;
+  background: var(--color-surface);
+}
+
+.input-range--primary::-moz-range-track {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--color-secondary);
+}
+
+.input-range--primary::-moz-range-progress {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.input-range--primary::-moz-range-thumb {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-surface);
+}
+
+.input-range--primary:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}

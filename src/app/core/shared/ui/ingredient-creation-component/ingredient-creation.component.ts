@@ -1,5 +1,11 @@
 import { Component, effect, inject, input, OnInit, output } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import {
   IngredientAdminDetailRequest,
   IngredientBasisUnit,
@@ -40,15 +46,22 @@ export class IngredientCreateFormComponent implements OnInit {
     caloriesKcal:new FormControl<number>(100,{nonNullable: true,
       validators: [Validators.required, Validators.min(0)],
     }),
-    price: new FormControl<number | null>(10, {
+    price: new FormControl(10, {
+      nonNullable: true,
       validators: [Validators.required, Validators.min(0)],
     }),
     image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
-    proteinG: new FormControl<number | null>(null),
+    proteinG: new FormControl(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
     fatG: new FormControl<number | null>(null),
-    carbsG: new FormControl<number | null>(null),
+    carbsG: new FormControl(0, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
     sugarG: new FormControl<number | null>(null),
     fiberG: new FormControl<number | null>(null),
     sodiumMg: new FormControl<number | null>(null),
@@ -144,6 +157,10 @@ export class IngredientCreateFormComponent implements OnInit {
   // Notifies the parent dialog that ingredient creation was cancelled.
   cancel(): void {
     this.cancelled.emit();
+  }
+
+  shouldShowError(control: AbstractControl): boolean {
+    return control.invalid && control.touched;
   }
 
   // Emits the current form validity to the parent dialog.

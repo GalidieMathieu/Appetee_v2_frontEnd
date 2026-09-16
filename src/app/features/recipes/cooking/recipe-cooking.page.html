@@ -1,0 +1,58 @@
+<!-- The route page owns only load/error states and passes a complete immutable DTO to shared UI. -->
+<div class="recipe-cooking-page">
+  @if (cookingView(); as view) {
+    @if (hasInvalidCookingData()) {
+      <section class="recipe-cooking-page__state" role="alert">
+        <mat-icon aria-hidden="true">restaurant</mat-icon>
+        <h1 class="text-section-title">Cooking session unavailable</h1>
+        <p class="text-body-secondary">This recipe does not have complete cooking instructions.</p>
+        <button type="button" class="btn-link--primary text-button-white" (click)="exitCookingMode()">
+          Back to recipes
+        </button>
+      </section>
+    } @else {
+      <app-recipe-cooking-mode
+        [recipe]="view"
+        (exitRequested)="exitCookingMode()"
+      />
+    }
+  } @else if (isUnavailable()) {
+    <section class="recipe-cooking-page__state" role="alert">
+      <mat-icon aria-hidden="true">search_off</mat-icon>
+      <h1 class="text-section-title">Cooking session unavailable</h1>
+      <p class="text-body-secondary">This recipe could not be found or is not available to cook.</p>
+      <button type="button" class="btn-link--primary text-button-white" (click)="exitCookingMode()">
+        Back to recipes
+      </button>
+    </section>
+  } @else if (requestState().status === 'error') {
+    <section class="recipe-cooking-page__state" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <h1 class="text-section-title">Cooking Mode could not be loaded</h1>
+      <p class="text-body-secondary">{{ requestState().error }}</p>
+      <div class="recipe-cooking-page__state-actions">
+        <button type="button" class="btn-link--primary text-button-white" (click)="retry()">
+          Try again
+        </button>
+        <button type="button" class="btn-selection text-button" (click)="exitCookingMode()">
+          Back to recipes
+        </button>
+      </div>
+    </section>
+  } @else {
+    <section class="recipe-cooking-page__loading" aria-label="Loading Cooking Mode" aria-live="polite">
+      <span class="recipe-cooking-page__sr-only">Loading Cooking Mode…</span>
+      <div class="recipe-cooking-page__skeleton recipe-cooking-page__skeleton--header"></div>
+      <div class="recipe-cooking-page__loading-grid">
+        <div class="recipe-cooking-page__loading-column">
+          <div class="recipe-cooking-page__skeleton recipe-cooking-page__skeleton--hero"></div>
+          <div class="recipe-cooking-page__skeleton recipe-cooking-page__skeleton--step"></div>
+        </div>
+        <div class="recipe-cooking-page__loading-column">
+          <div class="recipe-cooking-page__skeleton recipe-cooking-page__skeleton--ingredients"></div>
+          <div class="recipe-cooking-page__skeleton recipe-cooking-page__skeleton--progress"></div>
+        </div>
+      </div>
+    </section>
+  }
+</div>

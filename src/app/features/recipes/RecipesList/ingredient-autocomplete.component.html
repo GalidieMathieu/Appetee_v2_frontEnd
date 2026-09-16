@@ -1,0 +1,86 @@
+<!--
+  Accessible ingredient combobox for bounded suggestions and independent selected identity chips.
+  The parent owns Phase 10 draft/apply behavior so choosing a suggestion never reloads recipes.
+-->
+<section class="ingredient-autocomplete" aria-labelledby="ingredient-filter-label">
+  <label id="ingredient-filter-label" for="ingredient-filter-input" class="text-control-small">
+    Ingredients
+  </label>
+
+  <div class="ingredient-autocomplete__control">
+    <mat-icon aria-hidden="true">search</mat-icon>
+    <input
+      id="ingredient-filter-input"
+      type="search"
+      autocomplete="off"
+      placeholder="Search ingredients"
+      role="combobox"
+      aria-autocomplete="list"
+      aria-controls="ingredient-suggestions"
+      aria-haspopup="listbox"
+      [formControl]="queryControl"
+      [readOnly]="selectionLimitReached()"
+      [attr.aria-expanded]="panelVisible()"
+      [attr.aria-activedescendant]="activeOptionId()"
+      [attr.aria-describedby]="selectionLimitReached() ? 'ingredient-selection-limit' : null"
+      (keydown)="onInputKeydown($event)"
+    />
+
+    @if (panelVisible()) {
+      <div id="ingredient-suggestions" class="ingredient-autocomplete__panel" role="listbox">
+        @if (status() === 'loading') {
+          <p class="text-small ingredient-autocomplete__status" role="status">
+            Searching ingredients…
+          </p>
+        } @else if (status() === 'error') {
+          <div class="ingredient-autocomplete__status" role="alert">
+            <span class="text-small">Ingredients could not be loaded.</span>
+            <button type="button" class="text-control-small" (click)="retry()">
+              Try again
+            </button>
+          </div>
+        } @else if (suggestions().length === 0) {
+          <p class="text-small ingredient-autocomplete__status" role="status">
+            No ingredients found
+          </p>
+        } @else {
+          @for (ingredient of suggestions(); track ingredient.id; let index = $index) {
+            <button
+              type="button"
+              role="option"
+              class="text-control-small ingredient-autocomplete__option"
+              [id]="'ingredient-suggestion-' + index"
+              [attr.aria-selected]="activeIndex() === index"
+              [class.is-active]="activeIndex() === index"
+              (click)="selectIngredient(ingredient)"
+            >
+              {{ ingredient.name }}
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
+
+  @if (selectedIngredients().length > 0) {
+    <div class="ingredient-autocomplete__selected" aria-label="Selected ingredients">
+      @for (ingredient of selectedIngredients(); track ingredient.id) {
+        <button
+          type="button"
+          class="btn-selection text-chip ingredient-autocomplete__chip"
+          [attr.aria-label]="'Remove ' + ingredient.name"
+          (click)="removeIngredient(ingredient.id)"
+        >
+          {{ ingredient.name }}
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </div>
+  }
+
+  @if (selectionLimitReached()) {
+    <p id="ingredient-selection-limit" class="text-small">
+      Maximum 3 ingredients selected
+    </p>
+  }
+</section>

@@ -29,8 +29,8 @@
       <div class="recipe-created-layout">
         <section class="recipe-created-card recipe-created-summary">
           <div class="recipe-created-summary__media">
-            @if (recipe.imageUrl) {
-              <img [src]="recipe.imageUrl" [alt]="recipe.name" />
+            @if (recipe.previewImageUrl) {
+              <img [src]="recipe.previewImageUrl" [alt]="recipe.name" />
             } @else {
               <mat-icon>image</mat-icon>
               <span class="text-body-secondary">{{ copy.summary.emptyImage }}</span>
@@ -72,13 +72,13 @@
         <section class="recipe-created-card recipe-created-details">
           <div class="recipe-created-details__grid">
             <article class="recipe-created-details__stat">
-              <span class="text-body-secondary">{{ copy.stats.calories }}</span>
-              <strong>{{ recipe.caloriesTotal | number: '1.0-0' }} {{ copy.stats.caloriesUnit }}</strong>
+              <span class="text-body-secondary">{{ copy.stats.caloriesPerServing }}</span>
+              <strong>{{ recipe.caloriesPerServing | number: '1.0-0' }} {{ copy.stats.caloriesUnit }}</strong>
             </article>
 
             <article class="recipe-created-details__stat">
-              <span class="text-body-secondary">{{ copy.stats.protein }}</span>
-              <strong>{{ recipe.proteinTotal | number: '1.0-0' }} {{ copy.stats.gramsUnit }}</strong>
+              <span class="text-body-secondary">{{ copy.stats.proteinPerServing }}</span>
+              <strong>{{ recipe.proteinPerServing | number: '1.0-0' }} {{ copy.stats.gramsUnit }}</strong>
             </article>
 
             <article class="recipe-created-details__stat">

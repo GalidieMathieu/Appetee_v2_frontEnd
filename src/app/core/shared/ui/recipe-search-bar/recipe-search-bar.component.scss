@@ -1,0 +1,87 @@
+/* Search geometry is the extracted Recipe Discovery implementation shared without fixed parent width. */
+:host {
+  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.recipe-search-bar {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.recipe-search-bar__field {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 2.9rem;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0 0.8rem;
+  background: var(--color-surface);
+}
+
+.recipe-search-bar__field:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.recipe-search-bar__field mat-icon {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--color-muted);
+  font-size: 1.15rem;
+}
+
+.recipe-search-bar__field input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.recipe-search-bar__field input::placeholder {
+  color: var(--color-muted);
+}
+
+.recipe-search-bar__submit {
+  min-height: 2.9rem;
+  border: 0;
+  border-radius: var(--radius);
+  padding-inline: 1.35rem;
+  cursor: pointer;
+}
+
+.recipe-search-bar__submit:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .recipe-search-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recipe-search-bar__submit {
+    width: 100%;
+  }
+}

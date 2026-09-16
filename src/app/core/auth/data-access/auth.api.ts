@@ -2,7 +2,13 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_URL } from '@app/core/api/api.config';
-import { LoginRequest, SignUpRequest, UserSession } from './auth.model';
+import {
+  LoginRequest,
+  PasswordRecoveryConfirmRequest,
+  PasswordRecoveryRequest,
+  SignUpRequest,
+  UserSession,
+} from './auth.model';
 import { SKIP_AUTO_LOGOUT } from './auth.request-context';
 
 @Injectable({ providedIn: 'root' })
@@ -28,6 +34,22 @@ export class AuthApi {
 
   signUp(user: SignUpRequest): Observable<UserSession> {
     return this.http.post<UserSession>(`${this.apiUrl}/auth/sign-up`, user, this.authRequestOptions());
+  }
+
+  requestPasswordRecovery(request: PasswordRecoveryRequest): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/auth/password-recovery/request`,
+      request,
+      this.authRequestOptions()
+    );
+  }
+
+  confirmPasswordRecovery(request: PasswordRecoveryConfirmRequest): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl}/auth/password-recovery/confirm`,
+      request,
+      this.authRequestOptions()
+    );
   }
 
   logout(): Observable<void> {

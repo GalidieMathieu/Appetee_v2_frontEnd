@@ -1,0 +1,109 @@
+/* Horizontal overflow is contained by the section while canonical cards retain their dimensions. */
+:host {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.recipe-list-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.recipe-list-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.recipe-list-section__action {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0.45rem 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.recipe-list-section__action:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.recipe-list-section__action:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.recipe-list-section__row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  gap: 1.25rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 0.75rem;
+  scrollbar-gutter: stable;
+  touch-action: pan-x pan-y;
+}
+
+.recipe-list-section__row app-recipe-card,
+.recipe-list-section__row app-recipe-card-skeleton {
+  flex: 0 0 min(18.6rem, calc(100vw - 3rem));
+  width: min(18.6rem, calc(100vw - 3rem));
+}
+
+.recipe-list-section__feedback,
+.recipe-list-section__empty {
+  color: var(--color-muted);
+}
+
+.recipe-list-section__feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+}
+
+.recipe-list-section__feedback p,
+.recipe-list-section__empty {
+  margin: 0;
+}
+
+.recipe-list-section__retry {
+  flex: 0 0 auto;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 399px) {
+  .recipe-list-section__header {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .recipe-list-section__feedback {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recipe-list-section__retry {
+    width: 100%;
+  }
+}

@@ -1,236 +1,88 @@
+/* Production Home spacing follows the approved references across private-layout viewports. */
 .home-page {
+  min-width: 0;
   min-height: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
   background: var(--color-surface);
 }
 
 .home-page__container {
   width: min(100%, 1254px);
+  min-width: 0;
   margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.home-controls {
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.home-controls__inner {
-  display: flex;
-  flex-direction: column;
-  gap: 1.35rem;
-  padding-top: 2rem;
-  padding-bottom: 1.85rem;
-}
-
-.ingredient-callout {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.85rem;
-  min-width: 0;
-  padding: 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface));
-}
-
-.ingredient-callout__icon {
-  color: var(--color-primary);
-}
-
-.ingredient-callout__copy {
-  min-width: 0;
-}
-
-.ingredient-callout__title {
-  margin-bottom: 0.2rem;
-}
-
-.home-action-button,
-.home-search__button {
-  min-height: 2.55rem;
-  border: 0;
-  border-radius: var(--radius);
-  padding: 0 1.05rem;
-  cursor: pointer;
-  transition: background-color 150ms ease, box-shadow 150ms ease;
-}
-
-.home-action-button {
-  grid-column: 1 / -1;
-  justify-self: start;
-}
-
-.home-search {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0.65rem;
-}
-
-.home-search__field {
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  background: var(--color-surface);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-}
-
-.home-search__field input {
-  color: var(--color-text);
-  font-size: 0.9rem;
-}
-
-.home-search__icon {
-  color: color-mix(in srgb, var(--color-muted) 88%, var(--color-text));
-}
-
-.home-search__button {
-  min-height: 2.75rem;
-}
-
-.filter-row,
-.meal-filter__options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.filter-row__button,
-.meal-filter__button {
-  min-height: 2.45rem;
   padding-inline: 1rem;
-  border-color: transparent;
-  background: var(--color-secondary);
 }
 
-.filter-row__button mat-icon {
+.home-welcome {
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+}
+
+.home-welcome__inner {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: clamp(2rem, 5vw, 3.5rem);
+  padding-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.home-welcome__search {
+  width: 100%;
+  max-width: 58rem;
+  margin-top: 1rem;
+}
+
+.home-content {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 4.5rem);
+  padding-top: clamp(2rem, 5vw, 3.5rem);
+  padding-bottom: clamp(3rem, 7vw, 5rem);
+}
+
+.home-explore {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+  background: color-mix(in srgb, var(--color-secondary) 45%, var(--color-surface));
+}
+
+.home-explore__action {
+  flex: 0 0 auto;
+  gap: 0.55rem;
+  min-height: 2.65rem;
+  background: var(--color-surface);
+}
+
+.home-explore__action mat-icon {
   width: 1rem;
   height: 1rem;
   font-size: 1rem;
 }
 
-.filter-row__button.is-selected,
-.meal-filter__button.is-selected {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
-  box-shadow:
-    0 10px 15px -3px rgba(255, 114, 20, 0.25),
-    0 4px 6px -4px rgba(255, 114, 20, 0.2);
+@media (max-width: 399px) {
+  .home-page__container {
+    padding-inline: 0.875rem;
+  }
 }
 
-.meal-filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+@media (max-width: 639px) {
+  .home-explore {
+    align-items: stretch;
+    flex-direction: column;
+  }
 
-.recipe-results {
-  padding: 5rem 0;
-  background: var(--color-surface);
-}
-
-.recipe-results__header {
-  margin-bottom: 2rem;
-}
-
-.recipe-results__header .text-section-title {
-  margin-bottom: 0.55rem;
-}
-
-.recipe-results__grid {
-  display: grid;
-  grid-template-columns: minmax(0, 18.6rem);
-  gap: 1.5rem;
-}
-
-.recipe-results__empty {
-  display: grid;
-  justify-items: center;
-  gap: 0.8rem;
-  padding: 4rem 1rem;
-  text-align: center;
-  color: var(--color-muted);
-}
-
-.recipe-results__empty mat-icon {
-  width: 4rem;
-  height: 4rem;
-  font-size: 4rem;
-  color: color-mix(in srgb, var(--color-muted) 32%, transparent);
-}
-
-.recipe-collection-cta {
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  background:
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--color-primary) 9%, var(--color-surface)) 0%,
-      color-mix(in srgb, var(--color-secondary) 22%, var(--color-surface)) 52%,
-      color-mix(in srgb, var(--color-primary) 5%, var(--color-surface)) 100%
-    );
-}
-
-.recipe-collection-cta__inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.45rem;
-  padding-top: 6.7rem;
-  padding-bottom: 6.25rem;
-  text-align: center;
-}
-
-.recipe-collection-cta__description {
-  max-width: 42rem;
-}
-
-.recipe-collection-cta__button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  min-height: 3.75rem;
-  min-width: min(100%, 20.5rem);
-  border: 0;
-  border-radius: var(--radius);
-  padding: 0 2rem;
-  cursor: pointer;
-  font-size: 1.25rem;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.14),
-    0 8px 10px -6px rgba(0, 0, 0, 0.14);
-  transition: background-color 150ms ease, box-shadow 150ms ease;
-}
-
-.recipe-collection-cta__button mat-icon {
-  width: 1.55rem;
-  height: 1.55rem;
-  font-size: 1.55rem;
+  .home-explore__action {
+    width: 100%;
+  }
 }
 
 @media (min-width: 640px) {
   .home-page__container {
     padding-inline: 1.5rem;
-  }
-
-  .ingredient-callout {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .home-action-button {
-    grid-column: auto;
-    justify-self: end;
-  }
-
-  .home-search {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .home-search__button {
-    min-width: 5.6rem;
-    padding-inline: 1.35rem;
   }
 }
 

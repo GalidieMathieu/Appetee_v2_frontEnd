@@ -1,0 +1,54 @@
+<!-- The section owns repeated layout only; cards retain all Preview and favorite interactions. -->
+<section class="recipe-list-section" [attr.aria-labelledby]="headingId()">
+  <header class="recipe-list-section__header">
+    <h2 class="text-section-title" [id]="headingId()">{{ title() }}</h2>
+    <button
+      type="button"
+      class="recipe-list-section__action text-button"
+      [disabled]="actionDisabled()"
+      [attr.aria-disabled]="actionDisabled() ? 'true' : null"
+      [attr.aria-label]="actionLabel() + ' ' + title()"
+      (click)="triggerAction()"
+    >
+      {{ actionLabel() }} <span aria-hidden="true">→</span>
+    </button>
+  </header>
+
+  @if (errorMessage(); as error) {
+    <div class="recipe-list-section__feedback" role="alert">
+      <p>{{ error }}</p>
+      <button
+        type="button"
+        class="btn-selection text-button recipe-list-section__retry"
+        [attr.aria-label]="'Try ' + title() + ' again'"
+        (click)="retryRequested.emit()"
+      >
+        Try again
+      </button>
+    </div>
+  } @else {
+    <div
+      class="recipe-list-section__row"
+      [attr.aria-busy]="loading() ? 'true' : null"
+      [attr.aria-label]="loading() ? 'Loading ' + title() : null"
+    >
+      @if (loading()) {
+      @for (_ of skeletons(); track $index) {
+        <app-recipe-card-skeleton aria-hidden="true" />
+      }
+      <span class="visually-hidden">Loading {{ title() }}…</span>
+      } @else {
+        @for (recipe of recipes(); track recipe.id; let index = $index) {
+          <app-recipe-card
+            [recipe]="recipe"
+            [imageLoading]="index === 0 ? 'eager' : 'lazy'"
+          />
+        } @empty {
+          @if (emptyMessage(); as message) {
+            <p class="recipe-list-section__empty">{{ message }}</p>
+          }
+        }
+      }
+    </div>
+  }
+</section>

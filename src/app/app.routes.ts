@@ -1,3 +1,4 @@
+/** Root route ownership keeps public and authenticated lazy features under their proper layouts. */
 import { Routes } from '@angular/router';
 import { PublicLayoutComponent } from './core/layout/public-layout/public-layout.component';
 import { PrivateLayoutComponent } from './core/layout/private-layout/private-layout.component';
@@ -37,7 +38,21 @@ export const routes: Routes = [
                     loadChildren: () =>
                         import('./features/admin-recipes/admin-recipes.routes').then(m => m.ADMINRECIPES_ROUTES),
                   },
-                  // recipes, profile, etc.
+                  {
+                    path: 'profile',
+                    loadChildren: () =>
+                      import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES),
+                  },
+                  {
+                    path: 'recipes',
+                    loadChildren: () =>
+                      import('./features/recipes/recipes.routes').then(m => m.RECIPES_ROUTES),
+                  },
+                  {
+                    path: 'favorites',
+                    loadChildren: () =>
+                      import('./features/favorites/favorites.routes').then(m => m.FAVORITES_ROUTES),
+                  },
             ]
     },
     { path: '**', redirectTo: ''},

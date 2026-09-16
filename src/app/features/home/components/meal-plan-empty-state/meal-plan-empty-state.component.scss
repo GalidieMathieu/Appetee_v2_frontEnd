@@ -1,0 +1,46 @@
+/* Home onboarding follows the supplied dashed callout while using existing theme/button tokens. */
+.meal-plan-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  border-radius: 1rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface));
+}
+
+.meal-plan-empty-state__copy {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.meal-plan-empty-state__action {
+  flex: 0 0 auto;
+  min-height: 2.65rem;
+  border: 0;
+  border-radius: var(--radius);
+  padding-inline: 1.15rem;
+}
+
+.meal-plan-empty-state__action:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.45);
+  opacity: 0.65;
+}
+
+.meal-plan-empty-state__action:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .meal-plan-empty-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .meal-plan-empty-state__action {
+    width: 100%;
+  }
+}

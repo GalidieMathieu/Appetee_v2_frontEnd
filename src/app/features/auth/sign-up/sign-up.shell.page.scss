@@ -116,25 +116,3 @@
     margin-top: 1rem;
   }
   
-  .signin-cta__link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-    padding: 0.5rem 0.75rem;
-    border-radius: 9999px;
-  
-    transition: background-color 150ms ease, color 150ms ease;
-  }
-  
-  .signin-cta__link:hover {
-    background: color-mix(in srgb, var(--color-muted) 12%, transparent);
-    color: var(--color-text);
-  }
-  
-  .signin-cta__icon {
-    font-size: 1rem;
-    line-height: 1;
-    opacity: 0.8;
-  }
-  

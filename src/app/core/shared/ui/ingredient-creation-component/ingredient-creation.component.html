@@ -47,7 +47,14 @@
         placeholder=""
         step="1"
         min="0"
+        [attr.aria-invalid]="shouldShowError(form.controls.caloriesKcal)"
+        [attr.aria-describedby]="shouldShowError(form.controls.caloriesKcal) ? 'caloriesKcal-error' : null"
       />
+      @if (shouldShowError(form.controls.caloriesKcal)) {
+        <small id="caloriesKcal-error" class="text-error" role="alert">
+          Calories are required and cannot be negative.
+        </small>
+      }
     </div>
 
     <div class="form-field">
@@ -60,7 +67,14 @@
         placeholder=""
         step="0.01"
         min="0"
+        [attr.aria-invalid]="shouldShowError(form.controls.price)"
+        [attr.aria-describedby]="shouldShowError(form.controls.price) ? 'price-error' : null"
       />
+      @if (shouldShowError(form.controls.price)) {
+        <small id="price-error" class="text-error" role="alert">
+          Price is required and cannot be negative.
+        </small>
+      }
     </div>
 
     <div class="form-field">
@@ -100,7 +114,15 @@
         formControlName="proteinG"
         placeholder=""
         step="1"
+        min="0"
+        [attr.aria-invalid]="shouldShowError(form.controls.proteinG)"
+        [attr.aria-describedby]="shouldShowError(form.controls.proteinG) ? 'proteinG-error' : null"
       />
+      @if (shouldShowError(form.controls.proteinG)) {
+        <small id="proteinG-error" class="text-error" role="alert">
+          Protein is required and cannot be negative.
+        </small>
+      }
     </div>
 
     <div class="form-field">
@@ -124,7 +146,15 @@
         formControlName="carbsG"
         placeholder=""
         step="1"
+        min="0"
+        [attr.aria-invalid]="shouldShowError(form.controls.carbsG)"
+        [attr.aria-describedby]="shouldShowError(form.controls.carbsG) ? 'carbsG-error' : null"
       />
+      @if (shouldShowError(form.controls.carbsG)) {
+        <small id="carbsG-error" class="text-error" role="alert">
+          Carbs are required and cannot be negative.
+        </small>
+      }
     </div>
 
     <div class="form-field">

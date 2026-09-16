@@ -1,18 +1,19 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 import { inject } from '@angular/core';
-import { AuthFacade } from '../auth/data-access/auth.facade';
 import { SKIP_AUTO_LOGOUT } from '../auth/data-access/auth.request-context';
+import { SessionExpirationService } from '../auth/session-expiration.service';
 
 export const apiErrorInterceptor: HttpInterceptorFn = (req, next) => {
-  const auth = inject(AuthFacade);
+  const sessionExpiration = inject(SessionExpirationService);
 
   return next(req).pipe(
     catchError((err: unknown) => {
       if (err instanceof HttpErrorResponse) {
-        // Only auto-logout for authenticated API calls. Auth endpoints manage their own 401 handling.
+        // Auth endpoints manage expected 401 responses themselves. A 401 from any other API
+        // request means the previously accepted browser session is no longer usable.
         if (err.status === 401 && !req.context.get(SKIP_AUTO_LOGOUT)) {
-          auth.logout().subscribe();
+          sessionExpiration.handleExpiration();
         }
       }
       return throwError(() => err);

@@ -1,3 +1,7 @@
+/**
+ * Shared ingredient contracts keep lightweight catalogue identity separate from admin nutrition.
+ * Recipe autocomplete intentionally consumes only the existing ID/name Ingredient projection.
+ */
 export type IngredientBasisUnit = 'g' | 'ml';
 
 //########## DTO ############
@@ -29,12 +33,12 @@ export type IngredientAdminDetailRequest = {
   name: string;
   basis: number;
   basisUnit: IngredientBasisUnit;
-  price: number | null;
+  price: number;
   caloriesKcal: number;
   image: File;
-  proteinG: number | null;
+  proteinG: number;
   fatG: number | null;
-  carbsG: number | null;
+  carbsG: number;
   sugarG: number | null;
   fiberG: number | null;
   sodiumMg: number | null;

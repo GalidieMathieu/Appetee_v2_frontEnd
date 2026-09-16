@@ -1,0 +1,236 @@
+<!--
+  Compact Cooking Mode keeps the active instruction visually calm, lists only titles in progress,
+  and presents the session timer as a separate card below the current-step card.
+-->
+<article class="cooking-mode">
+  <header class="cooking-mode__topbar">
+    <button type="button" class="btn-link--back text-button cooking-mode__exit" (click)="exitRequested.emit()">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
+      Exit Cooking Mode
+    </button>
+    <span class="cooking-mode__status text-label">
+      <mat-icon aria-hidden="true">checklist</mat-icon>
+      Cooking mode
+    </span>
+  </header>
+
+  <div class="cooking-mode__grid">
+    <main class="cooking-mode__main">
+      <section class="cooking-card cooking-summary" aria-labelledby="cooking-recipe-title">
+        <div class="cooking-summary__media">
+          <img
+            class="cooking-summary__image"
+            [src]="resolvedImageUrl()"
+            [alt]="recipe().name"
+            width="900"
+            height="480"
+          />
+          <div class="cooking-summary__overlay">
+            <h1 id="cooking-recipe-title" class="text-section-title">{{ recipe().name }}</h1>
+          </div>
+        </div>
+        <div class="cooking-summary__body">
+          <dl class="cooking-summary__metrics" aria-label="Cooking quantity totals">
+            <div>
+              <dt class="text-small"><mat-icon aria-hidden="true">schedule</mat-icon>Total time</dt>
+              <dd class="text-label" data-testid="total-time">{{ recipe().totalTimeMinutes }} min</dd>
+            </div>
+            <div>
+              <dt class="text-small"><mat-icon aria-hidden="true">group</mat-icon>Servings</dt>
+              <dd class="text-label" data-testid="selected-servings">{{ selectedServings() }} servings</dd>
+            </div>
+            <div>
+              <dt class="text-small"><mat-icon aria-hidden="true">local_fire_department</mat-icon>Calories</dt>
+              <dd class="text-label" data-testid="scaled-calories">{{ scaledCalories() }} cal</dd>
+            </div>
+            <div>
+              <dt class="text-small"><mat-icon aria-hidden="true">fitness_center</mat-icon>Protein</dt>
+              <dd class="text-label" data-testid="scaled-protein">{{ scaledProtein() }} g</dd>
+            </div>
+            <div>
+              <dt class="text-small"><mat-icon aria-hidden="true">grain</mat-icon>Carbs</dt>
+              <dd class="text-label" data-testid="scaled-carbs">{{ scaledCarbs() }} g</dd>
+            </div>
+          </dl>
+
+          <p class="text-body-secondary cooking-summary__description">{{ recipe().description }}</p>
+
+          @if (recipe().badges.length > 0) {
+            <div class="cooking-summary__badges" aria-label="Recipe categories">
+              @for (badge of recipe().badges; track badge) {
+                <span class="text-chip">{{ badge }}</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+
+      @if (activeStep(); as step) {
+        <section class="cooking-card cooking-step" aria-label="Current cooking step">
+          <header class="cooking-step__header">
+            <p class="text-eyebrow">
+              Step {{ currentStepIndex() + 1 }} of {{ orderedSteps().length }}
+            </p>
+            @if (isFinalStep()) {
+              <mat-icon class="cooking-step__complete-icon" aria-label="Final step">check_circle</mat-icon>
+            }
+          </header>
+
+          <progress
+            class="cooking-step__progress"
+            [value]="progressPercent()"
+            max="100"
+            [attr.aria-label]="'Cooking progress: step ' + (currentStepIndex() + 1) + ' of ' + orderedSteps().length"
+          ></progress>
+
+          <div class="cooking-step__instruction">
+            <p class="text-body">{{ step.instruction }}</p>
+          </div>
+
+          @if (isFinalStep()) {
+            <div class="cooking-step__ready" role="status">
+              <mat-icon aria-hidden="true">celebration</mat-icon>
+              <p class="text-body">Your recipe is ready. Enjoy your meal or portion it into containers for later.</p>
+            </div>
+          }
+
+          <nav class="cooking-step__navigation" aria-label="Cooking step controls">
+            <button
+              type="button"
+              class="btn-selection text-button"
+              [disabled]="currentStepIndex() === 0"
+              (click)="previousStep()"
+            >
+              <mat-icon aria-hidden="true">chevron_left</mat-icon>
+              Previous step
+            </button>
+            @if (isFinalStep()) {
+              <button type="button" class="btn-link--primary text-button-white" (click)="cookAgain()">
+                <mat-icon aria-hidden="true">replay</mat-icon>
+                Cook again
+              </button>
+            } @else {
+              <button
+                type="button"
+                class="btn-link--primary text-button-white cooking-step__next"
+                (click)="nextStep()"
+              >
+                <span>Next step</span>
+                <mat-icon aria-hidden="true">chevron_right</mat-icon>
+              </button>
+            }
+          </nav>
+        </section>
+
+        <section class="cooking-timer" aria-labelledby="cooking-timer-title">
+          <div>
+            <h3 id="cooking-timer-title" class="text-subtitle">Cooking timer</h3>
+            <p class="text-small">One timer for your entire cooking session.</p>
+          </div>
+          <time class="text-title cooking-timer__time" data-testid="timer-display">{{ formattedElapsed() }}</time>
+          <div class="cooking-timer__controls">
+            <button type="button" class="btn-selection text-button" (click)="toggleTimer()">
+              <mat-icon aria-hidden="true">{{ timerState().running ? 'pause' : 'play_arrow' }}</mat-icon>
+              {{ timerActionLabel() }}
+            </button>
+            <button
+              type="button"
+              class="btn-selection text-button"
+              aria-label="Reset cooking timer"
+              [disabled]="elapsedMs() === 0 && !timerState().running"
+              (click)="resetTimer()"
+            >
+              <mat-icon aria-hidden="true">restart_alt</mat-icon>
+              Reset
+            </button>
+          </div>
+        </section>
+      }
+    </main>
+
+    <aside class="cooking-mode__aside">
+      <section class="cooking-card cooking-ingredients" aria-labelledby="cooking-ingredients-title">
+        <header class="cooking-ingredients__header">
+          <h2 id="cooking-ingredients-title" class="text-subtitle">Ingredients</h2>
+          <div class="cooking-ingredients__servings">
+            <span class="text-label">Servings</span>
+            <div class="cooking-ingredients__stepper">
+              <button
+                type="button"
+                class="text-button"
+                aria-label="Decrease servings"
+                [disabled]="selectedServings() === 1"
+                (click)="decreaseServings()"
+              >−</button>
+              <output class="text-label" aria-live="polite" aria-label="Selected servings">
+                {{ selectedServings() }}
+              </output>
+              <button
+                type="button"
+                class="text-button"
+                aria-label="Increase servings"
+                [disabled]="selectedServings() === maximumServings()"
+                (click)="increaseServings()"
+              >+</button>
+            </div>
+          </div>
+          <p class="text-small">Quantities and nutrition scale from the recipe's base servings.</p>
+        </header>
+
+        <ul class="cooking-ingredients__list">
+          @for (ingredient of orderedIngredients(); track ingredient.id) {
+            <li [class.is-checked]="checkedIngredientIds().has(ingredient.id)">
+              <label>
+                <input
+                  type="checkbox"
+                  [checked]="checkedIngredientIds().has(ingredient.id)"
+                  (change)="toggleIngredient(ingredient.id)"
+                />
+                <span class="text-body cooking-ingredients__name">{{ ingredient.name }}</span>
+                <span
+                  class="text-label cooking-ingredients__quantity"
+                  [attr.data-ingredient-id]="ingredient.id"
+                >
+                  {{ scaledIngredientQuantity(ingredient) }} {{ ingredient.unit }}
+                </span>
+              </label>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <section class="cooking-card cooking-progress" aria-labelledby="cooking-progress-title">
+        <h2 id="cooking-progress-title" class="text-subtitle">Cooking progress</h2>
+        <ol>
+          @for (step of orderedSteps(); track step.order; let index = $index) {
+            <li>
+              <button
+                type="button"
+                [class.is-current]="index === currentStepIndex()"
+                [class.is-complete]="index < currentStepIndex()"
+                [attr.aria-current]="index === currentStepIndex() ? 'step' : null"
+                (click)="selectStep(index)"
+              >
+                <span class="text-control-small cooking-progress__marker" aria-hidden="true">
+                  @if (index < currentStepIndex()) {
+                    <mat-icon>check</mat-icon>
+                  } @else {
+                    {{ index + 1 }}
+                  }
+                </span>
+                <span class="cooking-progress__copy">
+                  <strong class="text-body-strong">{{ step.title }}</strong>
+                  @if (index < currentStepIndex()) {
+                    <span class="text-control-small cooking-progress__state">Completed</span>
+                  } @else if (index === currentStepIndex()) {
+                    <span class="text-control-small cooking-progress__state">Current step</span>
+                  }
+                </span>
+              </button>
+            </li>
+          }
+        </ol>
+      </section>
+    </aside>
+  </div>
+</article>

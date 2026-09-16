@@ -5,6 +5,14 @@ import { SignUpWizard } from './sign-up/sign-up.wizard';
 export const AUTH_ROUTES: Routes = [
     { path: 'login', loadComponent: () => import('./login/login.page').then(m => m.LoginPage) },
     {
+        path: 'forgot-password',
+        loadComponent: () => import('./password-recovery/forgot-password.page').then(m => m.ForgotPasswordPage),
+    },
+    {
+        path: 'reset-password',
+        loadComponent: () => import('./password-recovery/reset-password.page').then(m => m.ResetPasswordPage),
+    },
+    {
         path: 'sign-up',
         loadComponent: () => import('./sign-up/sign-up.shell.page').then(m => m.SignUpShellPage),
         providers:[SignUpWizard],

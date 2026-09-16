@@ -29,21 +29,28 @@ import { defaultIfEmpty, finalize, of, startWith, filter, map, switchMap, tap } 
 import { Diet } from '@app/core/shared/data-access/diets/diet.model';
 import { DietsFacade } from '@app/core/shared/data-access/diets/diets.facade';
 import { IngredientsFacade } from '@app/core/shared/data-access/ingredients/ingredient.facade';
+import { IngredientDetailsFacade } from '@app/core/shared/data-access/ingredients/admin/ingredient-details.facade';
 import { IngredientDialogResult } from '@app/core/shared/data-access/ingredients/ingredient.model';
 import {
   RecipeBadge,
   RecipeDetailDto,
   RecipeDetailRequest,
   RecipeDifficulty,
-  RecipeNutrition,
+  RecipeFeaturedOrder,
+  RecipeInstructionStep,
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
+import { AdminRecipeFacade } from '@app/core/shared/data-access/recipes/admin/admin-recipe.facade';
 import { readAvifFileSelection } from '@app/core/shared/utils/avif-file-selection/avif-file-selection';
 
 import {
+  EMPTY_RECIPE_CALCULATION,
+  RecipeCalculation,
   RecipeCreationForm,
   RecipeCreationIngredient,
+  RecipeInstructionStepDraft,
+  RecipeInstructionStepForm,
 } from './data/recipe-creation';
 import { IngredientDialogComponent } from './component/ingredient-creation.dialog';
 import {
@@ -64,6 +71,56 @@ const requiredTrimmedValidator: ValidatorFn = (
   return value.trim().length > 0 ? null : { requiredTrimmed: true };
 };
 
+const structuredInstructionStepValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const value = control.value as RecipeInstructionStepDraft;
+  const title = value.title?.trim() ?? '';
+  const instruction = value.instruction?.trim() ?? '';
+
+  if (!title && !instruction) {
+    return null;
+  }
+
+  const errors: ValidationErrors = {};
+  if (!title) errors['titleRequired'] = true;
+  if (!instruction) errors['instructionRequired'] = true;
+  return Object.keys(errors).length > 0 ? errors : null;
+};
+
+const atLeastOneCompleteInstructionValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const values = control.value as RecipeInstructionStepDraft[];
+  const hasCompleteStep = values.some(
+    value => Boolean(value.title?.trim()) && Boolean(value.instruction?.trim())
+  );
+  return hasCompleteStep ? null : { required: true };
+};
+
+const validRecipeTimesValidator: ValidatorFn = (
+  control: AbstractControl
+): ValidationErrors | null => {
+  const value = control.value as {
+    prepTimeMinutes?: number;
+    cookTimeMinutes?: number;
+    totalTimeMinutes?: number;
+  };
+  const { prepTimeMinutes, cookTimeMinutes, totalTimeMinutes } = value;
+
+  if (
+    typeof prepTimeMinutes !== 'number'
+    || typeof cookTimeMinutes !== 'number'
+    || typeof totalTimeMinutes !== 'number'
+  ) {
+    return null;
+  }
+
+  return totalTimeMinutes >= prepTimeMinutes && totalTimeMinutes >= cookTimeMinutes
+    ? null
+    : { invalidTotalTime: true };
+};
+
 @Component({
   selector: 'app-admin-recipe-page',
   templateUrl: './admin-recipes.page.html',
@@ -75,9 +132,15 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   //########## Page Options ############
   readonly difficultyOptions: RecipeDifficulty[] = ['Easy', 'Medium', 'Hard'];
   readonly badgeOptions: ReadonlyArray<{ value: RecipeBadge; label: string }> = [
-    { value: 'freezer-friendly', label: 'Freezer-friendly' },
-    { value: 'budget-focused', label: 'Budget-focused' },
-    { value: 'high-protein', label: 'High-protein' },
+    { value: 'High Protein', label: 'High Protein' },
+    { value: 'Low Calorie', label: 'Low Calorie' },
+    { value: 'Low Carb', label: 'Low Carb' },
+    { value: 'High Fiber', label: 'High Fiber' },
+    { value: 'Quick Meal', label: 'Quick Meal' },
+    { value: 'Meal Prep', label: 'Meal Prep' },
+    { value: 'Freezer Friendly', label: 'Freezer Friendly' },
+    { value: 'Budget Friendly', label: 'Budget Friendly' },
+    { value: 'Few Ingredients', label: 'Few Ingredients' },
   ];
 
   //########## Dependencies ############
@@ -87,13 +150,17 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly dietsFacade = inject(DietsFacade);
   private readonly ingredientsFacade = inject(IngredientsFacade);
+  private readonly ingredientDetailsFacade = inject(IngredientDetailsFacade);
   private readonly recipesFacade = inject(RecipesFacade);
+  private readonly adminRecipeFacade = inject(AdminRecipeFacade);
 
   //########## Page State ############
   protected previewImageUrl: string | null = null;
   private previewImageObjectUrl: string | null = null;
   protected selectedImageName = '';
   protected readonly ingredients = signal<RecipeCreationIngredient[]>([]);
+  protected readonly duplicateIngredientError = signal<string | null>(null);
+  private readonly recipeCalculation = signal<RecipeCalculation>(EMPTY_RECIPE_CALCULATION);
   protected readonly submitAttempted = signal(false);
   private readonly routeId = toSignal(
     this.route.paramMap.pipe(map(paramMap => paramMap.get('id'))),
@@ -120,8 +187,20 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   protected readonly hasIngredientsError = computed(
     () => this.submitAttempted() && this.ingredients().length === 0
   );
-  protected readonly errorMessage = toSignal(this.recipesFacade.error$, { initialValue: null });
-  protected readonly isSaving = toSignal(this.recipesFacade.isLoading$, { initialValue: false });
+  protected readonly featuredIngredientCount = computed(
+    () => this.ingredients().filter(ingredient => ingredient.featuredOrder !== null).length
+  );
+  private readonly hasValidFeaturedIngredientCount = computed(() => {
+    const count = this.featuredIngredientCount();
+    return count >= 1 && count <= 3;
+  });
+  protected readonly hasFeaturedIngredientsError = computed(
+    () => this.submitAttempted()
+      && this.ingredients().length > 0
+      && !this.hasValidFeaturedIngredientCount()
+  );
+  protected readonly errorMessage = toSignal(this.adminRecipeFacade.error$, { initialValue: null });
+  protected readonly isSaving = toSignal(this.adminRecipeFacade.isLoading$, { initialValue: false });
 
   //########## Page Form ############
   readonly form: RecipeCreationForm = new FormGroup({
@@ -129,15 +208,29 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       nonNullable: true,
       validators: [requiredTrimmedValidator],
     }),
+    description: new FormControl('', {
+      nonNullable: true,
+      validators: [requiredTrimmedValidator, Validators.maxLength(500)],
+    }),
     image: new FormControl<File | null>(null, {
       validators: [Validators.required],
     }),
-    instructions: new FormArray<FormControl<string>>([]),
+    instructions: new FormArray<RecipeInstructionStepForm>([], {
+      validators: [atLeastOneCompleteInstructionValidator],
+    }),
     servings: new FormControl(1, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1)],
     }),
     prepTimeMinutes: new FormControl(15, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(1)],
+    }),
+    cookTimeMinutes: new FormControl(15, {
+      nonNullable: true,
+      validators: [Validators.required, Validators.min(0)],
+    }),
+    totalTimeMinutes: new FormControl(30, {
       nonNullable: true,
       validators: [Validators.required, Validators.min(1)],
     }),
@@ -150,7 +243,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     dietIds: new FormControl<number[]>([], {
       nonNullable: true,
     }),
-  });
+  }, { validators: [validRecipeTimesValidator] });
 
   readonly diets = toSignal(this.dietsFacade.diets$, {
     initialValue: [] as Diet[],
@@ -169,6 +262,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
+    this.form.controls.servings.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.updateRecipePreview());
+
     effect(() => {
       const isEditMode = this.isEditMode();
 
@@ -207,11 +304,15 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.image;
   }
 
-  get instructionsControl(): FormArray<FormControl<string>> {
+  get descriptionControl(): FormControl<string> {
+    return this.form.controls.description;
+  }
+
+  get instructionsControl(): FormArray<RecipeInstructionStepForm> {
     return this.form.controls.instructions;
   }
 
-  get instructionStepControls(): FormControl<string>[] {
+  get instructionStepControls(): RecipeInstructionStepForm[] {
     return this.instructionsControl.controls;
   }
 
@@ -221,6 +322,14 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   get prepTimeMinutesControl(): FormControl<number> {
     return this.form.controls.prepTimeMinutes;
+  }
+
+  get cookTimeMinutesControl(): FormControl<number> {
+    return this.form.controls.cookTimeMinutes;
+  }
+
+  get totalTimeMinutesControl(): FormControl<number> {
+    return this.form.controls.totalTimeMinutes;
   }
 
   get difficultyControl(): FormControl<RecipeDifficulty | null> {
@@ -319,55 +428,134 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return this.form.controls.badges.value;
   }
 
-  // Calculates the total recipe calories from loaded ingredient details.
+  // Exposes the current preview or saved calorie total.
   get totalCalories(): number {
-    return Math.round(this.calculateRecipeNutrition().caloriesTotal);
+    return Math.round(this.recipeCalculation().caloriesTotal);
   }
 
-  // Calculates the total recipe protein from loaded ingredient details.
+  // Exposes the current preview or saved protein total.
   get totalProtein(): number {
-    return Math.round(this.calculateRecipeNutrition().proteinTotal);
+    return Math.round(this.recipeCalculation().proteinTotal);
   }
 
-  // Calculates the total recipe carbs from loaded ingredient details.
+  get caloriesPerServing(): number {
+    return Math.round(this.recipeCalculation().caloriesPerServing);
+  }
+
+  get proteinPerServing(): number {
+    return Math.round(this.recipeCalculation().proteinPerServing);
+  }
+
+  // Exposes the current preview or saved carbohydrate total.
   get totalCarbs(): number {
-    return Math.round(this.calculateRecipeNutrition().carbsTotal);
+    return Math.round(this.recipeCalculation().carbsTotal);
   }
 
-  // Estimates the cost per serving from the linked ingredient prices.
+  // Exposes the current preview or saved cost per serving.
   get estimatedCostPerServing(): number | null {
-    return this.calculateEstimatedCostPerServing(this.servingsValue);
+    return this.recipeCalculation().estimatedCostPerServing;
   }
 
   // Opens the ingredient dialog and loads full DTO details for the selected id.
   openIngredientDialog(): void {
+    this.duplicateIngredientError.set(null);
     const dialogRef = this.dialog.open(IngredientDialogComponent);
 
     dialogRef.afterClosed().pipe(
       filter((result): result is IngredientDialogResult => result != null),
+      filter(result => {
+        if (!this.isIngredientSelected(result.ingredientId)) {
+          return true;
+        }
+
+        this.duplicateIngredientError.set(
+          'This ingredient is already linked to the recipe.'
+        );
+        return false;
+      }),
       switchMap(result =>
-        this.ingredientsFacade.getIngredientWithDetails(result.ingredientId).pipe(
+        this.ingredientDetailsFacade.get(result.ingredientId).pipe(
           map(ingredient => ({
             ...result,
             ingredient,
+            featuredOrder: null,
           }))
         )
       ),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(recipeIngredient => {
+      if (this.isIngredientSelected(recipeIngredient.ingredientId)) {
+        this.duplicateIngredientError.set(
+          'This ingredient is already linked to the recipe.'
+        );
+        return;
+      }
+
+      this.duplicateIngredientError.set(null);
       this.ingredients.update(ingredients => [...ingredients, recipeIngredient]);
+      this.updateRecipePreview();
     });
   }
 
   // Removes one selected ingredient from the recipe draft.
   removeIngredient(index: number): void {
-    this.ingredients.update(ingredients =>
-      ingredients.filter((_, currentIndex) => currentIndex !== index)
-    );
+    this.duplicateIngredientError.set(null);
+    this.ingredients.update(ingredients => {
+      const removedOrder = ingredients[index]?.featuredOrder ?? null;
+
+      return ingredients
+        .filter((_, currentIndex) => currentIndex !== index)
+        .map(ingredient => ({
+          ...ingredient,
+          featuredOrder:
+            removedOrder !== null
+            && ingredient.featuredOrder !== null
+            && ingredient.featuredOrder > removedOrder
+              ? (ingredient.featuredOrder - 1) as RecipeFeaturedOrder
+              : ingredient.featuredOrder,
+        }));
+    });
+    this.updateRecipePreview();
+  }
+
+  toggleFeaturedIngredient(index: number): void {
+    this.ingredients.update(ingredients => {
+      const selected = ingredients[index];
+      if (!selected) return ingredients;
+
+      if (selected.featuredOrder === null) {
+        const nextOrder = this.featuredIngredientCount() + 1;
+        if (nextOrder > 3) return ingredients;
+
+        return ingredients.map((ingredient, currentIndex) =>
+          currentIndex === index
+            ? { ...ingredient, featuredOrder: nextOrder as RecipeFeaturedOrder }
+            : ingredient
+        );
+      }
+
+      const removedOrder = selected.featuredOrder;
+      return ingredients.map((ingredient, currentIndex) => {
+        if (currentIndex === index) {
+          return { ...ingredient, featuredOrder: null };
+        }
+
+        return ingredient.featuredOrder !== null && ingredient.featuredOrder > removedOrder
+          ? {
+              ...ingredient,
+              featuredOrder: (ingredient.featuredOrder - 1) as RecipeFeaturedOrder,
+            }
+          : ingredient;
+      });
+    });
+  }
+
+  canFeatureIngredient(ingredient: RecipeCreationIngredient): boolean {
+    return ingredient.featuredOrder !== null || this.featuredIngredientCount() < 3;
   }
 
   // Adds one editable instruction step to the recipe draft.
-  addInstructionStep(value = ''): void {
+  addInstructionStep(value: RecipeInstructionStepDraft = {}): void {
     this.instructionsControl.push(this.createInstructionStepControl(value));
     this.instructionsControl.markAsDirty();
     this.instructionsControl.markAsTouched();
@@ -378,6 +566,20 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.instructionsControl.removeAt(index);
     this.instructionsControl.markAsDirty();
     this.instructionsControl.markAsTouched();
+  }
+
+  private isIngredientSelected(ingredientId: number): boolean {
+    return this.ingredients().some(ingredient => ingredient.ingredientId === ingredientId);
+  }
+
+  // Moves one instruction earlier while preserving the existing control instance.
+  moveInstructionStepUp(index: number): void {
+    this.moveInstructionStep(index, index - 1);
+  }
+
+  // Moves one instruction later while preserving the existing control instance.
+  moveInstructionStepDown(index: number): void {
+    this.moveInstructionStep(index, index + 1);
   }
 
   // Toggles one diet tag on the recipe.
@@ -427,14 +629,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   // Formats a recipe highlight label for display.
   getBadgeLabel(badge: RecipeBadge): string {
-    switch (badge) {
-      case 'freezer-friendly':
-        return 'Freezer-friendly';
-      case 'budget-focused':
-        return 'Budget-focused';
-      case 'high-protein':
-        return 'High-protein';
-    }
+    return badge;
   }
 
   // Validates the chosen AVIF image and creates a local preview URL.
@@ -471,7 +666,11 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.submitAttempted.set(true);
     this.form.markAllAsTouched();
 
-    if (this.form.invalid || this.ingredients().length === 0) {
+    if (
+      this.form.invalid
+      || this.ingredients().length === 0
+      || !this.hasValidFeaturedIngredientCount()
+    ) {
       return;
     }
 
@@ -483,8 +682,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     this.saveFeedbackPending.set(true);
     const editRecipeId = this.editRecipeId();
     const saveRequest$ = editRecipeId === null
-      ? this.recipesFacade.createRecipeWithDetails(recipeRequest)
-      : this.recipesFacade.updateRecipeWithDetails(editRecipeId, recipeRequest);
+      ? this.adminRecipeFacade.createRecipeWithDetails(recipeRequest)
+      : this.adminRecipeFacade.updateRecipeWithDetails(editRecipeId, recipeRequest);
 
     saveRequest$.pipe(
       tap(recipeSummary => {
@@ -533,8 +732,8 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    if (instructions.length === 0) {
-      this.instructionsControl.markAsTouched();
+    if (instructions.length === 0 || this.instructionsControl.invalid) {
+      this.instructionsControl.markAllAsTouched();
       return null;
     }
 
@@ -548,71 +747,72 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
       return null;
     }
 
-    const nutrition = this.calculateRecipeNutrition();
-
     return {
-      ...nutrition,
       name,
+      description: value.description.trim(),
       image: value.image,
       instructions,
       prepTimeMinutes: value.prepTimeMinutes,
+      cookTimeMinutes: value.cookTimeMinutes,
+      totalTimeMinutes: value.totalTimeMinutes,
       servings: value.servings,
       difficulty: value.difficulty,
       badges: value.badges,
       dietIds: value.dietIds,
-      estimatedCostPerServing: this.calculateEstimatedCostPerServing(value.servings),
       ingredients: this.ingredients().map(ingredient => ({
         ingredientId: ingredient.ingredientId,
         quantity: ingredient.quantity,
         unit: ingredient.unit,
+        featuredOrder: ingredient.featuredOrder,
       })),
     };
   }
 
-  // Aggregates the recipe nutrition totals from each selected ingredient quantity.
-  private calculateRecipeNutrition(): RecipeNutrition {
-    const totals = this.ingredients().reduce(
-      (sum, ingredient) => {
-        const factor = this.getIngredientQuantityFactor(ingredient);
-        const detail = ingredient.ingredient;
+  // Calculates the complete live preview once when its source data changes.
+  private calculateRecipePreview(): RecipeCalculation {
+    const ingredients = this.ingredients();
+    const servings = this.servingsValue;
+    let caloriesTotal = 0;
+    let proteinTotal = 0;
+    let carbsTotal = 0;
+    let totalCost = 0;
+    let hasCompletePricing = servings > 0 && ingredients.length > 0;
 
-        return {
-          caloriesTotal: sum.caloriesTotal + detail.caloriesKcal * factor,
-          proteinTotal: sum.proteinTotal + (detail.proteinG ?? 0) * factor,
-          carbsTotal: sum.carbsTotal + (detail.carbsG ?? 0) * factor,
-        };
-      },
-      {
-        caloriesTotal: 0,
-        proteinTotal: 0,
-        carbsTotal: 0,
+    for (const recipeIngredient of ingredients) {
+      const factor = this.getIngredientQuantityFactor(recipeIngredient);
+      const detail = recipeIngredient.ingredient;
+      caloriesTotal += detail.caloriesKcal * factor;
+      proteinTotal += (detail.proteinG ?? 0) * factor;
+      carbsTotal += (detail.carbsG ?? 0) * factor;
+
+      if (detail.price === null) {
+        hasCompletePricing = false;
+      } else {
+        totalCost += detail.price * factor;
       }
-    );
+    }
+
+    const roundedCaloriesTotal = this.roundTo(caloriesTotal, 2);
+    const roundedProteinTotal = this.roundTo(proteinTotal, 2);
 
     return {
-      caloriesTotal: this.roundTo(totals.caloriesTotal, 2),
-      proteinTotal: this.roundTo(totals.proteinTotal, 2),
-      carbsTotal: this.roundTo(totals.carbsTotal, 2),
+      caloriesTotal: roundedCaloriesTotal,
+      proteinTotal: roundedProteinTotal,
+      carbsTotal: this.roundTo(carbsTotal, 2),
+      caloriesPerServing: servings > 0
+        ? this.roundTo(roundedCaloriesTotal / servings, 2)
+        : 0,
+      proteinPerServing: servings > 0
+        ? this.roundTo(roundedProteinTotal / servings, 2)
+        : 0,
+      estimatedCostPerServing: hasCompletePricing
+        ? this.roundTo(totalCost / servings, 2)
+        : null,
     };
   }
 
-  // Estimates the recipe cost per serving from ingredient prices when available.
-  private calculateEstimatedCostPerServing(servings: number): number | null {
-    if (servings <= 0 || this.ingredients().length === 0) {
-      return null;
-    }
-
-    let totalCost = 0;
-
-    for (const recipeIngredient of this.ingredients()) {
-      if (recipeIngredient.ingredient.price === null) {
-        return null;
-      }
-
-      totalCost += recipeIngredient.ingredient.price * this.getIngredientQuantityFactor(recipeIngredient);
-    }
-
-    return this.roundTo(totalCost / servings, 2);
+  private updateRecipePreview(): void {
+    this.recipeCalculation.set(this.calculateRecipePreview());
   }
 
   // Converts one selected ingredient quantity into a scale factor relative to its nutrition basis.
@@ -651,8 +851,40 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     return control.invalid && (control.touched || this.submitAttempted());
   }
 
+  protected shouldShowTotalTimeError(): boolean {
+    return this.shouldShowControlError(this.totalTimeMinutesControl)
+      || (
+        this.form.hasError('invalidTotalTime')
+        && (this.totalTimeMinutesControl.touched || this.submitAttempted())
+      );
+  }
+
+  protected totalTimeErrorMessage(): string {
+    return this.totalTimeMinutesControl.hasError('min')
+      ? 'Total time must be at least 1 minute.'
+      : 'Total time must be at least the prep time and cook time.';
+  }
+
   protected hasInstructionsError(): boolean {
-    return this.submitAttempted() && this.getNormalizedInstructionSteps().length === 0;
+    return this.submitAttempted() && this.instructionsControl.invalid;
+  }
+
+  protected instructionsErrorMessage(): string {
+    return this.instructionsControl.hasError('required')
+      ? 'Add at least one complete instruction step before saving.'
+      : 'Complete both fields for every partially filled instruction step.';
+  }
+
+  protected shouldShowInstructionFieldError(
+    step: RecipeInstructionStepForm,
+    field: 'title' | 'instruction'
+  ): boolean {
+    if (!this.submitAttempted() && !step.controls[field].touched) {
+      return false;
+    }
+
+    const groupError = field === 'title' ? 'titleRequired' : 'instructionRequired';
+    return step.hasError(groupError) || this.instructionsControl.hasError('required');
   }
 
   private applyImageValidators(isEditMode: boolean): void {
@@ -663,14 +895,18 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   private populateFormForEdit(recipe: RecipeDetailDto): void {
     this.submitAttempted.set(false);
-    this.selectedImageName = recipe.imageUrl ? 'Current image on file' : '';
-    this.setPreviewImage(recipe.imageUrl);
+    this.duplicateIngredientError.set(null);
+    this.selectedImageName = recipe.previewImageUrl ? 'Current image on file' : '';
+    this.setPreviewImage(recipe.previewImageUrl);
     this.replaceInstructionSteps(recipe.instructions);
     this.form.patchValue({
       name: recipe.name,
+      description: recipe.description,
       image: null,
       servings: recipe.servings,
       prepTimeMinutes: recipe.prepTimeMinutes,
+      cookTimeMinutes: recipe.cookTimeMinutes,
+      totalTimeMinutes: recipe.totalTimeMinutes,
       difficulty: recipe.difficulty,
       badges: recipe.badges ?? [],
       dietIds: recipe.diets?.map(diet => diet.id) ?? [],
@@ -680,44 +916,63 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
         ingredientId: recipeIngredient.ingredientId,
         quantity: recipeIngredient.quantity,
         unit: recipeIngredient.unit,
+        featuredOrder: recipeIngredient.featuredOrder,
         ingredient: recipeIngredient.ingredient,
       }))
     );
+    this.applySavedCalculation(recipe);
     this.form.markAsPristine();
     this.form.markAsUntouched();
   }
 
   private resetCreateForm(): void {
     this.submitAttempted.set(false);
+    this.duplicateIngredientError.set(null);
     this.selectedImageName = '';
     this.editRecipeLoadError.set(null);
     this.clearPreviewImage();
-    this.replaceInstructionSteps([]);
+    this.replaceInstructionSteps([{}]);
     this.form.reset({
       name: '',
+      description: '',
       image: null,
       servings: 1,
       prepTimeMinutes: 15,
+      cookTimeMinutes: 15,
+      totalTimeMinutes: 30,
       difficulty: 'Medium',
       badges: [],
       dietIds: [],
     }, { emitEvent: false });
     this.ingredients.set([]);
+    this.recipeCalculation.set(EMPTY_RECIPE_CALCULATION);
     this.form.markAsPristine();
     this.form.markAsUntouched();
   }
 
-  private setPreviewImage(imageUrl: string | null): void {
+  private setPreviewImage(previewImageUrl: string | null): void {
     this.clearPreviewImage();
-    this.previewImageUrl = imageUrl;
+    this.previewImageUrl = previewImageUrl;
   }
 
   private applyUpdatedRecipeSummary(recipeSummary: RecipeSummary): void {
-    this.selectedImageName = recipeSummary.imageUrl ? 'Current image on file' : '';
+    this.selectedImageName = recipeSummary.previewImageUrl ? 'Current image on file' : '';
     this.form.controls.image.setValue(null);
-    this.setPreviewImage(recipeSummary.imageUrl);
+    this.setPreviewImage(recipeSummary.previewImageUrl);
+    this.applySavedCalculation(recipeSummary);
     this.form.markAsPristine();
     this.form.markAsUntouched();
+  }
+
+  private applySavedCalculation(recipe: RecipeCalculation): void {
+    this.recipeCalculation.set({
+      caloriesTotal: recipe.caloriesTotal,
+      proteinTotal: recipe.proteinTotal,
+      carbsTotal: recipe.carbsTotal,
+      caloriesPerServing: recipe.caloriesPerServing,
+      proteinPerServing: recipe.proteinPerServing,
+      estimatedCostPerServing: recipe.estimatedCostPerServing,
+    });
   }
 
   private openFeedbackDialog(data: RecipeFeedbackDialogData): void {
@@ -742,13 +997,37 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     );
   }
 
-  private createInstructionStepControl(value = ''): FormControl<string> {
-    return new FormControl(value, {
-      nonNullable: true,
-    });
+  private createInstructionStepControl(
+    value: RecipeInstructionStepDraft = {}
+  ): RecipeInstructionStepForm {
+    return new FormGroup(
+      {
+        title: new FormControl(value.title ?? '', { nonNullable: true }),
+        instruction: new FormControl(value.instruction ?? '', { nonNullable: true }),
+      },
+      { validators: [structuredInstructionStepValidator] }
+    );
   }
 
-  private replaceInstructionSteps(steps: string[]): void {
+  private moveInstructionStep(fromIndex: number, toIndex: number): void {
+    if (
+      fromIndex < 0
+      || fromIndex >= this.instructionsControl.length
+      || toIndex < 0
+      || toIndex >= this.instructionsControl.length
+      || fromIndex === toIndex
+    ) {
+      return;
+    }
+
+    const control = this.instructionsControl.at(fromIndex);
+    this.instructionsControl.removeAt(fromIndex);
+    this.instructionsControl.insert(toIndex, control);
+    this.instructionsControl.markAsDirty();
+    this.instructionsControl.markAsTouched();
+  }
+
+  private replaceInstructionSteps(steps: RecipeInstructionStepDraft[]): void {
     this.instructionsControl.clear();
 
     for (const step of steps) {
@@ -756,9 +1035,12 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getNormalizedInstructionSteps(): string[] {
+  private getNormalizedInstructionSteps(): RecipeInstructionStep[] {
     return this.instructionsControl.getRawValue()
-      .map(step => step.trim())
-      .filter(step => step.length > 0);
+      .map(step => ({
+        title: step.title.trim(),
+        instruction: step.instruction.trim(),
+      }))
+      .filter(step => step.title.length > 0 || step.instruction.length > 0);
   }
 }
