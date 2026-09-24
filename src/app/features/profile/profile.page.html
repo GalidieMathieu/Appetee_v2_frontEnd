@@ -1,3 +1,4 @@
+<!-- Current-account settings keep profile edits and irreversible closure in distinct visual regions. -->
 <main class="profile-page" aria-labelledby="profile-title">
   <section class="profile-card">
     <header>
@@ -57,12 +58,84 @@
         <button
           type="submit"
           class="save-button"
-          [disabled]="form.invalid || isSubmitting()"
+          [disabled]="form.invalid || isSubmitting() || isDeleting()"
           [attr.aria-busy]="isSubmitting()"
         >
           {{ isSubmitting() ? 'Saving…' : 'Save profile' }}
         </button>
       </form>
+
+      <section class="danger-zone" aria-labelledby="delete-account-title">
+        <div>
+          <h2 id="delete-account-title">Delete account</h2>
+          <p>
+            Permanently close your account and sign out. This action cannot be undone.
+          </p>
+        </div>
+
+        @if (!isDeleteConfirmationOpen()) {
+          <button
+            type="button"
+            class="danger-button"
+            [disabled]="isSubmitting()"
+            (click)="openDeleteConfirmation()"
+          >
+            Delete account
+          </button>
+        } @else {
+          <form
+            class="delete-confirmation"
+            [formGroup]="deleteForm"
+            (ngSubmit)="deleteAccount()"
+            aria-labelledby="delete-confirmation-title"
+            novalidate
+          >
+            <h3 id="delete-confirmation-title">Confirm permanent deletion</h3>
+            <p>
+              Type <strong>DELETE</strong> to confirm. Your recipes and other account data may be
+              removed according to Appetee's account-deletion policy.
+            </p>
+
+            @if (deleteErrorMessage(); as deleteError) {
+              <p class="status status--error" role="alert">{{ deleteError }}</p>
+            }
+
+            <div class="field">
+              <label for="delete-confirmation">Type DELETE</label>
+              <input
+                id="delete-confirmation"
+                class="input--primary"
+                formControlName="confirmation"
+                autocomplete="off"
+                [attr.aria-invalid]="deleteForm.controls.confirmation.invalid && deleteForm.controls.confirmation.touched"
+                [attr.aria-describedby]="deleteForm.controls.confirmation.invalid && deleteForm.controls.confirmation.touched ? 'delete-confirmation-error' : null"
+              />
+              @if (deleteForm.controls.confirmation.invalid && deleteForm.controls.confirmation.touched) {
+                <small id="delete-confirmation-error" role="alert">Enter DELETE exactly to continue.</small>
+              }
+            </div>
+
+            <div class="delete-confirmation__actions">
+              <button
+                type="button"
+                class="secondary-button"
+                [disabled]="isDeleting()"
+                (click)="cancelDeleteConfirmation()"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                class="danger-button"
+                [disabled]="deleteForm.invalid || isDeleting()"
+                [attr.aria-busy]="isDeleting()"
+              >
+                {{ isDeleting() ? 'Deleting account…' : 'Permanently delete account' }}
+              </button>
+            </div>
+          </form>
+        }
+      </section>
     }
   </section>
 </main>

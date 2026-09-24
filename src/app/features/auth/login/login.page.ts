@@ -1,3 +1,4 @@
+/** Authenticates guests and presents one-time identity-boundary notices after redirects. */
 import { ChangeDetectorRef, Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -6,6 +7,7 @@ import { finalize, tap } from 'rxjs';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 import { SessionExpirationService } from '@app/core/auth/session-expiration.service';
+import { AccountClosureService } from '@app/core/auth/account-closure.service';
 
 @Component({
     selector: 'app-login-page',
@@ -19,9 +21,11 @@ export class LoginPage {
     private readonly cdr = inject(ChangeDetectorRef);
     private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
     private readonly sessionExpiration = inject(SessionExpirationService);
+    private readonly accountClosure = inject(AccountClosureService);
     readonly errorMessage = toSignal(this.authFacade.error$, { initialValue: null });
     private readonly sessionExpiredMessage = signal(this.sessionExpiration.consumeMessage());
     readonly displayError = computed(() => this.errorMessage() ?? this.sessionExpiredMessage());
+    readonly accountClosureMessage = signal(this.accountClosure.consumeMessage());
     private readonly errorSummary = viewChild<ElementRef<HTMLElement>>('errorSummary');
     private readonly submitPending = signal(false);
     readonly isSubmitting = this.submitPending;

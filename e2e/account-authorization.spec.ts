@@ -1,3 +1,4 @@
+/** Browser authorization flows prove claim-scoped account actions and identity isolation. */
 import { expect, test } from '@playwright/test';
 
 type Profile = {
@@ -135,6 +136,73 @@ test('login sends Remember Me and keeps invalid-credential feedback generic', as
     password: 'incorrect-password',
     rememberMe: true,
   });
+});
+
+test('account closure is id-free, retryable after failure, and clears the browser session', async ({ page }) => {
+  let deleteAttempts = 0;
+  const deleteRequests: Array<{ url: string; body: string | null }> = [];
+
+  await page.route('https://localhost:5001/api/**', async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+
+    if (url.pathname === '/api/auth/session' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ userId: 42, username: 'closure-chef' }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/users/me' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ username: 'closure-chef', imageUrl: null }),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/users/me' && request.method() === 'DELETE') {
+      deleteAttempts += 1;
+      deleteRequests.push({ url: request.url(), body: request.postData() });
+      if (deleteAttempts === 1) {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ detail: 'Internal cleanup failure.' }),
+        });
+        return;
+      }
+
+      await route.fulfill({ status: 204 });
+      return;
+    }
+
+    await route.abort('failed');
+  });
+
+  await page.goto('/profile');
+  await expect(page.getByLabel('Username')).toHaveValue('closure-chef');
+  await page.getByRole('button', { name: 'Delete account', exact: true }).click();
+  await page.getByLabel('Type DELETE').fill('DELETE');
+  await page.getByRole('button', { name: 'Permanently delete account' }).click();
+
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page.getByRole('alert')).toContainText(
+    'An internal server error occurred. Please try again.'
+  );
+
+  await page.getByRole('button', { name: 'Permanently delete account' }).click();
+
+  await expect(page).toHaveURL(/\/auth\/login$/);
+  await expect(page.getByRole('status')).toHaveText(
+    'Your account has been deleted and you have been signed out.'
+  );
+  expect(deleteRequests).toHaveLength(2);
+  expect(deleteRequests.every(item => new URL(item.url).pathname === '/api/users/me')).toBe(true);
+  expect(deleteRequests.every(item => item.body === null)).toBe(true);
 });
 
 test('an expired protected session clears identity and returns to login with feedback', async ({ page }) => {

@@ -1,3 +1,4 @@
+/** Presents claim-scoped profile editing and explicit, retryable current-account closure. */
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
@@ -11,6 +12,7 @@ import {
 import { finalize, take } from 'rxjs';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { User } from '@app/core/shared/data-access/user/user.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-profile-page',
@@ -23,12 +25,16 @@ import { User } from '@app/core/shared/data-access/user/user.model';
 export class ProfilePage {
   private readonly userFacade = inject(UserFacade);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
 
   readonly isLoading = signal(true);
   readonly isSubmitting = signal(false);
   readonly hasProfile = signal(false);
   readonly errorMessage = signal<string | null>(null);
   readonly successMessage = signal<string | null>(null);
+  readonly isDeleteConfirmationOpen = signal(false);
+  readonly isDeleting = signal(false);
+  readonly deleteErrorMessage = signal<string | null>(null);
 
   readonly form = new FormGroup({
     username: new FormControl('', {
@@ -41,6 +47,13 @@ export class ProfilePage {
     }),
   });
 
+  readonly deleteForm = new FormGroup({
+    confirmation: new FormControl('', {
+      nonNullable: true,
+      validators: [Validators.required, Validators.pattern(/^DELETE$/)],
+    }),
+  });
+
   constructor() {
     this.loadProfile();
   }
@@ -49,7 +62,7 @@ export class ProfilePage {
     this.successMessage.set(null);
     this.errorMessage.set(null);
 
-    if (this.form.invalid || this.isSubmitting()) {
+    if (this.form.invalid || this.isSubmitting() || this.isDeleting()) {
       this.form.markAllAsTouched();
       return;
     }
@@ -90,6 +103,45 @@ export class ProfilePage {
     this.loadProfile();
   }
 
+  openDeleteConfirmation(): void {
+    if (this.isSubmitting() || this.isDeleting()) return;
+
+    this.deleteForm.reset();
+    this.deleteErrorMessage.set(null);
+    this.isDeleteConfirmationOpen.set(true);
+  }
+
+  cancelDeleteConfirmation(): void {
+    if (this.isDeleting()) return;
+
+    this.isDeleteConfirmationOpen.set(false);
+    this.deleteForm.reset();
+    this.deleteErrorMessage.set(null);
+  }
+
+  /**
+   * Sends no account identifier and leaves the confirmation retryable unless the server confirms success.
+   */
+  deleteAccount(): void {
+    if (this.deleteForm.invalid || this.isDeleting()) {
+      this.deleteForm.markAllAsTouched();
+      return;
+    }
+
+    this.deleteErrorMessage.set(null);
+    this.isDeleting.set(true);
+    this.userFacade.deleteMe$().pipe(
+      take(1),
+      finalize(() => this.isDeleting.set(false)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => {
+        void this.router.navigateByUrl('/auth/login', { replaceUrl: true });
+      },
+      error: () => this.readDeleteError(),
+    });
+  }
+
   private populateForm(profile: User): void {
     this.form.reset({
       username: profile.username,
@@ -101,6 +153,14 @@ export class ProfilePage {
   private readFacadeError(): void {
     this.userFacade.error$.pipe(take(1)).subscribe(message => {
       this.errorMessage.set(message ?? 'Something went wrong. Please try again.');
+    });
+  }
+
+  private readDeleteError(): void {
+    this.userFacade.error$.pipe(take(1)).subscribe(message => {
+      this.deleteErrorMessage.set(
+        message ?? 'We could not delete your account. Your account remains active; please try again.'
+      );
     });
   }
 

@@ -1,3 +1,4 @@
+/** Verifies current-user HTTP contracts never accept or transmit a browser-selected account ID. */
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -41,5 +42,15 @@ describe('UserApi', () => {
     expect(request.request.body).toEqual(body);
     expect(Object.keys(request.request.body)).toEqual(['username', 'imageUrl']);
     request.flush(body);
+  });
+
+  it('closes only the cookie-authenticated account without an id or request body', () => {
+    api.deleteMe().subscribe();
+
+    const request = http.expectOne('/api/users/me');
+    expect(request.request.method).toBe('DELETE');
+    expect(request.request.params.keys()).toEqual([]);
+    expect(request.request.body).toBeNull();
+    request.flush(null);
   });
 });

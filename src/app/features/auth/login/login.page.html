@@ -1,3 +1,4 @@
+<!-- Login owns credential entry plus one-time session-expiration and account-closure notices. -->
 <section class="login-page">
     <div class = login-shell_div>
         <main class="Login-shell_main">
@@ -6,6 +7,9 @@
                 <p>{{subTitle}}</p>
                 @if (displayError(); as errorMessage) {
                     <div #errorSummary class="text-error subtitle-error" role="alert" tabindex="-1">{{ errorMessage }}</div>
+                }
+                @if (accountClosureMessage(); as closureMessage) {
+                    <div class="account-closure-notice" role="status">{{ closureMessage }}</div>
                 }
             </div>
             <form [formGroup]="loginForm" (ngSubmit)="signIn()" novalidate class="account-form-div">

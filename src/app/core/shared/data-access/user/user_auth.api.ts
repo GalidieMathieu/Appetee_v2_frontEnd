@@ -1,3 +1,4 @@
+/** Claim-scoped browser access to the current user's profile and account lifecycle. */
 import { HttpClient } from '@angular/common/http';
 import { Injectable, Inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -17,6 +18,10 @@ export class UserApi {
 
   updateMe(request: UpdateCurrentUserRequest): Observable<User> {
     return this.http.put<User>(`${this.apiUrl}/users/me`, request);
+  }
+
+  deleteMe(): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/users/me`);
   }
 
   checkUserExist(email: string): Observable<ExistsResponse> {
