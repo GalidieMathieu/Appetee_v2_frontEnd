@@ -1,0 +1,25 @@
+@if(!summaryOnly()) { <h2 class="text-title">Review Your Plan</h2><p class="review-help text-body-secondary">Make sure everything looks good before creating your nutrition plan.</p> }
+@if(showName()) {
+<form class="review-name" [formGroup]="form()" novalidate>
+<span class="section-icon" aria-hidden="true"><mat-icon>description</mat-icon></span>
+<div><label class="text-label" for="review-name">Plan name</label><input id="review-name" class="input--primary" formControlName="name" aria-describedby="review-name-error" [attr.aria-invalid]="!!nameError() || form().controls.name.touched && form().controls.name.invalid"/>
+<p id="review-name-error" class="text-error" [hidden]="!nameError() && !(form().controls.name.touched && form().controls.name.invalid)">{{ nameError() }}@if(form().controls.name.touched && form().controls.name.invalid) { Enter a name of 1–80 characters. }</p></div>
+</form>}
+@if(pending()) {<p class="text-body" role="status">Calculating preview…</p>}
+@if(error()) {<p class="text-error" role="alert">{{ error() }}</p>}
+@if(preview(); as result) {
+@if(!summaryOnly()) {
+<div class="review-sections">
+<div class="review-row"><span class="section-icon" aria-hidden="true"><mat-icon>person_outline</mat-icon></span><div><h3 class="text-heading">Profile</h3><p class="text-body-secondary">{{ result.inputs.calculationSex }} · {{ result.inputs.ageYears }} years · {{ result.inputs.heightCm }} cm · {{ result.inputs.weightKg }} kg</p></div>@if(allowChange()) {<span class="changes"><button class="btn-selection text-label" type="button" (click)="change.emit('profile')">Change profile</button></span>}</div>
+<div class="review-row"><span class="section-icon" aria-hidden="true"><mat-icon>track_changes</mat-icon></span><div><h3 class="text-heading">Goal</h3><p class="text-body-secondary">{{ goalLabels[result.inputs.goal] }}</p></div>@if(allowChange()) {<span class="changes"><button class="btn-selection text-label" type="button" (click)="change.emit('goal')">Change goal</button></span>}</div>
+<div class="review-row"><span class="section-icon" aria-hidden="true"><mat-icon>directions_run</mat-icon></span><div><h3 class="text-heading">Activity</h3><p class="text-body-secondary">{{ activityLabels[result.inputs.activityLevel] }}</p></div>@if(allowChange()) {<span class="changes"><button class="btn-selection text-label" type="button" (click)="change.emit('activity')">Change activity</button></span>}</div>
+<div class="review-row"><span class="section-icon" aria-hidden="true"><mat-icon>restaurant</mat-icon></span><div><h3 class="text-heading">Meal Structure</h3><p class="text-body-secondary">{{ form().controls.defaultMealsPerDay.value }} meals / day</p></div>@if(allowChange()) {<span class="changes"><button class="btn-selection text-label" type="button" (click)="change.emit('meal-structure')">Change meal structure</button></span>}</div>
+</div>}
+<section class="review-targets" aria-label="Calculated daily targets">
+@if(!summaryOnly()) {<header class="section-heading"><span class="section-icon" aria-hidden="true"><mat-icon>bar_chart</mat-icon></span><div><h3 class="text-heading">Calculated Daily Targets</h3><p class="text-body-secondary">Based on your profile, goal and activity level.</p></div></header>}
+<app-nutrition-targets [targets]="result.targets" [sidebar]="summaryOnly()" />
+<dl class="estimate-details text-body-secondary"><div><dt>Resting estimate</dt><dd>{{ result.rmrKcal | number:'1.0-2' }} kcal</dd></div><div><dt>Maintenance estimate</dt><dd>{{ result.maintenanceKcal | number:'1.0-2' }} kcal</dd></div></dl>
+<p class="text-small">Policy {{ result.policyVersion }} · {{ result.calculationYear }}. Estimates are starting points, not clinical advice.</p>
+@for(warning of result.warnings; track $index) {<p class="text-body" role="status">{{ warningText(warning) }}</p>}
+</section>
+}

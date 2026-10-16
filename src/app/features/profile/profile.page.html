@@ -65,6 +65,50 @@
         </button>
       </form>
 
+      <div class="nutrition-profile-region">
+        @if (nutritionEditor.loading()) {
+          <p class="status" role="status">Loading your nutrition profile…</p>
+        }
+        @if (nutritionEditor.queryError()) {
+          <div class="status status--error" role="alert">
+            <p>{{ nutritionEditor.queryError() }}</p>
+            <button type="button" class="secondary-button" (click)="nutritionEditor.retryLoad()">
+              Try again
+            </button>
+          </div>
+        }
+        @if (nutritionEditor.initialized()) {
+          <app-nutrition-profile-form
+            [form]="nutritionEditor.form"
+            [pending]="nutritionEditor.saving()"
+            [errorMessage]="nutritionEditor.errorMessage()"
+            [successMessage]="nutritionEditor.successMessage()"
+            [fieldErrors]="nutritionEditor.fieldErrors()"
+            [diagnostic]="nutritionEditor.diagnostic()"
+            [blocked]="nutritionEditor.loading() || nutritionEditor.requiresReview()"
+            (save)="nutritionEditor.save()"
+          />
+          @if (nutritionEditor.requiresReview()) {
+            <div class="status status--error" role="status">
+              <p>Your draft is preserved. Refresh the saved profile, review it, then explicitly save your draft again if needed.</p>
+              <button type="button" class="secondary-button" [disabled]="nutritionEditor.loading()"
+                (click)="nutritionEditor.retryLoad()">Refresh saved profile</button>
+              @if (nutritionEditor.refreshedRevision()) {
+                @if (nutritionEditor.savedProfile(); as saved) {
+                  <p>Saved profile: {{ saved.calculationSex }} calculation coefficient;
+                    birth year {{ saved.birthYear }}; {{ saved.heightCm }} cm; {{ saved.weightKg }} kg.</p>
+                } @else {
+                  <p>No saved nutrition profile.</p>
+                }
+                <button type="button" class="secondary-button" (click)="nutritionEditor.confirmReview()">
+                  I reviewed the saved profile — keep my draft
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+
       <section class="danger-zone" aria-labelledby="delete-account-title">
         <div>
           <h2 id="delete-account-title">Delete account</h2>

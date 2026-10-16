@@ -1,0 +1,12 @@
+:host { display: block; min-width: 0; }
+.week-strip { display: grid; grid-template-columns: repeat(7, minmax(8.25rem, 1fr)); gap: .4rem; overflow-x: auto; padding: .2rem 1px; }
+.week-strip button { display: grid; gap: .25rem; min-height: 0; padding: .6rem .4rem; text-align: left; justify-content: start; border-radius: var(--radius); background: var(--color-surface); }
+.week-strip button strong { font-size: 1.3rem; line-height: 1.1; }
+.weekday { color: var(--color-muted); }
+.week-strip .text-small { white-space: normal; line-height: 1.4; }
+.week-strip button.is-selected { background: var(--color-bg-secondary); }
+.week-strip button.is-selected :is(.weekday, .text-small) { color: var(--color-primary); }
+.week-strip button strong { color: var(--color-text); }
+.week-strip button.is-selected strong { color: var(--color-primary); }
+@media(min-width: 68rem) { .week-strip button { padding-inline: 1rem; } }
+

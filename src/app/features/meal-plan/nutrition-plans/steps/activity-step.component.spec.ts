@@ -1,0 +1,4 @@
+import { TestBed } from '@angular/core/testing';
+import { ActivityStepComponent } from './activity-step.component';
+import { createCalculationChoiceForm } from '../../forms/nutrition-plan-form.factory';
+describe('ActivityStepComponent', () => { it('offers exactly the four policy activity levels with native keyboard-capable radios', () => { const fixture = TestBed.createComponent(ActivityStepComponent); const form = createCalculationChoiceForm(); fixture.componentRef.setInput('form', form); fixture.detectChanges(); const radios = fixture.nativeElement.querySelectorAll('input[type="radio"]'); expect(radios).toHaveLength(4); expect(form.controls.activityLevel.value).toBeNull(); radios[3].click(); fixture.detectChanges(); expect(form.controls.activityLevel.value).toBe('veryActive'); expect(radios[3].getAttribute('aria-describedby')).toBe('activity-feedback'); }); });

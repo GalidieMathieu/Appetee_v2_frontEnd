@@ -1,0 +1,80 @@
+<section class="easy-page" aria-labelledby="easy-title">
+  <button type="button" class="btn-link--back text-button" [disabled]="vm.saving()" (click)="vm.cancel()">← Back to Nutrition Plans</button>
+  <div class="easy-page__card">
+    <header>
+      <p class="text-eyebrow">Easy plan</p>
+      <h1 #heading id="easy-title" class="text-section-title" tabindex="-1">Create Nutrition Plan</h1>
+      <p class="text-lead">A simple meal structure, without calculated calorie or macro targets.</p>
+    </header>
+    @if (vm.error(); as error) {
+      <div #summary class="easy-page__error text-body" role="alert" tabindex="-1" aria-label="Creation error">
+        <p>{{ error }}</p>
+        @if (vm.diagnostic(); as reference) { <p>Reference: {{ reference }}</p> }
+        <ul>
+          @if (vm.fieldErrors().name || (vm.form.controls.name.touched && vm.form.controls.name.invalid)) {
+            <li><a mealPlanFieldLink href="#easy-name">{{ vm.fieldErrors().name?.[0] ?? 'Enter a name of 1–80 characters without control or line characters.' }}</a></li>
+          }
+          @if (vm.fieldErrors().defaultMealsPerDay || (vm.form.controls.defaultMealsPerDay.touched && vm.form.controls.defaultMealsPerDay.invalid)) {
+            <li><a mealPlanFieldLink href="#easy-count-1">{{ vm.fieldErrors().defaultMealsPerDay?.[0] ?? 'Choose a whole-number meal count from 1 to 8.' }}</a></li>
+          }
+        </ul>
+      </div>
+    }
+    @if (vm.loading()) { <p class="text-body-secondary" role="status">Loading saved plan context…</p> }
+    @if (vm.query().error; as error) {
+      <div class="easy-page__error text-body" role="alert"><p>{{ error }}</p>
+        <button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.saving()" (click)="vm.refresh()">Try loading again</button>
+      </div>
+    }
+    @if (vm.atCap()) { <p class="text-error" role="status">You have reached the limit of 50 plans. Delete a plan before creating another.</p> }
+    @if (vm.requiresReview()) {
+      <div class="easy-page__review text-body">
+        <p>Your draft is preserved. Refresh and inspect the saved plans. If your plan already appears, return to the list instead of creating it again.</p>
+        <button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.saving()" (click)="vm.refresh()">Refresh saved plans</button>
+        @if (vm.refreshedRevision()) {
+          <ul aria-label="Saved plans for review">
+            @for (plan of vm.savedPlans(); track plan.id) {
+              <li>{{ plan.name }} — {{ plan.defaultMealsPerDay }} meals / day @if (plan.id === vm.currentId()) { (Current) }</li>
+            } @empty { <li>No saved plans.</li> }
+          </ul>
+          <button type="button" class="btn-selection text-label" (click)="vm.confirmReview()">I reviewed the saved plans and my draft</button>
+        }
+      </div>
+    }
+    <form [formGroup]="vm.form" (ngSubmit)="vm.create()" novalidate>
+      <div class="easy-page__field">
+        <label for="easy-name" class="text-label">Plan name</label>
+        <input id="easy-name" class="input--primary" formControlName="name" autocomplete="off"
+          [attr.aria-invalid]="!!vm.fieldErrors().name || (vm.form.controls.name.touched && vm.form.controls.name.invalid)"
+          [attr.aria-describedby]="vm.fieldErrors().name || (vm.form.controls.name.touched && vm.form.controls.name.invalid) ? 'easy-name-help easy-name-error' : 'easy-name-help'" />
+        <p id="easy-name-help" class="text-small">1–80 characters. Names must be unique within your plans.</p>
+        @if (vm.fieldErrors().name || (vm.form.controls.name.touched && vm.form.controls.name.invalid)) {
+          <p id="easy-name-error" class="text-error">{{ vm.fieldErrors().name?.[0] ?? 'Enter a name of 1–80 characters without control or line characters.' }}</p>
+        }
+      </div>
+      <fieldset class="easy-page__field">
+        <legend class="text-heading">How many meals do you usually want each day?</legend>
+        <p id="easy-count-help" class="text-body-secondary">You can add or remove meals on individual days later.</p>
+        <div class="easy-page__counts">
+          @for (count of mealCounts; track count) {
+            <label class="btn-selection" [class.is-selected]="vm.form.controls.defaultMealsPerDay.value === count">
+              <input [id]="'easy-count-' + count" type="radio" formControlName="defaultMealsPerDay" [value]="count"
+                [attr.aria-invalid]="!!vm.fieldErrors().defaultMealsPerDay || (vm.form.controls.defaultMealsPerDay.touched && vm.form.controls.defaultMealsPerDay.invalid)"
+                [attr.aria-describedby]="vm.fieldErrors().defaultMealsPerDay || (vm.form.controls.defaultMealsPerDay.touched && vm.form.controls.defaultMealsPerDay.invalid) ? 'easy-count-help easy-count-error' : 'easy-count-help'" />
+              <span class="text-title">{{ count }}</span><span class="text-small">{{ count === 1 ? 'meal' : 'meals' }} / day</span>
+            </label>
+          }
+        </div>
+        @if (vm.fieldErrors().defaultMealsPerDay || (vm.form.controls.defaultMealsPerDay.touched && vm.form.controls.defaultMealsPerDay.invalid)) {
+          <p id="easy-count-error" class="text-error">{{ vm.fieldErrors().defaultMealsPerDay?.[0] ?? 'Choose a whole-number meal count from 1 to 8.' }}</p>
+        }
+      </fieldset>
+      <div class="easy-page__actions">
+        <button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.cancel()">Cancel</button>
+        <button type="submit" class="btn-link--primary text-button-white" [disabled]="!vm.canCreate()" [attr.aria-busy]="vm.saving()">
+          {{ vm.saving() ? 'Creating…' : 'Create Easy plan' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>

@@ -4,13 +4,15 @@
  */
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { Subject, firstValueFrom, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
 import { RecipeDetailRequest, RecipeSummaryDto } from '../recipe.model';
 import { RecipesFacade } from '../recipe.facade';
 import { AdminRecipeApi } from './admin-recipe.api';
 import { AdminRecipeFacade } from './admin-recipe.facade';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from '../../catalogue/catalogue-state.store';
 import { AdminRecipeStore } from './admin-recipe.store';
 
 describe('AdminRecipeFacade', () => {
@@ -28,7 +30,7 @@ describe('AdminRecipeFacade', () => {
     invalidatePreview.mockReset();
     invalidateCookingView.mockReset();
     invalidateQueries.mockReset();
-    create.mockReturnValue(of(createSummary()));
+    create.mockReturnValue(of(record(createSummary())));
     update.mockReturnValue(of(createSummary()));
 
     TestBed.configureTestingModule({
@@ -37,7 +39,7 @@ describe('AdminRecipeFacade', () => {
         AdminRecipeStore,
         {
           provide: AdminRecipeApi,
-          useValue: { create, update },
+          useValue: { create, update, getDetail: vi.fn(() => of(record({ ...createSummary(), instructions: [], ingredients: [], description: 'Saved', cookTimeMinutes: 25, totalTimeMinutes: 45 }))) },
         },
         {
           provide: RecipesFacade,
@@ -50,6 +52,13 @@ describe('AdminRecipeFacade', () => {
         },
       ],
     });
+  });
+
+  beforeEach(() => {
+    TestBed.inject(CapabilitiesStore).accept({ userId: 1, username: 'author', permissions: ['Catalog.ReadAdmin','Catalog.Write'] });
+    const catalogue = TestBed.inject(CatalogueStateStore);
+    catalogue.reviewedEtags.set({ 42: '\"catalog-recipe-42-v1\"' });
+    catalogue.recipeRequests.set({ 42: { status: 'success', error: null } });
   });
 
   it.each([
@@ -118,6 +127,69 @@ describe('AdminRecipeFacade', () => {
     expect(invalidateCookingView).toHaveBeenCalledWith(42);
     expect(invalidateQueries).toHaveBeenCalledOnce();
   });
+  it.each([412, 428])('preserves the originating token on %s and requires explicit fresh review without replay', async status => {
+    const facade = TestBed.inject(AdminRecipeFacade); const catalogue = TestBed.inject(CatalogueStateStore);
+    update.mockReturnValue(throwError(() => new HttpErrorResponse({ status })));
+    await firstValueFrom(facade.updateRecipeWithDetails(42, createRequest()), { defaultValue: null });
+    expect(catalogue.reviewRequired()[42]).toBe(true); expect(update).toHaveBeenCalledTimes(1);
+    expect(catalogue.reviewedEtags()[42]).toBe('"catalog-recipe-42-v1"');
+    await firstValueFrom(facade.loadDetail(42));
+    await firstValueFrom(facade.updateRecipeWithDetails(42, createRequest()), { defaultValue: null });
+    expect(update).toHaveBeenCalledTimes(1);
+    facade.confirmReview(42); expect(catalogue.reviewRequired()[42]).toBe(false);
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+  it('does not retry a rejected CSRF mutation or alter its resource token', async () => {
+    update.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { code: 'csrf_invalid' } })));
+    const facade = TestBed.inject(AdminRecipeFacade);
+    await firstValueFrom(facade.updateRecipeWithDetails(42, createRequest()), { defaultValue: null });
+    expect(update).toHaveBeenCalledTimes(1); expect(update.mock.calls[0]?.[2]).toBe('"catalog-recipe-42-v1"');
+    expect(TestBed.inject(CatalogueStateStore).reviewedEtags()[42]).toBe('"catalog-recipe-42-v1"');
+  });
+  it('does not enable administrative creation for a read-only moderator', async () => {
+    TestBed.inject(CapabilitiesStore).accept({ userId: 1, username: 'reader', permissions: ['Catalog.ReadAdmin'] });
+    expect(await firstValueFrom(TestBed.inject(AdminRecipeFacade).createRecipeWithDetails(createRequest()), { defaultValue: null })).toBeNull();
+    expect(create).not.toHaveBeenCalled(); expect(update).not.toHaveBeenCalled();
+  });
+  it('invalidates the resource and its token after 404 without replay', async () => {
+    update.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 404 })));
+    await firstValueFrom(TestBed.inject(AdminRecipeFacade).updateRecipeWithDetails(42, createRequest()), { defaultValue: null });
+    expect(TestBed.inject(CatalogueStateStore).reviewedEtags()[42]).toBeUndefined(); expect(update).toHaveBeenCalledTimes(1);
+  });
+  it('blocks blind creation repeat after an unknown transport outcome', async () => {
+    create.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 0 })));
+    const facade = TestBed.inject(AdminRecipeFacade);
+    await firstValueFrom(facade.createRecipeWithDetails(createRequest()), { defaultValue: null });
+    await firstValueFrom(facade.createRecipeWithDetails(createRequest()), { defaultValue: null });
+    expect(create).toHaveBeenCalledTimes(1); expect(TestBed.inject(CatalogueStateStore).createOutcomeUnknown()).toBe(true);
+  });
+  it('rejects a pre-write detail response instead of restoring an older ETag', async () => {
+    const oldRead = new Subject<any>(); const newRead = new Subject<any>();
+    const api = TestBed.inject(AdminRecipeApi); const getDetail = vi.spyOn(api, 'getDetail').mockReturnValueOnce(oldRead).mockReturnValueOnce(newRead);
+    const facade = TestBed.inject(AdminRecipeFacade); const catalogue = TestBed.inject(CatalogueStateStore);
+    const received: unknown[] = []; facade.loadDetail(42).subscribe(value => received.push(value));
+    update.mockReturnValue(of({ ...record(createSummary()), resourceVersion: '2', etag: '"catalog-recipe-42-v2"' }));
+    // The originating protected read is available, but another revalidation is in flight.
+    catalogue.recipeRequests.set({42:{status:'success',error:null}});
+    await firstValueFrom(facade.updateRecipeWithDetails(42,createRequest()));
+    expect(getDetail).toHaveBeenCalledTimes(2);
+    newRead.next({ ...record({ ...createSummary(), description: 'Confirmed', instructions: [], ingredients: [], cookTimeMinutes: 25, totalTimeMinutes: 45 }), resourceVersion: '2', etag: '"catalog-recipe-42-v2"' }); newRead.complete();
+    oldRead.next(record({ ...createSummary(), description: 'Old', instructions: [], ingredients: [], cookTimeMinutes: 25, totalTimeMinutes: 45 })); oldRead.complete();
+    expect(received).toEqual([]); expect(catalogue.recipes()[42]?.resourceVersion).toBe('2'); expect(catalogue.reviewedEtags()[42]).toBe('"catalog-recipe-42-v2"');
+  });
+  it('requires review when the protected follow-up read observes another writer after an own confirmation', async () => {
+    const api = TestBed.inject(AdminRecipeApi); vi.spyOn(api, 'getDetail').mockReturnValue(of({ ...record({ ...createSummary(), description: 'Another writer', instructions: [], ingredients: [], cookTimeMinutes: 25, totalTimeMinutes: 45 }), resourceVersion: '3', etag: '"catalog-recipe-42-v3"' }));
+    update.mockReturnValue(of({ ...record(createSummary()), resourceVersion: '2', etag: '"catalog-recipe-42-v2"' }));
+    const facade = TestBed.inject(AdminRecipeFacade); await firstValueFrom(facade.updateRecipeWithDetails(42,createRequest()));
+    const catalogue = TestBed.inject(CatalogueStateStore); expect(catalogue.reviewRequired()[42]).toBe(true);
+    await firstValueFrom(facade.updateRecipeWithDetails(42,createRequest()),{defaultValue:null}); expect(update).toHaveBeenCalledTimes(1);
+  });
+  it('ignores a late old-session mutation result without restoring records or clearing new request state', async () => {
+    const response = new Subject<any>(); update.mockReturnValue(response);
+    const facade = TestBed.inject(AdminRecipeFacade); const result = firstValueFrom(facade.updateRecipeWithDetails(42,createRequest()),{defaultValue:null});
+    const catalogue = TestBed.inject(CatalogueStateStore); catalogue.reset(); response.next(record(createSummary())); response.complete();
+    expect(await result).toBeNull(); expect(catalogue.recipes()).toEqual({}); expect(catalogue.reviewedEtags()).toEqual({}); expect(invalidateQueries).not.toHaveBeenCalled(); expect(update).toHaveBeenCalledTimes(1);
+  });
 });
 
 function createRequest(): RecipeDetailRequest {
@@ -156,3 +228,4 @@ function createSummary(): RecipeSummaryDto {
     estimatedCostPerServing: 1.5,
   };
 }
+function record<T extends {id:number}>(resource:T) { return {resource,resourceVersion:'1',createdByUserId:null,updatedByUserId:null,etag:'"catalog-recipe-'+resource.id+'-v1"'}; }

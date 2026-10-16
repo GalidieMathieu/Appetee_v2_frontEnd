@@ -1,0 +1,1 @@
+<span class="save-status text-small" [attr.data-save-status]="status()" [attr.role]="status() === 'dirty' || status() === 'idle' ? null : 'status'" [attr.aria-live]="status() === 'dirty' || status() === 'idle' ? 'off' : 'polite'" aria-atomic="true">{{ labels[status()] }}</span>

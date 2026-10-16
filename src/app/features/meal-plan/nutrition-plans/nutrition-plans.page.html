@@ -1,0 +1,85 @@
+<section class="plans-page" aria-labelledby="plans-title">
+  <h1 #heading id="plans-title" class="page-title-sr" tabindex="-1">Nutrition Plans</h1>
+  <p class="text-body-secondary">Reusable strategies for your training phases and routines.</p>
+  @if (vm.loaded() && vm.currentId() === null) {
+    <p class="plans-page__notice text-body">No Current plan. Choose a plan to set your default meal structure and, for Intermediate plans, nutrition targets. Saved meals and food are preserved.</p>
+  }
+  @if (vm.deleteId() === null && vm.error(); as error) {
+    <section #errorSummary class="plans-page__error text-body" role="alert" tabindex="-1" aria-label="Plan action error">
+      <p>{{ error }}</p>
+      @if (vm.diagnostic(); as reference) { <p>Reference: {{ reference }}</p> }
+      @for (message of vm.fieldErrors(); track $index) { <p>{{ message }}</p> }
+    </section>
+  }
+  @if (vm.success(); as success) { <p class="text-body plans-page__notice" role="status" aria-live="polite">{{ success }}</p> }
+  @if (vm.loading()) { <p class="text-body-secondary" role="status">{{ vm.loaded() ? 'Refreshing plans…' : 'Loading plans…' }}</p> }
+  @if (vm.request().error; as error) {
+    <div class="plans-page__error text-body" role="alert">
+      <p>{{ error }}</p>
+      <button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.pending() !== null"
+        (click)="vm.refresh()">Try loading again</button>
+    </div>
+  }
+  @if (vm.loaded() && vm.stale()) {
+    <div class="text-body-secondary"><p role="status">These plans may be out of date. Actions are unavailable until the list refreshes.</p>
+      <button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.pending() !== null" (click)="vm.refresh()">Refresh plans</button>
+    </div>
+  }
+  @if (vm.requiresReview()) {
+    <div class="plans-page__notice text-body">
+      <p>Refresh the saved plans, review the Current plan and list, then explicitly choose your next action. Nothing will be retried automatically.</p>
+      <button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.pending() !== null"
+        (click)="vm.refresh()">Refresh saved plans</button>
+      @if (vm.reviewedRefresh()) {
+        <button type="button" class="btn-selection text-label" (click)="vm.confirmReview()">I reviewed the refreshed plans</button>
+      }
+    </div>
+  }
+  @if (vm.loaded()) {
+    @if (vm.atCap()) { <p class="text-body-secondary" role="status">You have reached the limit of 50 plans. Delete a plan before duplicating another.</p> }
+    @if (vm.plans().length === 0) {
+      <div class="plans-page__empty"><h2 class="text-title">No nutrition plans yet</h2>
+        <p class="text-body-secondary">Your saved nutrition plans will appear here.</p>
+        <p class="text-body-secondary">Choose Create Nutrition Plan above to get started with Easy or Intermediate.</p>
+      </div>
+    } @else {
+      <div class="plans-page__grid">
+        @for (plan of vm.plans(); track plan.id) {
+          <app-nutrition-plan-card [plan]="plan" [current]="plan.id === vm.currentId()"
+            [disabled]="!vm.canWrite() || vm.loading() || vm.requiresReview()"
+            [duplicateDisabled]="vm.atCap()" [pending]="vm.pending()?.id === plan.id ? vm.pending()!.action : null"
+            (editPlan)="vm.edit(plan.id)" (usePlan)="vm.use(plan.id)" (duplicatePlan)="vm.duplicate(plan.id)"
+            (deletePlan)="vm.requestDelete(plan.id, deleteDialog)" />
+        }
+      </div>
+    }
+  }
+</section>
+
+<ng-template #deleteDialog>
+  <h2 mat-dialog-title>Delete nutrition plan?</h2>
+  <mat-dialog-content>
+    <p class="text-body">Delete “{{ vm.deletePlan()?.name }}”? This cannot be undone.</p>
+    @if (vm.deleteIsCurrent()) {
+      <p class="text-body">This is your Current plan. Deleting it leaves no Current plan, nutrition targets or default meals. No replacement plan will be selected.</p>
+    }
+    <p class="text-body">Your saved meals and food will not be deleted.</p>
+    @if (vm.error(); as error) {
+      <div #dialogError class="text-error" role="alert" tabindex="-1"><p>{{ error }}</p>
+        @if (vm.diagnostic(); as reference) { <p>Reference: {{ reference }}</p> }
+        @for (message of vm.fieldErrors(); track $index) { <p>{{ message }}</p> }
+      </div>
+    }
+    @if (vm.requiresReview()) {
+      <button type="button" class="btn-selection text-label" [disabled]="vm.loading()" (click)="vm.refresh()">Refresh saved plans</button>
+      @if (vm.reviewedRefresh()) {
+        <p class="text-body">Review the refreshed list after closing this dialog before choosing an action again.</p>
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button type="button" class="btn-selection text-label" [disabled]="vm.pending() !== null" (click)="vm.cancelDelete()">Cancel</button>
+    <button type="button" class="btn-selection text-error" [disabled]="vm.pending() !== null || vm.requiresReview() || !vm.canWrite() || vm.loading()"
+      (click)="vm.confirmDelete()">{{ vm.pending()?.action === 'delete' ? 'Deleting…' : 'Delete plan' }}</button>
+  </mat-dialog-actions>
+</ng-template>

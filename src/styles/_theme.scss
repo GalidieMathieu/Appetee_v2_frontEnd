@@ -9,6 +9,7 @@
   --color-bg-secondary: #FDF3EC;
   --color-text: #111827;
   --color-muted: #64748b;
+  --color-destructive: #b91c1c;
 
   --color-surface: #ffffff;
   --color-border: rgba(17, 24, 39, 0.10);
@@ -17,6 +18,9 @@
   --color-secondary: hsl(var(--color-secondary-hsl));
   --color-on-primary: #ffffff;
   --color-on-secondary: #111827;
+  // Accessible orange foreground/action variant; bright brand orange remains available for decoration.
+  --color-accessible-orange-hsl: 21 100% 34%;
+  --color-primary-text: #FF802B;
 
   --color-primary-hover: #FF802B;
   --color-secondary-hover: #FCE2D0;
@@ -25,9 +29,15 @@
 
   --radius: 8px;
   --shadow: 0 18px 45px rgba(0, 0, 0, 0.10);
+  --color-nutrition-protein: #6366f1;
+  --color-nutrition-carbs: #22b447;
+  --color-nutrition-fat: #eeb400;
+  --color-panel-muted: #f8fafc;
+  --shadow-panel: 0 2px 4px rgb(17 24 39 / 4%);
 }
 
 :root.dark {
+  --color-panel-muted: #1a1a1c;
   --color-bg: #0f0f10;
   --color-bg-tint: #1a1a1c;
   --color-text: #f5f5f5;

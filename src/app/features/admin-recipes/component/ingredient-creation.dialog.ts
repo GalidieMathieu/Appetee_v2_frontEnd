@@ -10,6 +10,9 @@ import { startWith } from 'rxjs';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { IngredientCreateFormComponent } from '@app/core/shared/ui/ingredient-creation-component/ingredient-creation.component';
 import { LoadingIndicatorComponent } from '@app/core/shared/utils/loading-indicator/loading-indicator.component';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from '@app/core/shared/data-access/catalogue/catalogue-state.store';
+import { RecipeIngredientSelection } from '../data/recipe-creation';
 
 type DialogMode = 'search' | 'create' | 'link';
 type LoadingPhase = 'ingredients' | 'details' | 'create';
@@ -22,6 +25,9 @@ type LoadingPhase = 'ingredients' | 'details' | 'create';
   imports: [MatDialogModule, ReactiveFormsModule, MatIconModule, IngredientCreateFormComponent, LoadingIndicatorComponent]
 })
 export class IngredientDialogComponent implements OnInit {
+  readonly permissions = inject(CapabilitiesStore);
+  readonly catalogue = inject(CatalogueStateStore);
+  private createdSelection: IngredientAdminDetailDto | undefined;
   
   //##################### INIT #################
   constructor(
@@ -65,6 +71,9 @@ export class IngredientDialogComponent implements OnInit {
 
   // Loads the ingredient list when the dialog opens.
   ngOnInit(): void {
+    this.catalogue.reset$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.selectedIngredient.set(null); this.createdSelection = undefined; this.recipeIngredientForm.reset(); this.dialogRef.close();
+    });
     this.loadingPhase.set('ingredients');
     this.facade.loadIfNeeded();
   }
@@ -135,6 +144,8 @@ export class IngredientDialogComponent implements OnInit {
 
   // Starts loading the selected ingredient details before linking it.
   selectIngredient(ingredient: Ingredient): void {
+    if (!this.permissions.canRead()) return;
+    this.createdSelection = undefined;
     this.loadingPhase.set('details');
     this.loadIngredientDetails(ingredient.id);
   }
@@ -160,6 +171,7 @@ export class IngredientDialogComponent implements OnInit {
 
   // Switches the dialog to manual ingredient creation mode.
   openCreateMode(): void {
+    if (!this.permissions.canWrite()) return;
     this.isChildFormValid.set(false);
     this.createName.set(this.searchTerm());
     this.mode.set('create');
@@ -181,6 +193,7 @@ export class IngredientDialogComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (ingredient: IngredientAdminDetailDto) => {
+        this.createdSelection = ingredient;
         this.ngZone.run(() => {
           this.showSelectedIngredient(ingredient);
         });
@@ -202,7 +215,13 @@ export class IngredientDialogComponent implements OnInit {
 
   // Tells the template when the child create form is ready to submit.
   canCreateIngredient(): boolean {
-    return this.isChildFormValid() && this.createForm()?.form.valid === true;
+    return this.permissions.canWrite() && !this.catalogue.ingredientCreateOutcomeUnknown() && this.isChildFormValid() && this.createForm()?.form.valid === true;
+  }
+  readonly inspectedCreation = signal(false);
+  inspectUncertainCreation(): void { this.inspectedCreation.set(true); this.searchControl.setValue(this.createForm()?.form.controls.name.value ?? this.searchTerm()); this.facade.reload(); }
+  readonly canConfirmCreationReview = computed(() => this.inspectedCreation() && !this.catalogueLoading() && !this.catalogueError());
+  confirmUncertainCreation(): void {
+    if (this.inspectedCreation() && !this.catalogueLoading() && !this.catalogueError()) this.adminFacade.confirmCreateReview();
   }
 
   //##################### Link To Parent #################
@@ -228,15 +247,17 @@ export class IngredientDialogComponent implements OnInit {
 
   // Returns the chosen ingredient id and quantity data to the parent page.
   confirmRecipeIngredient(): void {
+    if (!this.permissions.canWrite()) return;
     if (this.recipeIngredientForm.invalid || !this.selectedIngredient()) {
       this.recipeIngredientForm.markAllAsTouched();
       return;
     }
 
-    const result: IngredientDialogResult = {
+    const result: RecipeIngredientSelection = {
       ingredientId: this.selectedIngredient()!.id,
       quantity: this.recipeIngredientForm.controls.quantity.value,
       unit: this.recipeIngredientForm.controls.unit.value,
+      ...(this.createdSelection ? { createdIngredient: this.createdSelection } : {}),
     };
 
     this.dialogRef.close(result);

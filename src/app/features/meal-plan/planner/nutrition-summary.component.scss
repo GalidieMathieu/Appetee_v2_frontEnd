@@ -1,0 +1,32 @@
+:host { display: block; min-width: 0; container-type: inline-size; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .65rem; margin: 0; }
+.metric { --metric-color: var(--color-primary); display: flex; gap: .6rem; min-width: 0; align-items: center; }
+.protein { --metric-color: var(--color-nutrition-protein); }
+.carbs { --metric-color: var(--color-nutrition-carbs); }
+.fat { --metric-color: var(--color-nutrition-fat); }
+.metric + .metric { border-left: 1px solid var(--color-border); padding-left: .65rem; }
+.metric-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: 0 0 auto; border-radius: 50%; color: var(--metric-color); background: color-mix(in srgb, var(--metric-color) 9%, var(--color-surface)); }
+.metric-icon mat-icon { font-size: 1.25rem; width: 1.25rem; height: 1.25rem; }
+.metric-content { min-width: 0; }
+dt { margin-bottom: .35rem; }
+dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.target { color: var(--color-muted); font-weight: 400; }
+.metric-track { display: block; height: .4rem; margin-top: .4rem; border-radius: 1rem; overflow: hidden; background: color-mix(in srgb, var(--metric-color) 12%, var(--color-surface)); }
+.metric-track > span { display: block; height: 100%; border-radius: inherit; background: var(--metric-color); }
+.metric-remaining { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.no-targets { margin-top: .7rem; }
+.inline { display: flex; flex-wrap: wrap; gap: .15rem .35rem; }
+.inline .metric { display: block; border: 0; padding: 0; }
+.inline .metric + .metric::before { content: '·'; color: var(--color-muted); float: left; margin-right: .35rem; }
+.inline .metric-icon { display: none; }
+.inline dt, .total dt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.inline .metric-content { display: inline; }
+.inline dd { display: inline; color: var(--color-muted); font-size: .76rem; font-weight: 400; }
+.inline .calories { flex-basis: 100%; }
+.inline .calories dd { color: var(--color-text); font-size: .9rem; font-weight: 700; }
+.inline .protein::before { display: none; }
+.total dd { font-size: .8rem; }
+.total .metric { gap: .45rem; }
+@container (max-width: 34rem) { .metrics:not(.inline) { gap: .8rem .5rem; } .metrics:not(.inline) .metric { gap: .4rem; } .metrics:not(.inline) .metric + .metric { padding-left: .5rem; } .metrics:not(.inline) .metric-icon { width: 1.9rem; height: 1.9rem; } }
+@container (max-width: 27rem) { .metrics:not(.inline) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .metrics:not(.inline) .metric:nth-child(3) { border-left: 0; padding-left: 0; } }
+

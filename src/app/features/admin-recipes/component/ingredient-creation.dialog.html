@@ -1,5 +1,6 @@
 
-<div class="dialog_main" [attr.aria-busy]="isLoading()">
+@if (permissions.status() === 'loading') { <p class="text-body" role="status">Checking current administrative permissions…</p> }
+<div class="dialog_main" [style.display]="permissions.status() === 'loading' ? 'none' : null" [attr.aria-busy]="isLoading()">
 
   <!--  Header -->
   <div class="header_dialog">
@@ -7,6 +8,14 @@
     <button class="button_header_dialog" type="button" (click)="cancel()" [disabled]="isLoading()">x</button>
   </div>
   <p class="text-small subTitle_dialog">{{dialog_subTitle}}</p>
+  @if (!permissions.canRead()) { <p class="text-body">Existing ingredient details require catalogue read permission. You can create an ingredient and use its confirmed values instead.</p> }
+  @if (catalogue.ingredientCreateOutcomeUnknown()) {
+    <section role="alert" class="text-body"><p>The creation outcome is unknown. Inspect the ingredient catalogue before deciding whether to submit again. Your form is preserved.</p>
+      <button type="button" class="btn-selection text-label" (click)="inspectUncertainCreation()">Refresh ingredient catalogue</button>
+      @if (inspectedCreation()) { <p>Review matching names in the refreshed list.</p><div>@for(item of filteredIngredients();track item.id) {<p>{{ item.name }}</p>}</div>
+        <button type="button" class="btn-selection text-label" [disabled]="!canConfirmCreationReview()" (click)="confirmUncertainCreation()">I checked the catalogue and reviewed this draft</button> }
+    </section>
+  }
   @if (errorMessage(); as errorMessage) {
     <div class="text-error subtitle-error" role="alert">{{ errorMessage }}</div>
   }
@@ -58,7 +67,7 @@
           <button
             type="button"
             class="search-result-item"
-            (click)="selectIngredient(ingredient)"
+            [disabled]="!permissions.canRead()" (click)="selectIngredient(ingredient)"
           >
             <span class="search-result-item__name">{{ ingredient.name }}</span>
           </button>

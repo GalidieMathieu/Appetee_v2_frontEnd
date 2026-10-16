@@ -1,0 +1,27 @@
+:host { display: block; background: var(--color-surface); }
+:host:has(app-meal-planner) { background: var(--color-panel-muted); }
+.meal-plan-shell {
+  width: min(100% - 3rem, 84rem);
+  min-height: calc(100dvh - 64px);
+  margin-inline: auto;
+  padding-block: .5rem 1.5rem;
+  color: var(--color-text);
+}
+
+.meal-plan-header { padding-top: 1.25rem; }
+.meal-plan-header > .text-eyebrow { margin-bottom: .55rem; }
+.meal-plan-header__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid var(--color-border); }
+.meal-plan-header nav { display: flex; gap: .75rem; }
+.meal-plan-header nav a { padding: .9rem .75rem; color: var(--color-muted); text-decoration: none; border-bottom: 2px solid transparent; }
+.meal-plan-header nav a.is-active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+.meal-plan-header button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; padding: .75rem 1rem; min-height: 2.75rem; margin-bottom: .5rem; border: 0; border-radius: var(--radius); box-shadow: none; cursor: pointer; }
+.meal-plan-header button:disabled { opacity: .55; cursor: not-allowed; }
+.meal-plan-header :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+@media (max-width: 42rem) { .meal-plan-header__row { flex-wrap: wrap; gap: .6rem; } .meal-plan-header nav { order: 2; width: 100%; } }
+
+@media (max-width: 30rem) {
+  .meal-plan-shell {
+    width: min(100% - 1rem, 90rem);
+    padding-block: 1rem;
+  }
+}

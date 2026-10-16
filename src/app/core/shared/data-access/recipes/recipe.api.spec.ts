@@ -8,11 +8,13 @@ import { TestBed } from '@angular/core/testing';
 
 import { API_URL } from '@app/core/api/api.config';
 import {
+  RecipeCardAdvance,
   RecipeCardDto,
   RecipeCookingViewDto,
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
+  RecipeMealPlanPageDto,
   RecipePreviewDto,
 } from './recipe.model';
 import { RecipesApi } from './recipe.api';
@@ -104,6 +106,47 @@ describe('RecipesApi', () => {
     expect(request.request.method).toBe('GET');
     expect(request.request.params.keys()).toEqual(['cursor']);
     request.flush({ items: [], nextCursor: null, hasMore: false });
+  });
+
+  it('requests the advanced Meal Plan projection without changing ordinary discovery', () => {
+    const advancedCard: RecipeCardAdvance = {
+      id: 42,
+      name: 'Soup',
+      description: 'A warming vegetable soup.',
+      cardImageUrl: 'https://cdn.example.com/cards/soup.jpg',
+      totalTimeMinutes: 35,
+      caloriesPerServing: 60,
+      proteinPerServing: 2,
+      carbsPerServing: 10,
+      fatPerServing: null,
+      estimatedCostPerServing: 1.5,
+      badges: ['Quick Meal'],
+      featuredIngredients: [{ id: 7, name: 'Carrot', featuredOrder: 1 }],
+      isSaved: false,
+    };
+    const page: RecipeMealPlanPageDto = {
+      items: [advancedCard],
+      nextCursor: 'next-page',
+      hasMore: true,
+    };
+    let response: RecipeMealPlanPageDto | undefined;
+
+    api.discoverForMealPlan(criteria({
+      search: 'soup',
+      savedOnly: true,
+    }), 'opaque-cursor', 20).subscribe(value => response = value);
+
+    const request = http.expectOne(candidate => candidate.url === '/api/recipes/meal-plan');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('search')).toBe('soup');
+    expect(request.request.params.get('savedOnly')).toBe('true');
+    expect(request.request.params.get('cursor')).toBe('opaque-cursor');
+    expect(request.request.params.get('limit')).toBe('20');
+    expect(request.request.params.has('userId')).toBe(false);
+    request.flush(page);
+
+    expect(response).toEqual(page);
+    expect(response?.items[0]?.fatPerServing).toBeNull();
   });
 
   it('supports a bounded cursorless discovery preview without adding other parameters', () => {

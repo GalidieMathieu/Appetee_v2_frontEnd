@@ -1,0 +1,29 @@
+// Composition only: colors, typography and controls remain owned by src/styles.
+@mixin section-heading {
+  .section-heading { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+  .section-heading > div { display: grid; gap: .45rem; min-width: 0; }
+  .section-icon { display: grid; place-items: center; flex: 0 0 2.75rem; height: 2.75rem; border-radius: var(--radius); color: var(--color-primary); background: var(--color-bg-secondary); }
+}
+@mixin controls {
+  :host { display: block; min-width: 0; }
+  form, fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+  fieldset { display: grid; gap: .7rem; }
+  legend { padding: 0; margin-bottom: .5rem; }
+  .step-help { margin-bottom: .6rem; }
+  input[type=radio] { accent-color: var(--color-primary); width: 1.2rem; height: 1.2rem; flex-shrink: 0; margin: 0; }
+  select.input--primary { min-height: 2.75rem; max-width: 26rem; }
+  :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  .text-error:empty { display: none; }
+}
+@mixin choice-list {
+  @include controls;
+  .choice-card { display: flex; align-items: center; gap: 1rem; padding: .75rem 1rem; min-height: 4.25rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); cursor: pointer; }
+  .choice-card:hover { border-color: var(--color-primary); }
+  .choice-card:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+  .choice-card:focus-within { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+  .choice-card.is-selected { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 5%, var(--color-surface)); }
+  .choice-card__icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 50%; background: var(--color-bg-secondary); color: var(--color-primary); }
+  .choice-card__copy { display: grid; gap: .35rem; flex: 1; min-width: 0; }
+  .choice-card__copy strong { line-height: 1.35; }
+  @media (max-width: 34rem) { .choice-card { padding: .75rem; gap: .65rem; } .choice-card__icon { width: 2rem; height: 2rem; } }
+}

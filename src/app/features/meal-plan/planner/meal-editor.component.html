@@ -1,0 +1,43 @@
+<div class="editor-name">
+  <label for="meal-name" class="text-label">Meal name</label>
+  <input id="meal-name" class="input--primary" [value]="name()" [disabled]="!scalarReady()" maxlength="160" aria-describedby="meal-name-feedback" [attr.aria-invalid]="!validName(name()) || !!fieldErrors()['name']"
+    (input)="nameChanged.emit($any($event.target).value)" (blur)="flush.emit()" (keydown.enter)="$event.preventDefault(); flush.emit()" />
+  @if(!validName(name()) || fieldErrors()['name']) { <p id="meal-name-feedback" class="text-error">{{ fieldErrors()['name']?.[0] ?? 'Enter a name of 1–80 characters without line or control characters.' }}</p> }
+</div>
+<div class="editor-actions">
+  @if(meal().isVirtual) { <p class="text-small">Default slot · not saved. Opening this editor creates nothing.</p> }
+</div>
+<h3 class="text-heading">Meal Items</h3>
+<div class="editor-items" cdkDropList [cdkDropListDisabled]="!actionsReady() || meal().isVirtual" (cdkDropListDropped)="reorder.emit({from:$event.previousIndex,to:$event.currentIndex})">
+  @for(item of meal().items; track item.id;let position=$index) {
+    <article class="editor-item" tabindex="-1" [attr.data-order-row-item]="item.id" cdkDrag [cdkDragDisabled]="!actionsReady()" (cdkDragStarted)="startOrder.emit()" (cdkDragEnded)="cancelOrder.emit()">
+      <span class="item-icon" aria-hidden="true"><mat-icon>{{ item.type === 'recipe' ? 'restaurant' : 'edit_note' }}</mat-icon></span>
+      <div class="item-name"><h4 class="text-body-strong">{{ item.name ?? 'Unavailable recipe' }}</h4>
+        <p class="text-small">{{ item.type === 'recipe' ? item.availability === 'available' ? 'Whole servings' : 'Unavailable recipe — removal is available' : 'Manual food · entry totals' }}</p>
+      </div>
+      @if(item.type === 'manual') { <button type="button" class="edit-manual btn-selection text-small" [attr.data-edit-manual]="item.id" [attr.aria-label]="'Edit manual food ' + item.name" [disabled]="!actionsReady()" (click)="editManual.emit(item.id)">Edit</button> }
+      @if(item.type === 'recipe') {
+        <div class="quantity">
+          <label [for]="'quantity-' + item.id" class="text-small">Quantity</label>
+          <div class="quantity-controls">
+            <button type="button" class="btn-selection" [attr.aria-label]="'Decrease servings of ' + (item.name ?? 'unavailable recipe')" [disabled]="!scalarReady() || item.availability !== 'available' || !validQuantity(quantities()[item.id]?.value ?? item.quantity) || +(quantities()[item.id]?.value ?? item.quantity) <= 1" (click)="adjustQuantity.emit({id:item.id,delta:-1})">−</button>
+            <input [id]="'quantity-' + item.id" type="number" inputmode="numeric" class="input--primary" min="1" max="20" step="1" [value]="quantities()[item.id]?.value ?? item.quantity"
+              [disabled]="!scalarReady() || item.availability !== 'available'" [attr.aria-label]="'Servings of ' + (item.name ?? 'unavailable recipe')" [attr.aria-describedby]="'quantity-feedback-' + item.id" [attr.aria-invalid]="!validQuantity(quantities()[item.id]?.value ?? item.quantity)"
+              (input)="quantityChanged.emit({id:item.id,value:$any($event.target).value})" (blur)="flush.emit()" (keydown.enter)="$event.preventDefault(); flush.emit()" />
+            <button type="button" class="btn-selection" [attr.aria-label]="'Increase servings of ' + (item.name ?? 'unavailable recipe')" [disabled]="!scalarReady() || item.availability !== 'available' || !validQuantity(quantities()[item.id]?.value ?? item.quantity) || +(quantities()[item.id]?.value ?? item.quantity) >= 20" (click)="adjustQuantity.emit({id:item.id,delta:1})">＋</button>
+          </div>
+          @if(!validQuantity(quantities()[item.id]?.value ?? item.quantity)) { <p class="text-error" [id]="'quantity-feedback-' + item.id">Use a whole number from 1 to 20. Remove is a separate action.</p> }
+        </div>
+      }
+      <div class="item-nutrition"><app-nutrition-summary [totals]="item.nutrition" presentation="inline" [showNoTargetsNotice]="false"/></div>
+      <button type="button" class="btn-selection remove-item" [attr.aria-label]="'Remove ' + (item.name ?? 'unavailable recipe')" [disabled]="!actionsReady()" (click)="removeItem.emit(item.id)"><mat-icon aria-hidden="true">delete_outline</mat-icon></button>
+      @if(meal().items.length > 1) { <div class="order-controls"><button type="button" cdkDragHandle class="btn-selection text-small" [disabled]="!actionsReady()" [attr.data-order-item]="item.id" [attr.aria-label]="'Drag item ' + (item.name ?? 'unavailable recipe')">↕</button><span class="text-small">{{ position + 1 }} of {{ meal().items.length }}</span>
+      <button type="button" class="btn-selection text-small" [disabled]="!actionsReady() || position === 0" [attr.aria-label]="'Move item ' + (item.name ?? 'unavailable recipe') + ' up'" (click)="reorder.emit({from:position,to:position-1})">↑</button>
+      <button type="button" class="btn-selection text-small" [disabled]="!actionsReady() || position === meal().items.length-1" [attr.aria-label]="'Move item ' + (item.name ?? 'unavailable recipe') + ' down'" (click)="reorder.emit({from:position,to:position+1})">↓</button></div> }
+    </article>
+  } @empty { <p class="text-body-secondary editor-empty">This meal has no food yet. Add a recipe to get started.</p> }
+</div>
+<div class="add-actions"><button type="button" class="btn-selection add-recipe text-button" [disabled]="!actionsReady() || meal().items.length >= 20" (click)="addRecipe.emit()"><mat-icon aria-hidden="true">add</mat-icon> Add recipe</button>
+<button type="button" class="btn-selection add-manual text-button" [disabled]="!actionsReady() || meal().items.length >= 20" (click)="addManual.emit()"><mat-icon aria-hidden="true">add</mat-icon> Add manual food</button></div>
+@if(meal().items.length >= 20) { <p class="text-small">This meal has reached its limit of 20 items.</p> }
+<footer class="meal-total"><h3 class="text-heading">Meal Total</h3><app-nutrition-summary [totals]="meal().totals" presentation="total" [showNoTargetsNotice]="false"/></footer>

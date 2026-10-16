@@ -1,0 +1,9 @@
+:host { display: grid; gap: 1rem; min-width: 0; }
+.picker-search { display: grid; gap: .5rem; }
+.picker-search > div { display: flex; gap: .5rem; }
+.picker-search input { min-height: 2.75rem; min-width: 0; }
+.picker-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: .25rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); }
+.picker-tabs button { border: 0; }
+.picker-results { min-width: 0; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }

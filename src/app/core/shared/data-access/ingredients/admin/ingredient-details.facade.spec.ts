@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { vi } from 'vitest';
 
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueRecord } from '../../catalogue/catalogue-resource.model';
 import { AdminIngredientApi } from './admin-ingredient.api';
 import { AdminIngredientFacade } from './admin-ingredient.facade';
 import { AdminIngredientStore } from './admin-ingredient.store';
@@ -29,14 +31,16 @@ describe('ingredient data access boundaries', () => {
     });
   });
 
+  beforeEach(() => TestBed.inject(CapabilitiesStore).accept({userId:1,username:'author',permissions:['Catalog.ReadAdmin','Catalog.Write']}));
+
   it('coalesces a duplicate detail request and serves later access from cache', async () => {
-    const pending = new Subject<IngredientAdminDetailDto>();
+    const pending = new Subject<CatalogueRecord<IngredientAdminDetailDto>>();
     getDetail.mockReturnValue(pending);
     const facade = TestBed.inject(IngredientDetailsFacade);
 
     const first = firstValueFrom(facade.get(1));
     const duplicate = firstValueFrom(facade.get(1));
-    pending.next(detail(1));
+    pending.next(record(detail(1)));
     pending.complete();
 
     await Promise.all([first, duplicate]);
@@ -45,8 +49,8 @@ describe('ingredient data access boundaries', () => {
   });
 
   it('loads different ingredient IDs concurrently with independent request state', async () => {
-    const firstPending = new Subject<IngredientAdminDetailDto>();
-    const secondPending = new Subject<IngredientAdminDetailDto>();
+    const firstPending = new Subject<CatalogueRecord<IngredientAdminDetailDto>>();
+    const secondPending = new Subject<CatalogueRecord<IngredientAdminDetailDto>>();
     getDetail.mockImplementation((id: number) => id === 1 ? firstPending : secondPending);
     const facade = TestBed.inject(IngredientDetailsFacade);
 
@@ -55,13 +59,13 @@ describe('ingredient data access boundaries', () => {
     expect(facade.requestState(1).status).toBe('loading');
     expect(facade.requestState(2).status).toBe('loading');
 
-    firstPending.next(detail(1));
+    firstPending.next(record(detail(1)));
     firstPending.complete();
     expect(await first).toEqual(detail(1));
     expect(facade.requestState(1).status).toBe('success');
     expect(facade.requestState(2).status).toBe('loading');
 
-    secondPending.next(detail(2));
+    secondPending.next(record(detail(2)));
     secondPending.complete();
     await second;
   });
@@ -79,7 +83,7 @@ describe('ingredient data access boundaries', () => {
   });
 
   it('allows creation while the catalogue is loading and synchronizes both caches', async () => {
-    create.mockReturnValue(of(detail(4)));
+    create.mockReturnValue(of(record(detail(4))));
     const catalogue = TestBed.inject(IngredientsStore);
     const details = TestBed.inject(IngredientDetailsStore);
     const admin = TestBed.inject(AdminIngredientFacade);
@@ -112,8 +116,8 @@ describe('ingredient data access boundaries', () => {
   });
 
   it('discards an in-flight response from before an identity reset', async () => {
-    const oldIdentityRequest = new Subject<IngredientAdminDetailDto>();
-    const newIdentityRequest = new Subject<IngredientAdminDetailDto>();
+    const oldIdentityRequest = new Subject<CatalogueRecord<IngredientAdminDetailDto>>();
+    const newIdentityRequest = new Subject<CatalogueRecord<IngredientAdminDetailDto>>();
     getDetail
       .mockReturnValueOnce(oldIdentityRequest)
       .mockReturnValueOnce(newIdentityRequest);
@@ -124,15 +128,22 @@ describe('ingredient data access boundaries', () => {
     store.reset();
     const newResult = firstValueFrom(facade.get(9));
 
-    oldIdentityRequest.next({ ...detail(9), name: 'Old identity ingredient' });
+    oldIdentityRequest.next(record({ ...detail(9), name: 'Old identity ingredient' }));
     oldIdentityRequest.complete();
     expect(await oldResult).toBeNull();
     expect(store.get(9)).toBeNull();
 
-    newIdentityRequest.next({ ...detail(9), name: 'New identity ingredient' });
+    newIdentityRequest.next(record({ ...detail(9), name: 'New identity ingredient' }));
     newIdentityRequest.complete();
     expect((await newResult).name).toBe('New identity ingredient');
     expect(store.get(9)?.name).toBe('New identity ingredient');
+  });
+  it('allows write-only creation without granting protected read access through the created cache', async () => {
+    TestBed.inject(CapabilitiesStore).accept({userId:1,username:'writer',permissions:['Catalog.Write']});
+    create.mockReturnValue(of(record(detail(4))));
+    expect(await firstValueFrom(TestBed.inject(AdminIngredientFacade).create(createRequest()))).toEqual(detail(4));
+    expect(await firstValueFrom(TestBed.inject(IngredientDetailsFacade).get(4),{defaultValue:null})).toBeNull();
+    expect(getDetail).not.toHaveBeenCalled(); expect(create).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -165,3 +176,4 @@ function createRequest(): IngredientAdminDetailRequest {
     image: new File(['image'], 'ingredient.avif', { type: 'image/avif' }),
   };
 }
+function record<T extends {id:number}>(resource:T) { return {resource,resourceVersion:'1',createdByUserId:null,updatedByUserId:null,etag:'"catalog-ingredient-'+resource.id+'-v1"'}; }

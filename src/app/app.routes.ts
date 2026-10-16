@@ -53,6 +53,11 @@ export const routes: Routes = [
                     loadChildren: () =>
                       import('./features/favorites/favorites.routes').then(m => m.FAVORITES_ROUTES),
                   },
+                  {
+                    path: 'meal-plan',
+                    loadChildren: () =>
+                      import('./features/meal-plan/meal-plan.routes').then(m => m.MEAL_PLAN_ROUTES),
+                  },
             ]
     },
     { path: '**', redirectTo: ''},

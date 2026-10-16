@@ -1,0 +1,163 @@
+<section class="nutrition-profile" [attr.aria-labelledby]="planContext() ? null : 'nutrition-profile-title'" [attr.aria-label]="planContext() ? 'Calculation profile' : null">
+  @if (!planContext()) {
+  <header class="nutrition-profile__header">
+    <p class="text-eyebrow">Meal planning</p>
+    <h2 id="nutrition-profile-title" class="text-title">Nutrition profile</h2>
+    <p class="text-body-secondary">
+      Save these values for later nutrition-plan setup. Updating them does not recalculate existing plans.
+    </p>
+  </header>
+  }
+
+  @if (errorMessage() || errorLinks().length) {
+    <div class="nutrition-profile__summary" role="alert" aria-label="Profile field errors">
+      <strong>{{ planContext() ? 'Review the calculation profile.' : 'We could not save your nutrition profile.' }}</strong>
+      <span>{{ errorMessage() }}</span>
+      @if (diagnostic(); as reference) { <span>Reference: {{ reference }}</span> }
+      <ul>
+        @for (error of errorLinks(); track error.id) {
+          <li>{{ error.message }}</li>
+        }
+      </ul>
+    </div>
+  }
+  @if (successMessage(); as success) {
+    <p class="nutrition-profile__success" role="status" aria-live="polite">{{ success }}</p>
+  }
+
+  <form [formGroup]="form()" (ngSubmit)="submit()" novalidate>
+    <fieldset class="nutrition-profile__sex">
+      <legend class="text-label">Calculation sex</legend>
+      <p id="calculation-sex-help" class="text-small">
+        Used only as the male or female coefficient required by the estimate equation.
+      </p>
+      @if (compact()) {
+        <select class="input--primary" id="nutrition-sex-female" formControlName="calculationSex" aria-label="Calculation sex"
+          [attr.aria-invalid]="invalid('calculationSex')"
+          [attr.aria-describedby]="describedBy('calculationSex', 'calculation-sex-help calculation-sex-error')">
+          <option [ngValue]="null" disabled>Choose</option><option value="female">Female</option><option value="male">Male</option>
+        </select>
+      } @else {
+      <div class="nutrition-profile__choices" aria-describedby="calculation-sex-help">
+        <label [class.is-selected]="form().controls.calculationSex.value === 'female'">
+          <input id="nutrition-sex-female" type="radio" formControlName="calculationSex" value="female"
+            [attr.aria-invalid]="invalid('calculationSex')"
+            [attr.aria-describedby]="describedBy('calculationSex', 'calculation-sex-help calculation-sex-error')" />
+          Female
+        </label>
+        <label [class.is-selected]="form().controls.calculationSex.value === 'male'">
+          <input type="radio" formControlName="calculationSex" value="male"
+            [attr.aria-invalid]="invalid('calculationSex')"
+            [attr.aria-describedby]="describedBy('calculationSex', 'calculation-sex-help calculation-sex-error')" />
+          Male
+        </label>
+      </div>
+      }
+      @if (form().controls.calculationSex.touched && form().controls.calculationSex.invalid) {
+        <small id="calculation-sex-error" role="alert">Choose a calculation sex.</small>
+      }
+      @if (fieldErrors().calculationSex; as errors) {
+        <small id="calculationSex-server-error" role="alert">{{ errors[0] }}</small>
+      }
+    </fieldset>
+
+    <div class="nutrition-profile__grid">
+      <div class="nutrition-profile__field">
+        <label for="nutrition-age" class="text-label">Age this year</label>
+        <div class="nutrition-profile__unit-input"><input
+          id="nutrition-age"
+          class="input--primary"
+          type="number"
+          inputmode="numeric"
+          min="18"
+          max="65"
+          step="1"
+          formControlName="ageYears"
+          [attr.aria-invalid]="invalid('ageYears')"
+          [attr.aria-describedby]="describedBy('ageYears', 'nutrition-age-help nutrition-age-error')"
+        /><span aria-hidden="true">years</span></div>
+        <span id="nutrition-age-help" class="text-small">Whole years, from 18 to 65.</span>
+        @if (form().controls.ageYears.invalid && form().controls.ageYears.touched) {
+          <small id="nutrition-age-error" role="alert">Enter a whole-number age from 18 to 65.</small>
+        }
+        @if (fieldErrors().ageYears; as errors) {
+          <small id="ageYears-server-error" role="alert">{{ errors[0] }}</small>
+        }
+      </div>
+
+      <div class="nutrition-profile__field">
+        <label for="nutrition-height" class="text-label">Height (cm)</label>
+        <div class="nutrition-profile__unit-input"><input
+          id="nutrition-height"
+          class="input--primary"
+          type="number"
+          inputmode="decimal"
+          min="120"
+          max="230"
+          step="0.01"
+          formControlName="heightCm"
+          [attr.aria-invalid]="invalid('heightCm')"
+          [attr.aria-describedby]="describedBy('heightCm', 'nutrition-height-help nutrition-height-error')"
+        /><span aria-hidden="true">cm</span></div>
+        <span id="nutrition-height-help" class="text-small">120–230 cm, up to two decimals.</span>
+        @if (form().controls.heightCm.invalid && form().controls.heightCm.touched) {
+          <small id="nutrition-height-error" role="alert">Enter 120–230 cm with up to two decimals.</small>
+        }
+        @if (fieldErrors().heightCm; as errors) {
+          <small id="heightCm-server-error" role="alert">{{ errors[0] }}</small>
+        }
+      </div>
+
+      <div class="nutrition-profile__field">
+        <label for="nutrition-weight" class="text-label">Weight (kg)</label>
+        <div class="nutrition-profile__unit-input"><input
+          id="nutrition-weight"
+          class="input--primary"
+          type="number"
+          inputmode="decimal"
+          min="35"
+          max="250"
+          step="0.01"
+          formControlName="weightKg"
+          [attr.aria-invalid]="invalid('weightKg')"
+          [attr.aria-describedby]="describedBy('weightKg', 'nutrition-weight-help nutrition-weight-error')"
+        /><span aria-hidden="true">kg</span></div>
+        <span id="nutrition-weight-help" class="text-small">35–250 kg, up to two decimals.</span>
+        @if (form().controls.weightKg.invalid && form().controls.weightKg.touched) {
+          <small id="nutrition-weight-error" role="alert">Enter 35–250 kg with up to two decimals.</small>
+        }
+        @if (fieldErrors().weightKg; as errors) {
+          <small id="weightKg-server-error" role="alert">{{ errors[0] }}</small>
+        }
+      </div>
+    </div>
+
+    @if (form().controls.ageYears.value === 18) {
+      <div class="nutrition-profile__confirmation">
+        <label>
+          <input id="nutrition-adult" type="checkbox" formControlName="adultConfirmed"
+            [attr.aria-invalid]="invalid('adultConfirmed')"
+            [attr.aria-describedby]="describedBy('adultConfirmed', 'adult-confirmation-error')" />
+          I confirm that I am already 18 years old.
+        </label>
+        @if (form().touched && form().hasError('adultConfirmationRequired')) {
+          <small id="adult-confirmation-error" role="alert">Adult confirmation is required at age 18.</small>
+        }
+        @if (fieldErrors().adultConfirmed; as errors) {
+          <small id="adultConfirmed-server-error" role="alert">{{ errors[0] }}</small>
+        }
+      </div>
+    }
+
+    @if (!planContext()) {
+    <button
+      type="submit"
+      class="btn-link--primary text-button-white nutrition-profile__save"
+      [disabled]="form().invalid || pending() || blocked()"
+      [attr.aria-busy]="pending()"
+    >
+      {{ pending() ? 'Saving…' : 'Save nutrition profile' }}
+    </button>
+    }
+  </form>
+</section>

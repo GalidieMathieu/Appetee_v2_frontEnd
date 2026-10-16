@@ -1,5 +1,7 @@
-import { Injectable } from '@angular/core';
-import { EMPTY, Observable, catchError, filter, finalize, of, shareReplay, tap, timeout } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { EMPTY, Observable, catchError, filter, finalize, map, of, shareReplay, takeUntil, tap, timeout } from 'rxjs';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from '../../catalogue/catalogue-state.store';
 
 import { EntityRequestState } from '../../generic-template/entity-cache-store';
 import { toApiErrorMessage } from '../../generic-template/api-error-message';
@@ -9,6 +11,8 @@ import { IngredientAdminDetailDto } from '../ingredient.model';
 
 @Injectable({ providedIn: 'root' })
 export class IngredientDetailsFacade {
+  private readonly capabilities = inject(CapabilitiesStore);
+  private readonly catalogue = inject(CatalogueStateStore);
   private readonly requests = new Map<string, Observable<IngredientAdminDetailDto>>();
 
   constructor(
@@ -17,6 +21,7 @@ export class IngredientDetailsFacade {
   ) {}
 
   get(id: number): Observable<IngredientAdminDetailDto> {
+    if (!this.capabilities.canRead()) return EMPTY;
     const cached = this.store.get(id);
     if (cached) return of(cached);
 
@@ -29,7 +34,8 @@ export class IngredientDetailsFacade {
     const request$ = this.api.getDetail(id).pipe(
       timeout(10000),
       filter(() => this.store.generation() === generation),
-      tap(detail => this.store.upsert(detail)),
+      tap(record => this.catalogue.ingredients.update(records => ({ ...records, [id]: record }))),
+      map(record => record.resource), tap(detail => this.store.upsert(detail)),
       catchError((error: unknown) => {
         if (this.store.generation() === generation) {
           this.store.setError(id, toApiErrorMessage(error));
@@ -37,6 +43,7 @@ export class IngredientDetailsFacade {
         return EMPTY;
       }),
       finalize(() => this.requests.delete(requestKey)),
+      takeUntil(this.catalogue.reset$),
       shareReplay({ bufferSize: 1, refCount: false })
     );
     this.requests.set(requestKey, request$);

@@ -1,0 +1,12 @@
+<button type="button" class="meal-row" [class.compact]="compact()" [attr.aria-label]="'View ' + meal().name" (click)="openMeal.emit(meal())">
+  <span class="meal-identity"><span class="meal-icon" aria-hidden="true"><mat-icon>restaurant</mat-icon></span><span class="meal-label"><strong class="text-body-strong">{{ meal().name }}</strong><span class="text-small">{{ meal().isVirtual ? 'Default slot · not saved' : meal().items.length + (meal().items.length === 1 ? ' food item' : ' food items') }}</span></span></span>
+  <span class="foods">
+    @for(item of meal().items.slice(0,2);track item.id) {
+      <span class="food"><span class="food-icon" aria-hidden="true"><mat-icon>{{ item.type === 'recipe' ? 'restaurant_menu' : 'edit_note' }}</mat-icon></span><span class="food-name"><span class="text-body">{{ item.name ?? 'Unavailable recipe' }}</span><span class="text-small">{{ item.type === 'recipe' ? item.quantity + (item.quantity === 1 ? ' serving' : ' servings') : 'Manual food' }}</span></span><span class="food-nutrients text-small">{{ item.nutrition.caloriesKcal ?? 'Unknown' }} kcal · {{ item.nutrition.proteinG ?? 'Unknown' }} g P · {{ item.nutrition.carbsG ?? 'Unknown' }} g C · {{ item.nutrition.fatG ?? 'Unknown' }} g F</span></span>
+    } @empty { <span class="text-small empty-foods">No food items</span> }
+    @if(meal().items.length > 2) { <span class="text-small more-foods">+{{ meal().items.length - 2 }} more items</span> }
+  </span>
+  <span class="meal-nutrients"><app-nutrition-summary [totals]="meal().totals" presentation="inline" [showNoTargetsNotice]="false"/></span>
+  <mat-icon class="open-icon" aria-hidden="true">chevron_right</mat-icon>
+</button>
+@for(warning of meal().warnings;track $index) { <p class="meal-warning text-small">{{ warningText(warning) }}</p> }

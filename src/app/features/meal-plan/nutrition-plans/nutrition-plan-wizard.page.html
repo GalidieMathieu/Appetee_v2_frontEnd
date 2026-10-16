@@ -1,0 +1,24 @@
+<section class="plan-task" aria-labelledby="wizard-title">
+<header class="wizard-header"><h1 #heading id="wizard-title" class="text-section-title" tabindex="-1">Create Nutrition Plan</h1><p class="text-lead">Tell us about yourself so we can create a plan that fits your goals and lifestyle.</p></header>
+<nav aria-label="Creation steps"><ol class="step-strip">
+@for(step of vm.steps; track step; let i = $index) {
+<li [class.is-current]="vm.draftState.step() === step" [class.is-complete]="i < vm.steps.indexOf(vm.draftState.firstIncomplete())">
+<button type="button" [attr.aria-current]="vm.draftState.step() === step ? 'step' : null" [disabled]="!vm.canVisit(step) || vm.saving()" (click)="vm.goTo(step)">
+<span class="step-number" aria-hidden="true">{{ i < vm.steps.indexOf(vm.draftState.firstIncomplete()) && vm.draftState.step() !== step ? '✓' : i + 1 }}</span>
+<span>{{ stepLabels[step] }}</span><span class="sr-only">{{ vm.draftState.step() === step ? '(current)' : i < vm.steps.indexOf(vm.draftState.firstIncomplete()) ? '(complete)' : '' }}</span></button></li>
+}</ol></nav>
+@if(vm.error() || vm.query().error || vm.profileError()) {<div #summary tabindex="-1" role="alert" class="text-error">{{ vm.error() ?? vm.query().error ?? vm.profileError() }}<p>{{ vm.diagnostic() }}</p>@if(vm.profileError()) {<button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.reloadProfile()">Retry loading profile</button>}<ul>@for(issue of vm.fieldIssues();track issue.id) {<li>@if(issue.step === vm.draftState.step()) {<a mealPlanFieldLink [href]="'#' + issue.id">{{ issue.message }}</a>} @else {<button type="button" class="btn-selection text-label" (click)="vm.goTo(issue.step)">{{ issue.message }} — {{ issue.step }}</button>}</li>}</ul><button type="button" class="btn-selection text-label" [disabled]="vm.loading() || vm.saving()" (click)="vm.refresh()">Refresh saved plans</button></div>}
+@if(vm.loading()) {<p class="text-body" role="status">Loading saved plan context…</p>}
+@if(vm.requiresReview()) {<div class="notice text-body"><p>Your draft is preserved. Refresh and inspect the saved plans before explicitly choosing whether to submit again.</p>@for(plan of vm.savedPlans(); track plan.id) {<p>{{ plan.name }}</p>}@if(vm.refreshedRevision()) {<button class="btn-selection text-label" type="button" (click)="vm.confirmReview()">I reviewed the saved context and my draft</button>}</div>}
+<div class="task-body">@switch(vm.draftState.step()) {
+@case('profile') {<app-profile-step [form]="vm.draftState.profileForm" [errors]="vm.profileErrors()" />}
+@case('goal') {<app-goal-step [form]="vm.draftState.choices" [error]="vm.choiceErrors()['goal']?.[0] ?? null" />}
+@case('activity') {<app-activity-step [form]="vm.draftState.choices" [error]="vm.choiceErrors()['activityLevel']?.[0] ?? null" />}
+@case('meal-structure') {<app-meal-structure-step [error]="vm.fieldErrors().defaultMealsPerDay?.[0] ?? null" [form]="vm.form" />}
+@case('review') {<app-review-step [nameError]="vm.fieldErrors().name?.[0] ?? null" [form]="vm.form" [preview]="vm.draftState.preview()" [pending]="vm.previewLoading()" [error]="vm.previewError()" (change)="vm.goTo($event)" />@if(vm.previewError()) {<p class="text-body">If a calculation is unsupported, choose an Easy plan without targets instead. Nothing will be clamped or saved automatically.</p><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.recalculate()">Request a fresh preview</button><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.chooseEasy()">Choose Easy instead</button>} }
+}</div>
+<footer class="wizard-actions">
+<div><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.back()">← Back</button><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.cancel()">Cancel</button></div>
+@if(vm.draftState.step() !== 'review') {<button type="button" class="btn-link--primary text-button-white" [disabled]="vm.saving()" (click)="vm.next()">Continue <span aria-hidden="true">→</span></button>}
+@else {<button type="button" class="btn-link--primary text-button-white" [disabled]="!vm.canCreate() || !vm.draftState.preview() || vm.previewLoading()" (click)="vm.create()">{{ vm.saving() ? 'Creating…' : 'Create Nutrition Plan' }} <span aria-hidden="true">→</span></button>}
+</footer></section>
