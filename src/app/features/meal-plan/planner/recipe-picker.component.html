@@ -1,0 +1,15 @@
+<p class="text-body-secondary">Search compatible recipes or browse your Saved recipes to add a whole serving.</p>
+<form class="picker-search" (submit)="$event.preventDefault(); searchSubmitted.emit()">
+  <label for="picker-search" class="text-label">Search recipes</label>
+  <div><input id="picker-search" class="input--primary" type="search" maxlength="100" placeholder="Search recipes, e.g. chicken bowl" [value]="search()" (input)="searchChanged.emit($any($event.target).value)"/><button type="submit" class="btn-selection text-label">Search</button></div>
+</form>
+<div class="picker-tabs" role="group" aria-label="Recipe source"><button type="button" class="btn-selection text-label" [class.is-selected]="!savedOnly()" [attr.aria-pressed]="!savedOnly()" (click)="tabChanged.emit(false)">Search</button><button type="button" class="btn-selection text-label" [class.is-selected]="savedOnly()" [attr.aria-pressed]="savedOnly()" (click)="tabChanged.emit(true)">Saved</button></div>
+@if(loading()) { <p class="text-body-secondary" role="status">{{ loaded() ? 'Refreshing recipes…' : 'Loading recipes…' }}</p> }
+@if(error()) { <div class="text-error" role="alert"><p>{{ error() }}</p><button type="button" class="btn-selection text-label" [disabled]="loading()" (click)="refresh.emit()">Try loading recipes again</button></div> }
+@if(stale()) { <p class="text-body-secondary">These results are refreshing. Adding is unavailable until confirmed results load.</p> }
+<div class="picker-results">
+  @for(recipe of cards();track recipe.id) { <app-recipe-picker-row [recipe]="recipe" [inMeal]="inMealIds().includes(recipe.id)" [disabled]="!ready() || stale() || loading()" [pending]="pendingId() === recipe.id" (add)="add.emit($event)" (preview)="preview.emit($event)"/> }
+</div>
+@if(loaded() && !loading() && !error() && cards().length === 0) { <p class="text-body-secondary">No recipes match. Try another search or switch between Search and Saved.</p> }
+@if(moreError()) { <p role="alert" class="text-error">{{ moreError() }}</p> }
+@if(hasMore()) { <button type="button" class="btn-selection text-label" [disabled]="loadingMore() || loading() || stale()" (click)="more.emit()">{{ loadingMore() ? 'Loading more…' : 'Load more recipes' }}</button> }

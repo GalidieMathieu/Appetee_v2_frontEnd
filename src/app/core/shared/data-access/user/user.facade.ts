@@ -1,3 +1,4 @@
+/** Coordinates current-user profile operations and finalizes local identity state after closure. */
 import { Injectable } from '@angular/core';
 
 import { AbstractLoadFacade } from '../generic-template/abstractLoadFacade';
@@ -6,6 +7,7 @@ import { UpdateCurrentUserRequest, User } from './user.model';
 import { UserStore } from './user.store';
 import { catchError, distinctUntilChanged, map, Observable, of, take, tap, throwError } from 'rxjs';
 import { toApiErrorMessage } from '../generic-template/api-error-message';
+import { AccountClosureService } from '@app/core/auth/account-closure.service';
 
 export interface EmailAvailabilityResult {
   readonly status: 'available' | 'taken' | 'error';
@@ -18,7 +20,8 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
 
   constructor(
     private readonly api: UserApi,
-    store: UserStore
+    store: UserStore,
+    private readonly accountClosure: AccountClosureService
   ) {
     super(store);
   }
@@ -52,6 +55,21 @@ export class UserFacade extends AbstractLoadFacade<User | null, UserStore> {
     this.store.setLoading();
     return this.api.updateMe(request).pipe(
       tap((data: User) => this.setSuccess(data)),
+      catchError((error: unknown) => {
+        this.setError(this.toUserMessage(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Requests closure for the claim-derived current account and clears browser state only on success.
+   * A failed or ambiguous response remains retryable and does not falsely report local completion.
+   */
+  deleteMe$(): Observable<void> {
+    this.store.setLoading();
+    return this.api.deleteMe().pipe(
+      tap(() => this.accountClosure.complete()),
       catchError((error: unknown) => {
         this.setError(this.toUserMessage(error));
         return throwError(() => error);

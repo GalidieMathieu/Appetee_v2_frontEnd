@@ -1,0 +1,22 @@
+<section aria-label="Selected day" [class.compact]="compact()">
+<header class="day-header"><div class="day-identity"><span class="calendar-icon" aria-hidden="true"><mat-icon>calendar_today</mat-icon></span><div><h2 class="text-title">{{ day().date | date:'EEEE · MMM d' }}</h2><p class="text-body-secondary">{{ day().savedMealCount }} saved meals · {{ day().totals.caloriesKcal ?? 'Unknown' }} kcal@if(day().persistence === 'untouched') { · Untouched day }</p></div></div>
+<app-nutrition-summary [totals]="day().totals" [targets]="showTargets() ? day().targets : null" [remaining]="showTargets() ? day().remaining : null"/>
+</header>
+@if(!day().meals.length) { <p class="text-body day-empty">{{ day().persistence === 'saved' ? 'This saved day has no meals.' : 'No default meals for this day. Choose a Current nutrition plan to set a meal structure, or add a meal.' }}</p> }
+<div class="meals" cdkDropList [cdkDropListDisabled]="!actionsReady() || day().persistence !== 'saved'" (cdkDropListDropped)="reorder.emit({from:$event.previousIndex,to:$event.currentIndex})">
+@for(meal of day().meals;track meal.key;let position=$index) {
+  <div cdkDrag tabindex="-1" [attr.data-order-row-meal]="meal.id" [cdkDragDisabled]="!actionsReady() || meal.isVirtual" (cdkDragStarted)="startOrder.emit()" (cdkDragEnded)="cancelOrder.emit()" [class.is-selected]="selectedKey() === meal.key">
+    <app-meal-row [meal]="meal" [compact]="compact()" (openMeal)="openMeal.emit($event)"/>
+    @if(!meal.isVirtual && day().savedMealCount > 1) {
+      <div class="order-controls"><button type="button" cdkDragHandle class="btn-selection text-small" [disabled]="!actionsReady()" [attr.data-order-meal]="meal.id" [attr.aria-label]="'Drag meal ' + meal.name">↕</button>
+      <span class="text-small">{{ position + 1 }} of {{ day().savedMealCount }}</span>
+      <button type="button" class="btn-selection text-small" [disabled]="!actionsReady() || position === 0" [attr.aria-label]="'Move meal ' + meal.name + ' up'" (click)="reorder.emit({from:position,to:position-1})">↑</button>
+      <button type="button" class="btn-selection text-small" [disabled]="!actionsReady() || position === day().savedMealCount-1" [attr.aria-label]="'Move meal ' + meal.name + ' down'" (click)="reorder.emit({from:position,to:position+1})">↓</button></div>
+    }
+  </div>
+}</div>
+@for(warning of day().warnings;track $index) { <p class="text-small" role="status">{{ warningText(warning) }}</p> }
+<div class="day-actions"><button type="button" class="new-meal text-button" [disabled]="!canAddMeal()" (click)="newMeal.emit()"><mat-icon aria-hidden="true">add</mat-icon> New Meal</button>
+<button type="button" class="copy-day text-label" [disabled]="!actionsReady()" (click)="copyDay.emit()"><mat-icon aria-hidden="true">content_copy</mat-icon> Copy day</button></div>
+@if(day().savedMealCount >= 12) { <p class="text-small">This day has reached its limit of 12 meals.</p> }
+</section>

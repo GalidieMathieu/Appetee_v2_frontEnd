@@ -8,6 +8,7 @@ import {
   PasswordRecoveryRequest,
   SignUpRequest,
   UserSession,
+  CurrentUserSession,
 } from './auth.model';
 import { SKIP_AUTO_LOGOUT } from './auth.request-context';
 
@@ -23,8 +24,8 @@ export class AuthApi {
   }
 
   // Refresh the session token from the backend without triggering the global 401 logout handler.
-  refreshSession(): Observable<UserSession> {
-    return this.http.get<UserSession>(`${this.apiUrl}/auth/session`, this.authRequestOptions());
+  refreshSession(): Observable<CurrentUserSession> {
+    return this.http.get<CurrentUserSession>(`${this.apiUrl}/auth/session`, this.authRequestOptions());
   }
 
   // Login and return the cookie-backed session plus the current session data.

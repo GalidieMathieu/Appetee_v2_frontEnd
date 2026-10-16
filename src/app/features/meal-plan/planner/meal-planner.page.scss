@@ -1,0 +1,30 @@
+:host { display: block; min-width: 0; }
+.planner { margin: .85rem auto; display: grid; gap: .9rem; }
+.page-title-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); margin: 0; }
+.planner-toolbar { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.planner-controls { display: flex; justify-content: flex-end; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.planner-controls button { min-height: 2.5rem; border-radius: var(--radius); }
+.planner-controls .icon-button { width: 2.5rem; padding: .45rem; }
+.copy-week { gap: .5rem; }
+.copy-week mat-icon { width: 1rem; height: 1rem; font-size: 1rem; }
+.planner-controls label { display: flex; gap: .5rem; align-items: center; }
+.planner-controls input { min-height: 2.5rem; max-width: 11rem; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.workspace.day-task { grid-template-columns: minmax(0, 1fr); }
+.day-pane, .task-pane, .notice { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); min-width: 0; overflow-wrap: anywhere; box-shadow: var(--shadow-panel); }
+.task-pane { display: grid; gap: 1rem; padding: 1.25rem; }
+.notice { padding: 1rem; }
+.task-title-row { display: flex; align-items: center; gap: .85rem; }
+.task-icon { display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; background: var(--color-bg-secondary); color: var(--color-primary); border-radius: var(--radius); }
+.task-title { flex: 1; min-width: 0; display: grid; gap: .4rem; }
+.delete-meal { display: inline-flex; gap: .4rem; color: var(--color-destructive); border-color: color-mix(in srgb, var(--color-destructive) 20%, var(--color-surface)); border-radius: var(--radius); white-space: normal; }
+.delete-meal mat-icon { width: 1.1rem; height: 1.1rem; font-size: 1.1rem; }
+.task-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.task-header button { border: 0; background: transparent; color: var(--color-primary); cursor: pointer; }
+.notice button { margin-right: .5rem; white-space: normal; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+:host :is(button, [tabindex="-1"]) { scroll-margin-top: 5rem; }
+h1[tabindex="-1"]:focus, h2[tabindex="-1"]:focus { outline: none; }
+@media(max-width:58rem) { .workspace { grid-template-columns: minmax(0, 1fr); } .workspace:not(.day-task) .day-pane { display: none; } .planner-controls { justify-content: flex-start; } }
+@media(max-width:34rem) { .task-pane { padding: 1rem; } .planner-controls { justify-content: flex-start; } .task-title-row { flex-wrap: wrap; } .planner-toolbar { gap: .5rem; } }

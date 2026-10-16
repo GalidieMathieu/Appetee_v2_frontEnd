@@ -1,0 +1,39 @@
+<section class="edit-task" aria-labelledby="edit-title">
+<header class="edit-header"><p class="text-eyebrow">Your fueling, made simple</p><h1 #heading id="edit-title" tabindex="-1" class="text-section-title">Edit Nutrition Plan</h1><p class="text-lead">Review your details and daily targets. Recalculate deliberately to preview changes before saving.</p></header>
+@if(vm.error() || vm.detailQuery()?.error) {<div #summary class="text-error" role="alert" tabindex="-1">{{ vm.detailQuery()?.httpStatus === 404 ? 'This plan is unavailable.' : vm.error() ?? vm.detailQuery()?.error }}<p>{{ vm.diagnostic() }}</p><ul>@for(issue of vm.fieldIssues();track issue.id) {<li><a mealPlanFieldLink [href]="'#' + issue.id">{{ issue.message }}</a></li>}</ul><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.refresh()">Refresh saved plan</button></div>}
+@if(vm.loading()) {<p role="status" class="text-body">Loading complete saved plan…</p>}
+@if(vm.requiresReview()) {<div class="notice text-body"><p>Your draft is preserved. Review refreshed saved values before choosing Update again.</p>@if(vm.savedDetail(); as detail) {<p>Saved: {{ detail.plan.name }} · {{ detail.plan.defaultMealsPerDay }} meals / day · {{ detail.plan.calculationPolicyVersion ?? 'No targets' }}</p>}@if(vm.refreshedRevision()) {<button type="button" class="btn-selection text-label" (click)="vm.confirmReview()">I reviewed the saved plan and my draft</button>}</div>}
+
+@if(vm.savedDetail(); as detail) {
+<div class="edit-grid">
+<div class="fields">
+<form class="edit-section plan-name" [formGroup]="vm.form"><label class="text-label" for="edit-name">Plan name</label><input id="edit-name" class="input--primary" formControlName="name" [attr.aria-invalid]="!!vm.fieldErrors().name || vm.form.controls.name.touched && vm.form.controls.name.invalid" aria-describedby="edit-name-error"/><p id="edit-name-error" class="text-error" [hidden]="!vm.fieldErrors().name && !(vm.form.controls.name.touched && vm.form.controls.name.invalid)">{{ vm.fieldErrors().name?.[0] }} @if(vm.form.controls.name.touched && vm.form.controls.name.invalid) { Enter a name of 1–80 characters. }</p></form>
+@if(vm.draftState.mode() === 'intermediate') {
+<section class="edit-section" aria-label="Profile"><app-profile-step [compact]="true" [form]="vm.draftState.profileForm" [errors]="vm.profileErrors()"/>
+@if(detail.profileDiffers) {<p class="notice text-body">Your current profile differs from the saved calculation inputs. It will not overwrite this draft.</p>}
+@if(vm.profileError()) {<p role="alert" class="text-error">{{ vm.profileError() }}</p>}
+<button type="button" class="btn-selection text-label profile-action" [disabled]="!vm.savedProfileAvailable() || vm.saving()" (click)="vm.useCurrentProfile()">Use current profile</button></section>
+<section class="edit-section" aria-label="Goal"><header class="section-heading"><span class="section-icon" aria-hidden="true"><mat-icon>track_changes</mat-icon></span><div><h2 class="text-title">Goal</h2><p class="text-body-secondary">This helps set the right calorie and macro targets for you.</p></div></header><app-goal-step [compact]="true" [form]="vm.draftState.choices" [error]="vm.choiceErrors()['goal']?.[0] ?? null"/></section>
+<section class="edit-section" aria-label="Activity"><header class="section-heading"><span class="section-icon" aria-hidden="true"><mat-icon>directions_run</mat-icon></span><div><h2 class="text-title">Activity</h2><p class="text-body-secondary">Your activity level influences your daily energy needs.</p></div></header><app-activity-step [compact]="true" [form]="vm.draftState.choices" [error]="vm.choiceErrors()['activityLevel']?.[0] ?? null"/></section>
+}
+<section class="edit-section" aria-label="Meal Structure"><header class="section-heading"><span class="section-icon" aria-hidden="true"><mat-icon>restaurant</mat-icon></span><div><h2 class="text-title">Meal Structure</h2><p class="text-body-secondary">Choose your default meals per day. Saved meals are preserved.</p></div></header><app-meal-structure-step [compact]="true" [error]="vm.fieldErrors().defaultMealsPerDay?.[0] ?? null" [form]="vm.form"/></section>
+</div>
+<aside class="target-sidebar" aria-label="Nutrition targets and save actions">
+<header class="section-heading"><span class="section-icon" aria-hidden="true"><mat-icon>bar_chart</mat-icon></span><div><h2 class="text-title">Calculated Daily Targets</h2><p class="text-body-secondary">Based on your profile, goal and activity level.</p></div></header>
+@if(vm.draftState.mode() === 'intermediate') {
+@if(vm.draftState.preview() || vm.previewLoading() || vm.previewError()) {
+<p class="text-label">Preview estimates — not saved yet</p>
+<app-review-step [summaryOnly]="true" [showName]="false" [allowChange]="false" [form]="vm.form" [preview]="vm.draftState.preview()" [pending]="vm.previewLoading()" [error]="vm.previewError()"/>
+} @else {
+<p class="text-label">Saved estimates</p><app-nutrition-targets [targets]="detail.plan.targets" [sidebar]="true" />
+<dl class="saved-details text-body-secondary"><div><dt>Resting estimate</dt><dd>{{ detail.plan.rmrKcal ?? 'Unknown' }} kcal</dd></div><div><dt>Maintenance estimate</dt><dd>{{ detail.plan.maintenanceKcal ?? 'Unknown' }} kcal</dd></div></dl>
+}
+<p class="text-small">Saved policy: {{ detail.plan.calculationPolicyVersion }}. Mode is fixed; name and meal-count changes preserve saved calculations.</p>
+@if(vm.previewChangedPolicy()) {<p class="notice text-body" role="status">The preview uses a newer or different calculation policy. Saved targets remain unchanged until Update is confirmed.</p>}
+<button type="button" class="btn-selection text-label recalculate-action" [disabled]="vm.saving()" (click)="vm.recalculate()">Recalculate estimates</button>
+<p class="target-note text-body-secondary">Estimates are starting points, not clinical advice. Recalculate to preview current policy/year; no targets change until you save.</p>
+} @else {<p class="target-note text-body-secondary">Easy plans have no calculated nutrition targets.</p>}
+@for(warning of detail.plan.warnings;track $index) {<p class="text-small">{{ warningText(warning) }}</p>}
+<div class="actions"><button type="button" class="btn-link--primary text-button-white" [disabled]="!vm.canCreate() || vm.previewLoading()" (click)="vm.create()">{{ vm.saving() ? 'Updating…' : 'Save changes' }}</button><button type="button" class="btn-selection text-label" [disabled]="vm.saving()" (click)="vm.cancel()">Cancel</button></div>
+</aside></div>}
+</section>

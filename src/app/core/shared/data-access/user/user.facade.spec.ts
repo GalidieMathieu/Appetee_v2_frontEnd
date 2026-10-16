@@ -1,3 +1,4 @@
+/** Covers current-user facade state, including success-only local finalization for account closure. */
 import { TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom, of, throwError } from 'rxjs';
@@ -6,24 +7,30 @@ import { vi } from 'vitest';
 import { UserFacade } from './user.facade';
 import { UserStore } from './user.store';
 import { UserApi } from './user_auth.api';
+import { AccountClosureService } from '@app/core/auth/account-closure.service';
 
 describe('UserFacade operation state', () => {
   const checkUserExist = vi.fn();
   const getMe = vi.fn();
   const updateMe = vi.fn();
+  const deleteMe = vi.fn();
+  const completeClosure = vi.fn();
 
   beforeEach(() => {
     checkUserExist.mockReset();
     getMe.mockReset();
     updateMe.mockReset();
+    deleteMe.mockReset();
+    completeClosure.mockReset();
     TestBed.configureTestingModule({
       providers: [
         UserFacade,
         UserStore,
         {
           provide: UserApi,
-          useValue: { getMe, updateMe, checkUserExist },
+          useValue: { getMe, updateMe, deleteMe, checkUserExist },
         },
+        { provide: AccountClosureService, useValue: { complete: completeClosure } },
       ],
     });
   });
@@ -45,6 +52,27 @@ describe('UserFacade operation state', () => {
     expect(await firstValueFrom(facade.updateMe$(request))).toEqual(request);
     expect(updateMe).toHaveBeenCalledWith(request);
     expect(await firstValueFrom(facade.me$)).toEqual(request);
+  });
+
+  it('finalizes local identity state after the current-account delete succeeds', async () => {
+    deleteMe.mockReturnValue(of(void 0));
+    const facade = TestBed.inject(UserFacade);
+
+    await firstValueFrom(facade.deleteMe$());
+
+    expect(deleteMe).toHaveBeenCalledWith();
+    expect(completeClosure).toHaveBeenCalledOnce();
+  });
+
+  it('keeps local identity state intact and exposes a retryable error when deletion fails', async () => {
+    deleteMe.mockReturnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    const facade = TestBed.inject(UserFacade);
+
+    await expect(firstValueFrom(facade.deleteMe$())).rejects.toBeInstanceOf(HttpErrorResponse);
+    expect(completeClosure).not.toHaveBeenCalled();
+    expect(await firstValueFrom(facade.error$)).toBe(
+      'An internal server error occurred. Please try again.'
+    );
   });
 
   it.each([

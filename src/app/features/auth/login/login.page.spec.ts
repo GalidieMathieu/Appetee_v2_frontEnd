@@ -1,3 +1,4 @@
+/** Covers login interaction and one-time identity-boundary feedback after redirects. */
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, Routes } from '@angular/router';
@@ -8,6 +9,7 @@ import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { LoginRequest } from '@app/core/auth/data-access/auth.model';
 import { LoginPage } from './login.page';
 import { SessionExpirationService } from '@app/core/auth/session-expiration.service';
+import { AccountClosureService, ACCOUNT_CLOSED_MESSAGE } from '@app/core/auth/account-closure.service';
 
 @Component({
   standalone: true,
@@ -30,12 +32,14 @@ describe('LoginPage', () => {
   let authLoading$: BehaviorSubject<boolean>;
   let loginSpy: ReturnType<typeof vi.fn>;
   let consumeExpirationMessage: ReturnType<typeof vi.fn>;
+  let consumeClosureMessage: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     authError$ = new BehaviorSubject<string | null>(null);
     authLoading$ = new BehaviorSubject<boolean>(false);
     loginSpy = vi.fn((request: LoginRequest) => of(void 0));
     consumeExpirationMessage = vi.fn(() => null);
+    consumeClosureMessage = vi.fn(() => null);
 
     await TestBed.configureTestingModule({
       imports: [LoginPage],
@@ -52,6 +56,10 @@ describe('LoginPage', () => {
         {
           provide: SessionExpirationService,
           useValue: { consumeMessage: consumeExpirationMessage },
+        },
+        {
+          provide: AccountClosureService,
+          useValue: { consumeMessage: consumeClosureMessage },
         },
       ],
     }).compileComponents();
@@ -168,6 +176,16 @@ describe('LoginPage', () => {
     expect(document.activeElement?.textContent).toContain(
       'Your session expired. Please log in again.'
     );
+  });
+
+  it('announces confirmed account closure once after redirect', async () => {
+    consumeClosureMessage.mockReturnValue(ACCOUNT_CLOSED_MESSAGE);
+
+    const { root } = await navigateToLoginPage();
+    harness.detectChanges();
+
+    expect(root.querySelector('[role="status"]')?.textContent).toContain(ACCOUNT_CLOSED_MESSAGE);
+    expect(consumeClosureMessage).toHaveBeenCalledTimes(1);
   });
 
   // Verifies that typing into the DOM updates the reactive form model, submits the exact payload, and redirects on success.

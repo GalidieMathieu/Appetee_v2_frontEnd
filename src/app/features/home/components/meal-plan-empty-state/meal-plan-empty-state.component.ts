@@ -1,4 +1,4 @@
-/** Home-specific onboarding shown until the owning Manual Meal Planning feature is available. */
+/** Home-owned entry only; upcoming-meal data is deliberately not synthesized here. */
 import { Component, input, output } from '@angular/core';
 
 @Component({

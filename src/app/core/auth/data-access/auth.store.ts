@@ -15,6 +15,7 @@ export class AuthStore extends EntityStore<UserSession | null> {
 
   //for all auth related
   readonly isAuthenticated = signal(false);
+  currentSession(): UserSession | null { return this.dataSubject.value; }
 
   protected initialValue(): UserSession | null {
     return null;

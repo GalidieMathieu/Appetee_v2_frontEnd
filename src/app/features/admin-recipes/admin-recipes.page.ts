@@ -40,7 +40,11 @@ import {
   RecipeInstructionStep,
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
-import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CapabilitiesFacade } from '@app/core/auth/data-access/capabilities.facade';
+import { CatalogueStateStore } from '@app/core/shared/data-access/catalogue/catalogue-state.store';
+import { AuthStore } from '@app/core/auth/data-access/auth.store';
+import { HostListener } from '@angular/core';
 import { AdminRecipeFacade } from '@app/core/shared/data-access/recipes/admin/admin-recipe.facade';
 import { readAvifFileSelection } from '@app/core/shared/utils/avif-file-selection/avif-file-selection';
 
@@ -51,6 +55,7 @@ import {
   RecipeCreationIngredient,
   RecipeInstructionStepDraft,
   RecipeInstructionStepForm,
+  RecipeIngredientSelection,
 } from './data/recipe-creation';
 import { IngredientDialogComponent } from './component/ingredient-creation.dialog';
 import {
@@ -151,8 +156,14 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   private readonly dietsFacade = inject(DietsFacade);
   private readonly ingredientsFacade = inject(IngredientsFacade);
   private readonly ingredientDetailsFacade = inject(IngredientDetailsFacade);
-  private readonly recipesFacade = inject(RecipesFacade);
   private readonly adminRecipeFacade = inject(AdminRecipeFacade);
+  protected readonly permissions = inject(CapabilitiesStore);
+  protected readonly catalogue = inject(CatalogueStateStore);
+  private readonly capabilityFacade = inject(CapabilitiesFacade);
+  private readonly auth = inject(AuthStore);
+  protected readonly needsReview = computed(() => this.editRecipeId() !== null && !!this.catalogue.reviewRequired()[this.editRecipeId()!]);
+  protected readonly savedRecord = computed(() => this.editRecipeId() !== null ? this.catalogue.recipes()[this.editRecipeId()!] ?? null : null);
+  protected readonly savedRequest = computed(() => this.editRecipeId() !== null ? this.catalogue.recipeRequests()[this.editRecipeId()!] ?? null : null);
 
   //########## Page State ############
   protected previewImageUrl: string | null = null;
@@ -262,6 +273,10 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
   });
 
   constructor() {
+    this.catalogue.reset$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.resetCreateForm(); this.isEditRecipeReady.set(false); this.dialog.closeAll();
+      if (this.auth.isAuthenticated()) void this.router.navigateByUrl('/home', { replaceUrl: true });
+    });
     this.form.controls.servings.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.updateRecipePreview());
@@ -363,7 +378,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
         this.isEditRecipeReady.set(false);
         this.isEditRecipeLoading.set(true);
 
-        return this.recipesFacade.getRecipesWithDetails(id).pipe(
+        return this.adminRecipeFacade.loadDetail(id).pipe(
           map(recipe => ({ kind: 'loaded' as const, recipe })),
           defaultIfEmpty({ kind: 'failed' as const }),
           finalize(() => this.isEditRecipeLoading.set(false))
@@ -390,8 +405,18 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   // Releases the local image preview when the page is destroyed.
   ngOnDestroy(): void {
+    const id = this.editRecipeId(); if (id !== null) this.adminRecipeFacade.releaseEditor(id);
     this.clearPreviewImage();
+    this.resetCreateForm();
   }
+  @HostListener('window:focus') onWindowFocus(): void {
+    this.capabilityFacade.refresh$(this.auth.currentSession()?.userId).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({error:()=>undefined});
+  }
+  refreshSavedRecipe(): void {
+    const id = this.editRecipeId(); if (id !== null) this.adminRecipeFacade.loadDetail(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+  }
+  confirmSavedReview(): void { const id = this.editRecipeId(); if (id !== null) this.adminRecipeFacade.confirmReview(id); }
+  confirmCreateReview(): void { this.adminRecipeFacade.confirmCreateReview(); }
 
   // Builds the recipe title shown in the summary card.
   get recipeName(): string {
@@ -458,11 +483,12 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   // Opens the ingredient dialog and loads full DTO details for the selected id.
   openIngredientDialog(): void {
+    if (!this.permissions.canWrite()) return;
     this.duplicateIngredientError.set(null);
     const dialogRef = this.dialog.open(IngredientDialogComponent);
 
     dialogRef.afterClosed().pipe(
-      filter((result): result is IngredientDialogResult => result != null),
+      filter((result): result is RecipeIngredientSelection => result != null),
       filter(result => {
         if (!this.isIngredientSelected(result.ingredientId)) {
           return true;
@@ -474,7 +500,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
         return false;
       }),
       switchMap(result =>
-        this.ingredientDetailsFacade.get(result.ingredientId).pipe(
+        (result.createdIngredient ? of(result.createdIngredient) : this.ingredientDetailsFacade.get(result.ingredientId)).pipe(
           map(ingredient => ({
             ...result,
             ingredient,
@@ -663,6 +689,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
   // Validates the page form and submits the recipe create request.
   saveRecipe(): void {
+    if (!this.permissions.canWrite() || this.isEditMode() && !this.permissions.canEdit() || this.needsReview() || this.catalogue.createOutcomeUnknown()) return;
     this.submitAttempted.set(true);
     this.form.markAllAsTouched();
 
@@ -680,6 +707,11 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
     }
 
     this.saveFeedbackPending.set(true);
+    const submittedDraft = JSON.stringify({ fields: this.form.getRawValue(), ingredients: this.ingredients() });
+    const submittedImage = this.form.controls.image.value;
+    const isSubmittedDraftCurrent = () => this.form.controls.image.value === submittedImage
+      && JSON.stringify({ fields: this.form.getRawValue(), ingredients: this.ingredients() }) === submittedDraft;
+    let acknowledgedCurrentDraft = false;
     const editRecipeId = this.editRecipeId();
     const saveRequest$ = editRecipeId === null
       ? this.adminRecipeFacade.createRecipeWithDetails(recipeRequest)
@@ -687,18 +719,20 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
 
     saveRequest$.pipe(
       tap(recipeSummary => {
+        acknowledgedCurrentDraft = isSubmittedDraftCurrent();
         if (editRecipeId === null) {
           return;
         }
 
-        this.applyUpdatedRecipeSummary(recipeSummary);
+        if (acknowledgedCurrentDraft) this.applyUpdatedRecipeSummary(recipeSummary);
       }),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: recipeSummary => {
         this.saveFeedbackPending.set(false);
         if (editRecipeId === null) {
-          void this.navigateToSuccessPage(recipeSummary);
+          if (acknowledgedCurrentDraft) void this.navigateToSuccessPage(recipeSummary);
+          else this.openFeedbackDialog({ eyebrow: 'Submitted version created', title: 'Later edits remain unsaved', description: 'The submitted recipe was created, but this newer draft was not sent.', message: 'Inspect the created recipe before deciding whether to create another.' });
           return;
         }
 
@@ -706,7 +740,7 @@ export class AdminRecipesPageComponent implements OnInit, OnDestroy {
           eyebrow: 'Recipe updated',
           title: 'Recipe updated successfully',
           description: 'Your changes were saved to the current recipe.',
-          message: `"${recipeSummary.name}" is now up to date.`,
+          message: acknowledgedCurrentDraft ? `"${recipeSummary.name}" is now up to date.` : 'The submitted version was saved. Later edits remain unsaved.',
           actionLabel: 'Continue editing',
         });
       },

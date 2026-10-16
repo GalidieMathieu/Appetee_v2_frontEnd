@@ -131,16 +131,16 @@ describe('HomePageComponent', () => {
     expect(navigate).toHaveBeenNthCalledWith(2, ['/recipes']);
   });
 
-  it('keeps the unavailable Meal Plan action truly disabled and route-free', () => {
+  it('opens the implemented Meal Plan workspace from its Home entry', () => {
     const fixture = createFixture();
     const action = fixture.nativeElement.querySelector(
       '.meal-plan-empty-state__action'
     ) as HTMLButtonElement;
 
-    expect(action.disabled).toBe(true);
-    expect(action.getAttribute('aria-disabled')).toBe('true');
+    expect(action.disabled).toBe(false);
+    expect(action.getAttribute('aria-disabled')).toBeNull();
     action.click();
-    expect(navigate).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/meal-plan']);
   });
 
   it('keeps a missing Favorites destination disabled and route-free', () => {

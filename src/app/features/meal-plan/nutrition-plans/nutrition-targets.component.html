@@ -1,0 +1,12 @@
+<dl class="targets" [class.targets--sidebar]="sidebar()" aria-label="Daily nutrition targets">
+  @for (metric of metrics(); track metric.label) {
+    <div class="target">
+      @if (sidebar()) { <span class="target__ring" aria-hidden="true"></span> }
+      <div><dt class="text-small">{{ metric.label }}</dt>
+        <dd class="text-body-strong">@if (metric.value !== null && metric.value !== undefined) {
+          {{ metric.value | number:'1.0-2' }} {{ metric.unit }}
+        } @else { <span aria-label="Unknown">—</span> }</dd>
+      </div>
+    </div>
+  }
+</dl>

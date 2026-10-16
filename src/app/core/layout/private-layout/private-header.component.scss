@@ -39,7 +39,7 @@
 /* Desktop nav */
 .hdr__nav {
   display: none;
-  gap: 28px;
+  gap: clamp(4px, 1.3vw, 20px);
 }
 
 .hdr__link {
@@ -55,7 +55,7 @@
 }
 
 .hdr__link.is-active {
-  color: var(--color-primary);
+  color: var(--color-primary-text, var(--color-primary));
 }
 
 /* Right section */
@@ -159,6 +159,8 @@
 
 /* Mobile panel */
 .hdr__panel {
+  position: relative;
+  z-index: 1;
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.2s ease;
@@ -194,7 +196,7 @@
 
 .hdr__panelLink.is-active {
   background: var(--color-secondary);
-  color: var(--color-primary);
+  color: var(--color-primary-text, var(--color-primary));
 }
 
 /* Overlay */

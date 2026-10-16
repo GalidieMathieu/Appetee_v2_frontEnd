@@ -1,0 +1,23 @@
+import { ManualItemDraftState } from '../state/manual-item-draft.state';
+import { MealPlanOrderingState } from '../state/meal-plan-ordering.state';
+import { CopyFlowState } from '../state/copy-flow.state';
+import { TestBed } from '@angular/core/testing';
+import { computed, signal } from '@angular/core';
+import { vi } from 'vitest';
+import { MealPlannerPage } from './meal-planner.page';
+import { MealPlanWorkspaceFacade } from '../state/meal-plan-workspace.facade';
+import { plannerRange } from '@app/core/shared/data-access/meal-plan/testing/meal-plan.fixtures';
+import { MealEditorDraftState } from '../state/meal-editor-draft.state';
+describe('MealPlannerPage', () => {
+    const range = plannerRange('2026-10-12');
+    const task = signal<'day' | 'meal'>('day');
+    const selectedMeal = signal(range.days[0]!.meals[0]! as typeof range.days[0]['meals'][number] | null);
+    const snapshot = signal<any>(null);
+    const refresh = vi.fn();
+    const enter = vi.fn();
+    const leave = vi.fn();
+    beforeEach(() => { task.set('day'); selectedMeal.set(null); snapshot.set({ data: range, freshness: 'fresh', request: { status: 'success', error: null } }); refresh.mockReset(); TestBed.configureTestingModule({ providers: [{ provide: MealPlanWorkspaceFacade, useValue: { enter, leave, refresh, manual: new ManualItemDraftState(), copy: new CopyFlowState(), ordering: new MealPlanOrderingState(), displayDay: computed(() => snapshot()?.data?.days[0] ?? null), editorMeal: selectedMeal, openCopy: vi.fn(), drafts: new MealEditorDraftState(), pending: signal(false), structuralPending: signal(false), canWrite: () => true, actionsReady: () => true, canAddMeal: () => true, newMeal: vi.fn(), date: signal(range.from), task, selectedMeal, snapshot, settings: signal(range.settings), day: computed(() => snapshot()?.data?.days[0] ?? null), weekDates: signal([{ date: range.from, savedMealCount: 1, caloriesKcal: 500 }]), open: (meal: any) => { selectedMeal.set(meal); task.set('meal'); }, back: () => { selectedMeal.set(null); task.set('day'); }, shiftWeek: vi.fn(), today: vi.fn(), jump: vi.fn(), selectDate: vi.fn() } }] }); });
+    it('opens one readonly task, focuses its heading and restores the meal trigger on Back', () => { const fixture = TestBed.createComponent(MealPlannerPage); fixture.detectChanges(); const trigger = fixture.nativeElement.querySelector('[aria-label="View Lunch"]'); trigger.click(); fixture.detectChanges(); expect(document.activeElement?.textContent).toBe('Edit Lunch'); expect(fixture.nativeElement.textContent).toContain('Meal Items'); expect(fixture.nativeElement.querySelectorAll('form')).toHaveLength(0); const back = Array.from(fixture.nativeElement.querySelectorAll('button')) as HTMLButtonElement[]; back.find(button => button.textContent?.includes('Back to day'))!.click(); fixture.detectChanges(); expect(document.activeElement).toBe(trigger); });
+    it('shows unavailable backend errors with GET retry and no fake meals', () => { snapshot.set({ data: null, freshness: 'stale', request: { status: 'error', error: 'The planner service is unavailable.' } }); const fixture = TestBed.createComponent(MealPlannerPage); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('unavailable'); fixture.nativeElement.querySelector('[role="alert"] button').click(); expect(refresh).toHaveBeenCalledTimes(1); });
+    it('hides stale targets while preserving visible saved meals', () => { snapshot.set({ data: range, freshness: 'stale', request: { status: 'loading', error: null } }); const fixture = TestBed.createComponent(MealPlannerPage); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Refreshing week'); expect(fixture.nativeElement.textContent).not.toContain('Remaining'); expect(fixture.nativeElement.textContent).toContain('Lunch'); });
+});

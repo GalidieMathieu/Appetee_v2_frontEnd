@@ -10,6 +10,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/ro
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthFacade } from '@app/core/auth/data-access/auth.facade';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CapabilitiesFacade } from '@app/core/auth/data-access/capabilities.facade';
 import { finalize } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
@@ -30,6 +32,8 @@ type NavItem = {
 export class PrivateHeaderComponent {
   private readonly authFacade = inject(AuthFacade);
   private readonly userFacade = inject(UserFacade);
+  protected readonly capabilities = inject(CapabilitiesStore);
+  private readonly capabilityFacade = inject(CapabilitiesFacade);
   private readonly profileUsername = toSignal(this.userFacade.username$, { initialValue: '' });
 
   readonly username = computed(() => this.profileUsername() || 'Guest');
@@ -38,14 +42,14 @@ export class PrivateHeaderComponent {
   isMenuOpen = false;
   activePath = '';
 
-  nav: NavItem[] = [
+  readonly nav = computed<NavItem[]>(() => [
     { label: 'Home', path: '/home', exact: true },
     { label: 'Recipes', path: '/recipes' },
     { label: 'Favorites', path: '/favorites' },
     { label: 'Profile', path: '/profile' },
-    { label: 'Create Recipes', path: '/admin-recipes/create' },
-
-  ];
+    { label: 'Meal Plan', path: '/meal-plan' },
+    ...(this.capabilities.canWrite() ? [{ label: 'Create Recipes', path: '/admin-recipes/create' }] : []),
+  ]);
 
   constructor(private readonly router: Router) {
     this.activePath = this.router.url;
@@ -61,6 +65,9 @@ export class PrivateHeaderComponent {
 
   toggleMenu(): void {
     this.isMenuOpen = !this.isMenuOpen;
+  }
+  @HostListener('window:focus') revalidateCapabilities(): void {
+    this.capabilityFacade.refresh$().subscribe({ error: () => undefined });
   }
 
   closeMenu(): void {

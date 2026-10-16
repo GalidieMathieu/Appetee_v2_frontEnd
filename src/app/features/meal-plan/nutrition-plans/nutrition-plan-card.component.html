@@ -1,0 +1,57 @@
+<article class="plan-card" [class.plan-card--current]="current()" [attr.aria-label]="plan().name"
+  [attr.aria-busy]="pending() !== null">
+  <header class="plan-card__header">
+    <span class="plan-card__icon" aria-hidden="true"><mat-icon>{{ plan().goal ? goalIcons[plan().goal!] : 'restaurant' }}</mat-icon></span>
+    <h2 class="text-heading">{{ plan().name }}</h2>
+    @if (current()) { <span class="plan-card__current text-control-small">Current</span> }
+    <button type="button" class="plan-card__menu" [matMenuTriggerFor]="menu"
+      [disabled]="disabled() || pending() !== null" [attr.aria-label]="'More actions for ' + plan().name">
+      <mat-icon aria-hidden="true">more_horiz</mat-icon>
+    </button>
+    <mat-menu #menu="matMenu">
+      <button mat-menu-item [disabled]="duplicateDisabled()" (click)="duplicatePlan.emit()"
+        [attr.aria-label]="'Duplicate ' + plan().name">Duplicate</button>
+      <button mat-menu-item (click)="deletePlan.emit()" [attr.aria-label]="'Delete ' + plan().name">Delete</button>
+    </mat-menu>
+  </header>
+  <div class="plan-card__tags text-control-small">
+    <span>{{ plan().mode === 'easy' ? 'Easy' : 'Intermediate' }}</span>
+    @if (plan().mode === 'intermediate') {
+      @if (plan().activityLevel; as activity) { <span>{{ activityLabels[activity] }}</span> }
+      @if (plan().goal; as goal) { <span>{{ goalLabels[goal] }}</span> }
+    }
+  </div>
+  @if (plan().mode === 'intermediate') {
+    <p class="text-body-secondary">Estimated daily targets</p>
+    <dl class="plan-card__targets">
+      @for (nutrient of [
+        { label: 'Daily energy', value: plan().targets?.caloriesKcal, unit: 'kcal' },
+        { label: 'Protein', value: plan().targets?.proteinG, unit: 'g' },
+        { label: 'Carbs', value: plan().targets?.carbsG, unit: 'g' },
+        { label: 'Fat', value: plan().targets?.fatG, unit: 'g' }
+      ]; track nutrient.label) {
+        <div>
+          <dt class="text-small">{{ nutrient.label }}</dt>
+          <dd class="text-body-strong">
+            @if (nutrient.value !== null && nutrient.value !== undefined) {
+              {{ nutrient.value | number:'1.0-2' }} {{ nutrient.unit }}
+            } @else { <span aria-label="Unknown">—</span> }
+          </dd>
+        </div>
+      }
+    </dl>
+  } @else {
+    <p class="plan-card__no-targets text-body-secondary">Flexible meal planning without nutrition targets.</p>
+  }
+  <footer class="plan-card__footer">
+    <div><p class="text-eyebrow">Meal structure</p><p class="text-body-strong">{{ plan().defaultMealsPerDay }} meals / day</p></div>
+    <div class="plan-card__actions">
+    <button type="button" class="btn-selection text-label" [attr.data-edit-plan-id]="plan().id" [disabled]="disabled() || pending() !== null" [attr.aria-label]="'Edit ' + plan().name" (click)="editPlan.emit()">Edit</button>
+    @if (!current()) {
+      <button type="button" class="btn-link--primary text-button-white" (click)="usePlan.emit()" [disabled]="disabled() || pending() !== null" [attr.aria-label]="'Use this plan: ' + plan().name">{{ pending() === 'use' ? 'Saving…' : 'Use this plan' }}</button>
+    }</div>
+  </footer>
+  @if (pending() === 'duplicate' || pending() === 'delete') {
+    <p class="text-body-secondary" role="status">{{ pending() === 'duplicate' ? 'Duplicating…' : 'Deleting…' }}</p>
+  }
+</article>

@@ -9,7 +9,7 @@
 
     <!-- Desktop Nav -->
     <nav class="hdr__nav" aria-label="Primary navigation">
-      @for (item of nav; track item.path) {
+      @for (item of nav(); track item.path) {
         <a
           class="hdr__link"
           [routerLink]="item.path"
@@ -52,7 +52,7 @@
   <!-- Mobile Panel -->
   <div class="hdr__panel" [class.is-open]="isMenuOpen">
     <nav class="hdr__panelNav" aria-label="Mobile navigation">
-      @for (item of nav; track item.path) {
+      @for (item of nav(); track item.path) {
         <a
           class="hdr__panelLink"
           [routerLink]="item.path"
@@ -78,3 +78,4 @@
     <button class="hdr__overlay" (click)="closeMenu()"></button>
   }
 </header>
+@if (capabilities.notice(); as notice) { <p class="text-small" role="status" aria-live="polite">{{ notice }}</p> }

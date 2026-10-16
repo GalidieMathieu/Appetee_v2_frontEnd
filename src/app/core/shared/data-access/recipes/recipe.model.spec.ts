@@ -5,6 +5,7 @@
 import { IngredientAdminDetailDto } from '../ingredients/ingredient.model';
 import { User } from '../user/user.model';
 import {
+  RecipeCardAdvance,
   RecipeCardDto,
   RecipeDetailDto,
   RecipeDiscoveryPageDto,
@@ -83,5 +84,27 @@ describe('recipe discovery cursor contract', () => {
 
     expect(nextCursorIsOpaque).toBe(true);
     expect(backendCursorKeys).toEqual([false, false, false, false]);
+  });
+});
+
+describe('meal-plan picker recipe projection', () => {
+  it('keeps ordinary cards lean and adds macros only to the advanced projection', () => {
+    const ordinaryCardKeys: [
+      HasKey<RecipeCardDto, 'description'>,
+      HasKey<RecipeCardDto, 'proteinPerServing'>,
+      HasKey<RecipeCardDto, 'carbsPerServing'>,
+      HasKey<RecipeCardDto, 'fatPerServing'>,
+    ] = [false, false, false, false];
+    const advancedCardKeys: [
+      HasKey<RecipeCardAdvance, 'description'>,
+      HasKey<RecipeCardAdvance, 'proteinPerServing'>,
+      HasKey<RecipeCardAdvance, 'carbsPerServing'>,
+      HasKey<RecipeCardAdvance, 'fatPerServing'>,
+    ] = [true, true, true, true];
+    const nullableFat: IsExactly<RecipeCardAdvance['fatPerServing'], number | null> = true;
+
+    expect(ordinaryCardKeys).toEqual([false, false, false, false]);
+    expect(advancedCardKeys).toEqual([true, true, true, true]);
+    expect(nullableFat).toBe(true);
   });
 });

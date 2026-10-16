@@ -40,6 +40,8 @@ export type RecipeCreationIngredient = IngredientDialogResult & {
   ingredient: IngredientAdminDetailDto;
   featuredOrder: RecipeFeaturedOrder | null;
 };
+/** Temporary selection can carry an authorized create receipt without granting protected reads. */
+export type RecipeIngredientSelection = IngredientDialogResult & { createdIngredient?: IngredientAdminDetailDto };
 
 export type RecipeCalculation = RecipeNutrition & RecipePerServingNutrition & {
   estimatedCostPerServing: number | null;

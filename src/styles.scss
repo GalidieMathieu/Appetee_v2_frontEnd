@@ -33,3 +33,25 @@ body {
     var(--color-bg) 0%,
     #ffffff 100%);
 }
+
+// Meal Plan's multi-section forms use document scrolling, not a viewport-sized
+// body scroll container (which clips full-page content on smaller screens).
+body:has(app-meal-plan-shell) {
+  height: auto;
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+// Meal Plan and its overlays inherit the shared palette from styles/_theme.scss.
+.meal-plan-shell :focus-visible, body:has(app-meal-plan-shell) .cdk-overlay-container :focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .meal-plan-shell *, body:has(app-meal-plan-shell) .cdk-overlay-container * {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

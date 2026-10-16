@@ -1,3 +1,4 @@
+/* Login layout includes distinct error and successful account-closure announcement states. */
 .login-page {
     display: flex;
     align-items: center;
@@ -48,6 +49,15 @@
 
   .subtitle-error {
     margin-bottom: 1rem;
+  }
+
+  .account-closure-notice {
+    margin-bottom: 1rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid #8bcba5;
+    border-radius: 0.65rem;
+    color: #176b3a;
+    background: #eaf8ef;
   }
 
     /* ===== form div===== */

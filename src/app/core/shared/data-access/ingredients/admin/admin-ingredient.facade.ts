@@ -1,5 +1,8 @@
-import { Injectable } from '@angular/core';
-import { EMPTY, Observable, catchError, finalize, tap } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { EMPTY, Observable, catchError, filter, finalize, map, takeUntil, tap, timeout } from 'rxjs';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from '../../catalogue/catalogue-state.store';
 
 import { AbstractLoadFacade } from '../../generic-template/abstractLoadFacade';
 import { AdminIngredientApi } from './admin-ingredient.api';
@@ -14,6 +17,7 @@ import { IngredientsStore } from '../ingredients.store';
 
 @Injectable({ providedIn: 'root' })
 export class AdminIngredientFacade extends AbstractLoadFacade<null, AdminIngredientStore> {
+  private readonly capabilities = inject(CapabilitiesStore); private readonly catalogue = inject(CatalogueStateStore);
   constructor(
     private readonly api: AdminIngredientApi,
     private readonly catalogueStore: IngredientsStore,
@@ -24,24 +28,30 @@ export class AdminIngredientFacade extends AbstractLoadFacade<null, AdminIngredi
   }
 
   create(request: IngredientAdminDetailRequest): Observable<IngredientAdminDetailDto> {
-    if (this.store.isLoading()) return EMPTY;
+    if (!this.capabilities.canWrite() || this.store.isLoading() || this.catalogue.ingredientCreateOutcomeUnknown()) return EMPTY;
+    const generation = this.catalogue.generation();
     this.setLoading();
 
-    return this.api.create(this.toFormData(request)).pipe(
+    return this.api.create(this.toFormData(request)).pipe(timeout(10000), filter(() => this.catalogue.generation() === generation),
+      tap(record => this.catalogue.ingredients.update(records => ({ ...records, [record.resource.id]: record }))), map(record => record.resource),
       tap(detail => {
         const item: Ingredient = { id: detail.id, name: detail.name };
         this.detailsStore.upsert(detail);
         this.catalogueStore.upsert(item);
       }),
       catchError((error: unknown) => {
-        this.setError(this.toUserMessage(error));
+        if (this.catalogue.generation() === generation) {
+          if (!(error instanceof HttpErrorResponse) || error.status === 0 || error.status >= 500) this.catalogue.ingredientCreateOutcomeUnknown.set(true);
+          this.setError(this.toUserMessage(error));
+        }
         return EMPTY;
       }),
-      finalize(() => {
-        if (this.store.isLoading()) this.setSuccessWithNoData();
+      takeUntil(this.catalogue.reset$), finalize(() => {
+        if (this.catalogue.generation() === generation && this.store.isLoading()) this.setSuccessWithNoData();
       })
     );
   }
+  confirmCreateReview(): void { if (this.capabilities.canWrite()) this.catalogue.ingredientCreateOutcomeUnknown.set(false); }
 
   private toFormData(ingredient: IngredientAdminDetailRequest): FormData {
     const formData = new FormData();

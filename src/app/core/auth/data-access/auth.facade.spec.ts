@@ -5,6 +5,7 @@ import { vi } from 'vitest';
 import { SESSION_RESETTERS } from '@app/core/session/session-reset.token';
 import { AuthApi } from './auth.api';
 import { AuthFacade } from './auth.facade';
+import { CapabilitiesStore } from './capabilities.store';
 import { AuthStore } from './auth.store';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { User } from '@app/core/shared/data-access/user/user.model';
@@ -37,7 +38,7 @@ describe('AuthFacade', () => {
         AuthFacade,
         AuthStore,
         { provide: SessionExpirationService, useValue: sessionExpiration },
-        { provide: SESSION_RESETTERS, useValue: [resetter] },
+        { provide: SESSION_RESETTERS, useFactory: (capabilities: CapabilitiesStore) => [resetter, capabilities], deps: [CapabilitiesStore] },
         {
           provide: AuthApi,
           useValue: {
@@ -72,7 +73,7 @@ describe('AuthFacade', () => {
     const facade = TestBed.inject(AuthFacade);
     const store = TestBed.inject(AuthStore);
 
-    refreshSessionSpy.mockReturnValue(of(session));
+    refreshSessionSpy.mockReturnValue(of({ ...session, permissions: [] }));
     getMeSpy.mockReturnValue(of(user));
 
     await firstValueFrom(facade.restoreSession$());
@@ -87,6 +88,7 @@ describe('AuthFacade', () => {
   it('clears user-scoped stores before accepting a different identity', async () => {
     const session: UserSession = { userId: 7, username: 'second-chef' };
     loginSpy.mockReturnValue(of(session));
+    refreshSessionSpy.mockReturnValue(of({ ...session, permissions: [] }));
     getMeSpy.mockReturnValue(of({ username: 'second-chef', imageUrl: null }));
 
     await firstValueFrom(TestBed.inject(AuthFacade).login$({

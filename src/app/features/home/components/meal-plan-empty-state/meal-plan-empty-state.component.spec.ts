@@ -16,7 +16,7 @@ describe('MealPlanEmptyStateComponent', () => {
     expect(root.querySelector('section')?.getAttribute('aria-labelledby'))
       .toBe('meal-plan-empty-title');
     expect(root.querySelector('h2')?.textContent).toContain('Plan your meals for the week');
-    expect(root.textContent).toContain('preferences and schedule');
+    expect(root.textContent).toContain('reusable nutrition plans');
   });
 
   it('does not emit while unavailable and emits once when enabled', () => {

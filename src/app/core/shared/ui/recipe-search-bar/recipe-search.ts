@@ -1,10 +1,2 @@
-/** Shared bounded recipe-search normalization used before emitting UI intent or serializing criteria. */
-export const RECIPE_SEARCH_MAX_LENGTH = 100;
-
-export function normalizeRecipeSearchValue(value: string | null | undefined): string {
-  return (value ?? '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .slice(0, RECIPE_SEARCH_MAX_LENGTH)
-    .trimEnd();
-}
+/** Compatibility export: normalization is shared with Core Meal Plan discovery. */
+export { RECIPE_SEARCH_MAX_LENGTH, normalizeRecipeSearchValue } from '@app/core/shared/data-access/recipes/recipe-search';

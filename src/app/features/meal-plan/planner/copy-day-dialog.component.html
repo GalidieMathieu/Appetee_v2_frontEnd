@@ -1,0 +1,28 @@
+<h2 mat-dialog-title>Copy day</h2>
+<mat-dialog-content>
+  <p class="text-body">Source: {{ data.view().source }}. This replaces destination structure and food, not your nutrition plan or targets.</p>
+  <label class="text-label" for="copy-destination">Destination
+    <input id="copy-destination" type="date" class="input--primary" min="1000-01-01" max="9999-12-31"
+      [value]="data.view().destination" [disabled]="data.view().pending" (change)="destinationChanged.emit($any($event.target).value)"/>
+  </label>
+  <button type="button" class="btn-selection text-label" [disabled]="data.view().pending || data.view().loading" (click)="inspect.emit()">Review destination</button>
+  @if(data.view().loading) { <p class="text-body" role="status">Loading source and destination…</p> }
+  @if(data.view().error;as error) { <p class="copy-error text-error" role="alert">{{ error }}</p> }
+  <ol class="mappings" aria-label="Copy date mappings">
+    @for(row of data.view().rows;track row.destination) {
+      <li><p class="text-body-strong">{{ row.source }} → {{ row.destination }}</p>
+        <p class="text-small">Source: {{ row.sourceState }}. Destination: {{ row.destinationState }} · {{ row.meals }} meals, {{ row.items }} items to replace.</p>
+        @if(row.content.length) { <details><summary class="text-label">Destination meals and food to replace</summary><ul>@for(meal of row.content;track $index) { <li class="text-small">{{ meal.meal }}: {{ meal.items.length ? meal.items.join(', ') : 'Empty meal' }}</li> }</ul></details> }
+        @if(row.clears) { <p class="text-error">Absent source — clears saved destination food and structure.</p> }
+      </li>
+    }
+  </ol>
+  @if(data.view().ready) {
+    <p class="text-body">The entire destination day will be replaced exactly. Saved-empty sources remain saved-empty; absent sources clear destination persistence.</p>
+    @if(data.view().requiresReplacement) { <label class="replacement text-label"><input type="checkbox" [checked]="data.view().confirmed" [disabled]="data.view().pending" (change)="acknowledge.emit($any($event.target).checked)"/>I understand that saved destination content will be replaced or cleared.</label> }
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button type="button" class="btn-selection text-label" [disabled]="data.view().pending" (click)="dialog.close()">Cancel</button>
+  <button type="button" class="btn-link--primary btn-action text-button-white" [disabled]="data.view().pending || !data.view().ready || data.view().requiresReplacement && !data.view().confirmed" (click)="confirm.emit()">{{ data.view().pending ? 'Copying…' : 'Copy day' }}</button>
+</mat-dialog-actions>

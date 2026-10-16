@@ -3,7 +3,7 @@
  * Feature query stores and transient Recipe Experience context join the cookie-session reset flow.
  */
 import { ApplicationConfig, provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withRouterConfig } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { apiErrorInterceptor } from './core/api/api-error.interceptor';
 
@@ -27,11 +27,22 @@ import { RecipeCookingStore } from './core/shared/data-access/recipes/recipe-coo
 import { FavoritesStore } from './features/favorites/state/favorites.store';
 import { HomeStore } from './features/home/state/home.store';
 import { RecipeExperienceFacade } from './core/shared/ui/recipe-experience/recipe-experience.facade';
+import { MealPlanContextStore } from './core/shared/data-access/meal-plan/meal-plan-context.store';
+import { MealPlannerStore } from './core/shared/data-access/meal-plan/meal-planner.store';
+import { NutritionPlansStore } from './core/shared/data-access/meal-plan/nutrition-plans.store';
+import { NutritionPlanDetailsStore } from './core/shared/data-access/meal-plan/nutrition-plan-details.store';
+import { NutritionProfileStore } from './core/shared/data-access/user/nutrition-profile.store';
+import { MealPlanMutationCoordinator } from './core/shared/data-access/meal-plan/meal-plan-mutation-coordinator';
+import { CsrfTokenService } from './core/auth/csrf-token.service';
+import { CapabilitiesStore } from './core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from './core/shared/data-access/catalogue/catalogue-state.store';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
+    // Staying in a guarded editor must restore the browser's history position,
+    // so a subsequent Back can ask again rather than losing the parent entry.
+    provideRouter(routes, withRouterConfig({ canceledNavigationResolution: 'computed' })),
     provideHttpClient(
       withFetch(),
       withInterceptors([authInterceptor,apiErrorInterceptor])
@@ -39,6 +50,9 @@ export const appConfig: ApplicationConfig = {
     // Restore a valid cookie-backed session before the router renders any guarded route.
     provideAppInitializer(() => inject(AuthFacade).restoreSession$()),
     // Register stores for resetAll()
+    { provide: SESSION_RESETTERS, useExisting: CapabilitiesStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: CatalogueStateStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: CsrfTokenService, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipesStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipePreviewStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: RecipeCookingStore, multi: true },
@@ -53,5 +67,11 @@ export const appConfig: ApplicationConfig = {
     { provide: SESSION_RESETTERS, useExisting: AdminIngredientStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: AuthStore, multi: true },
     { provide: SESSION_RESETTERS, useExisting: UserStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: MealPlanContextStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: MealPlannerStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: NutritionPlansStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: NutritionPlanDetailsStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: NutritionProfileStore, multi: true },
+    { provide: SESSION_RESETTERS, useExisting: MealPlanMutationCoordinator, multi: true },
   ]
 };

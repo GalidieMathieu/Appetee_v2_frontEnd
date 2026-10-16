@@ -1,0 +1,23 @@
+<form [formGroup]="draft().form" (ngSubmit)="submitEntry.emit()" novalidate aria-label="Manual food">
+  @if(draft().error() || draft().attempted() && draft().form.invalid) {
+    <div #summary class="manual-errors text-error" tabindex="-1" role="alert">
+      <p>{{ draft().error() ?? 'Review the manual food fields before saving.' }}</p>
+      @if(draft().diagnostic();as reference) { <p class="text-small">Reference: {{ reference }}</p> }
+      <ul>@for(field of draft().fields;track field.key) { @if(draft().feedback(field.key);as message) { <li><a mealPlanFieldLink [href]="'#manual-' + field.key">{{ field.label }}: {{ message }}</a></li> } }</ul>
+      @if(draft().blocked()) { <button type="button" class="btn-selection text-label" [disabled]="pending()" (click)="refresh.emit()">Refresh saved day</button>
+      @if(canReview()) { <button type="button" class="btn-selection text-label" (click)="review.emit()">I reviewed the saved day and my draft</button> } }
+    </div>
+  }
+  <p id="manual-total-help" class="text-body-secondary">Total for this entry — not per serving. Enter every value; all nutrition values must be greater than zero.</p>
+  <fieldset [disabled]="pending()" class="manual-fields">
+    <legend class="sr-only">Manual food totals</legend>
+    @for(field of draft().fields;track field.key) {
+      <div [class.name-field]="field.key === 'name'"><label class="text-label" [for]="'manual-' + field.key">{{ field.label }}</label>
+      <input [id]="'manual-' + field.key" class="input--primary" [formControlName]="field.key" type="text" [attr.inputmode]="field.key === 'name' ? 'text' : 'decimal'"
+        [attr.aria-invalid]="!!draft().feedback(field.key)" [attr.aria-describedby]="'manual-total-help manual-feedback-' + field.key"/>
+      <p [id]="'manual-feedback-' + field.key" class="text-error" [hidden]="!draft().feedback(field.key)">{{ draft().feedback(field.key) }}</p></div>
+    }
+  </fieldset>
+  <footer><button type="button" class="btn-selection text-label" [disabled]="pending()" (click)="cancel.emit()">Cancel</button>
+  <button type="submit" class="btn-link--primary btn-action text-button-white" [disabled]="pending() || !ready()">{{ pending() ? 'Saving…' : draft().editingId() === null ? 'Add manual food' : 'Update manual food' }}</button></footer>
+</form>

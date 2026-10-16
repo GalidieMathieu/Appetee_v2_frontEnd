@@ -1,0 +1,28 @@
+@use 'plan-ui' as ui;
+@include ui.section-heading;
+.edit-task { max-width: 84rem; margin: 1.5rem auto; display: grid; gap: 1.5rem; }
+.edit-header { display: grid; gap: .7rem; }
+.edit-header .text-section-title { font-size: clamp(1.6rem, 2.6vw, 2.1rem); }
+.edit-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(20rem, 1fr); gap: 1.25rem; align-items: start; }
+.fields { display: grid; gap: 1rem; min-width: 0; }
+.edit-section { padding: 1.25rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: calc(var(--radius) * 1.5); min-width: 0; }
+.plan-name { display: grid; gap: .5rem; }
+input { min-height: 2.75rem; }
+.text-error:empty { display: none; }
+.target-sidebar { padding: 1.25rem; background: var(--color-bg-secondary); border-radius: calc(var(--radius) * 1.5); display: grid; gap: .75rem; min-width: 0; }
+.target-sidebar .section-heading { margin-bottom: 0; }
+.target-sidebar .section-icon { background: var(--color-surface); }
+.saved-details { border-top: 1px solid var(--color-border); padding-top: 1rem; display: grid; gap: 1rem; margin: 0; }
+.saved-details > div { display: flex; gap: .75rem; justify-content: space-between; }
+.saved-details dd { margin: 0; color: var(--color-text); }
+.target-note, .notice { padding: .85rem; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); overflow-wrap: anywhere; }
+.profile-action { margin-top: .75rem; }
+.recalculate-action { justify-self: start; white-space: normal; }
+.actions { display: grid; gap: .65rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
+.actions button { min-height: 2.75rem; padding: .7rem 1rem; border-radius: var(--radius); cursor: pointer; }
+.actions .btn-link--primary { border: 0; box-shadow: none; }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+h1[tabindex="-1"]:focus { outline: none; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+@media(max-width:58rem) { .edit-grid { grid-template-columns: 1fr; } }
+@media(max-width:34rem) { .edit-task { margin: .75rem auto; } .edit-section, .target-sidebar { padding: 1rem; } }
