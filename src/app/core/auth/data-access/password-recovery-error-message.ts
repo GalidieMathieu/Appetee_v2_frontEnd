@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { CSRF_REJECTED_MESSAGE, isCsrfInvalidError } from '../csrf-error';
 
 export const PASSWORD_RECOVERY_MESSAGES = {
   offline: 'Cannot reach the server. Check your connection and try again.',
@@ -10,6 +11,7 @@ export const PASSWORD_RECOVERY_MESSAGES = {
 } as const;
 
 export function toPasswordRecoveryRequestMessage(error: unknown): string {
+  if (isCsrfInvalidError(error)) return CSRF_REJECTED_MESSAGE;
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
       return PASSWORD_RECOVERY_MESSAGES.offline;
@@ -24,6 +26,7 @@ export function toPasswordRecoveryRequestMessage(error: unknown): string {
 }
 
 export function toPasswordRecoveryConfirmMessage(error: unknown): string {
+  if (isCsrfInvalidError(error)) return CSRF_REJECTED_MESSAGE;
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
       return PASSWORD_RECOVERY_MESSAGES.offline;

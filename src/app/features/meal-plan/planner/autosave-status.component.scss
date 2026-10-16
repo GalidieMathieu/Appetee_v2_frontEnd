@@ -1,0 +1,2 @@
+.save-status { display: inline-flex; padding: .35rem .6rem; border-radius: var(--radius); background: var(--color-bg-secondary); }
+[data-save-status=failed], [data-save-status=conflict], [data-save-status=unknownOutcome] { color: var(--color-text); border: 1px solid var(--color-primary); }

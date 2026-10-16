@@ -1,0 +1,25 @@
+.plan-task { max-width: 56rem; margin: 1.5rem auto; padding: clamp(1.25rem, 3vw, 2rem); border: 1px solid var(--color-border); border-radius: calc(var(--radius) * 1.5); background: var(--color-surface); }
+.wizard-header { display: grid; gap: .65rem; }
+.wizard-header .text-section-title { font-size: clamp(1.6rem, 2.6vw, 2.1rem); }
+.step-strip { list-style: none; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 0 0 1.25rem; margin: 1.5rem 0; border-bottom: 1px solid var(--color-border); }
+.step-strip li { position: relative; min-width: 0; }
+.step-strip li:not(:last-child)::after { content: ''; height: 2px; position: absolute; left: calc(50% + 1.2rem); right: calc(-50% + 1.2rem); top: 1.05rem; background: var(--color-border); }
+.step-strip li.is-complete::after { background: var(--color-primary); }
+.step-strip button { display: grid; justify-items: center; gap: .65rem; width: 100%; border: 0; background: transparent; color: var(--color-muted); cursor: pointer; font-size: .8rem; padding: 0 .2rem; }
+.step-number { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; border: 1px solid var(--color-border); background: var(--color-surface); font-weight: 700; }
+.is-current button { color: var(--color-primary); font-weight: 700; }
+.is-current .step-number, .is-complete .step-number { border-color: var(--color-primary); color: var(--color-on-primary); background: var(--color-primary); }
+.task-body { min-width: 0; }
+.task-body > app-profile-step { display: block; border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1.25rem; }
+.notice { padding: .9rem; margin-bottom: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius); }
+.wizard-actions { display: flex; justify-content: space-between; align-items: center; gap: .75rem; border-top: 1px solid var(--color-border); padding-top: 1rem; margin-top: 1.5rem; }
+.wizard-actions > div { display: flex; gap: .5rem; }
+.wizard-actions button { min-height: 2.75rem; padding: .7rem 1.25rem; border-radius: var(--radius); cursor: pointer; }
+.wizard-actions .btn-link--primary { display: inline-flex; gap: 1rem; align-items: center; border: 0; box-shadow: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+h1[tabindex="-1"]:focus { outline: none; }
+button:disabled { cursor: not-allowed; }
+.wizard-actions button:disabled { opacity: .55; }
+@media (max-width: 34rem) { .plan-task { margin: .5rem 0; padding: 1rem; } .step-strip { margin-top: 1.5rem; } .step-strip button { font-size: .65rem; } .wizard-actions { flex-wrap: wrap; } .wizard-actions > button { flex: 1; } .wizard-actions button { padding-inline: .75rem; } .task-body > app-profile-step { padding: .75rem; } }
+@media (max-width: 34rem) { .wizard-actions > div { width: 100%; } .wizard-actions > div button { flex: 1; } .wizard-actions > button { width: 100%; } }

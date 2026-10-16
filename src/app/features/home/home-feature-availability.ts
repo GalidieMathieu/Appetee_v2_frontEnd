@@ -14,7 +14,7 @@ export const HOME_FEATURE_AVAILABILITY = new InjectionToken<HomeFeatureAvailabil
   {
     factory: () => ({
       favoritesRoute: true,
-      mealPlanRoute: false,
+      mealPlanRoute: true,
     }),
   }
 );

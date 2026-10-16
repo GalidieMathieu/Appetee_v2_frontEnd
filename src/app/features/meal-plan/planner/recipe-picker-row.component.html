@@ -1,0 +1,13 @@
+<article class="picker-row" [attr.aria-busy]="pending()">
+  <button type="button" class="recipe-preview" [attr.aria-label]="'Preview ' + recipe().name" (click)="preview.emit(recipe())">
+    @if(recipe().cardImageUrl; as url) { <img [src]="url" alt="" loading="lazy"/> }
+    @else { <mat-icon aria-hidden="true">restaurant</mat-icon> }
+  </button>
+  <div class="recipe-copy">
+    <button type="button" class="recipe-title text-body-strong" [attr.aria-label]="'Preview ' + recipe().name" (click)="preview.emit(recipe())">{{ recipe().name }}</button>
+    <p class="text-body-secondary">{{ recipe().description }}</p>
+    <div class="recipe-metrics text-small"><span>{{ recipe().caloriesPerServing | number:'1.0-2' }} kcal</span><span>{{ recipe().proteinPerServing | number:'1.0-2' }} g protein</span><span>{{ recipe().carbsPerServing | number:'1.0-2' }} g carbs</span><span>@if(recipe().fatPerServing !== null) { {{ recipe().fatPerServing | number:'1.0-2' }} g fat } @else { Fat <span aria-label="Unknown">—</span> }</span></div>
+    <div class="recipe-badges text-chip">@for(badge of recipe().badges;track badge) { <span>{{ badge }}</span> }<span>{{ recipe().totalTimeMinutes }} min</span></div>
+  </div>
+  <button type="button" class="btn-link--primary text-button-white add-button" [disabled]="disabled() || inMeal() || pending()" [attr.aria-label]="inMeal() ? recipe().name + ' is in this meal' : 'Add ' + recipe().name" (click)="add.emit(recipe())">{{ pending() ? 'Adding…' : inMeal() ? 'In meal' : '＋ Add' }}</button>
+</article>

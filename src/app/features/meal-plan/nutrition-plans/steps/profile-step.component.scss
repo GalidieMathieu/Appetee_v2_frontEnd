@@ -1,0 +1,4 @@
+@use '../plan-ui' as ui;
+@include ui.section-heading;
+:host { display: block; min-width: 0; }
+.section-heading { padding-bottom: 1.1rem; border-bottom: 1px solid var(--color-border); }

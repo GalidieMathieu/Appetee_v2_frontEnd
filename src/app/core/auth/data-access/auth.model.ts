@@ -2,6 +2,7 @@ export type UserSession = {
   userId: number;
   username: string;
 };
+export interface CurrentUserSession extends UserSession { readonly permissions: readonly string[]; }
 
 export type LoginRequest = { 
   email: string;

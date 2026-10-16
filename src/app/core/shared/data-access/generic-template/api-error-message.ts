@@ -1,7 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { CSRF_REJECTED_MESSAGE, isCsrfInvalidError } from '../../../auth/csrf-error';
 
 /** Converts transport/backend failures into safe messages suitable for UI state. */
 export function toApiErrorMessage(error: unknown): string {
+  if (isCsrfInvalidError(error)) return CSRF_REJECTED_MESSAGE;
   if (error instanceof HttpErrorResponse) {
     const backendMessage = extractBackendMessage(error.error);
 

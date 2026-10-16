@@ -2,7 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { DOCUMENT } from '@angular/common';
 import { inject, Injectable, signal } from '@angular/core';
 import { AbstractLoadFacade } from '@app/core/shared/data-access/generic-template/abstractLoadFacade';
-import { catchError, EMPTY, finalize, map, Observable, of, switchMap, take, tap } from 'rxjs';
+import { catchError, EMPTY, filter, finalize, map, Observable, of, switchMap, take, takeUntil, tap } from 'rxjs';
 import {
   LoginRequest,
   PasswordRecoveryConfirmRequest,
@@ -12,6 +12,7 @@ import {
 } from './auth.model';
 import { AuthApi } from './auth.api';
 import { AuthStore } from './auth.store';
+import { CapabilitiesFacade } from './capabilities.facade';
 import { UserFacade } from '@app/core/shared/data-access/user/user.facade';
 import { SessionService } from '@app/core/session/session.service';
 import { SessionExpirationService } from '../session-expiration.service';
@@ -38,6 +39,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
   }
 
   private readonly session = inject(SessionService);
+  private readonly capabilities = inject(CapabilitiesFacade);
   private readonly sessionExpiration = inject(SessionExpirationService);
   private readonly document = inject(DOCUMENT);
   private readonly passwordRecoveryLoadingState = signal(false);
@@ -57,9 +59,10 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
    *
    * @remarks This keeps cookie restoration and explicit sign-in flows aligned.
    */
-  private hydrateSession$(session: UserSession): Observable<void> {
-    return this.userFacade.getMe$().pipe(
-      tap(() => this.setAuthenticatedSession(session)),
+  private hydrateSession$(session: UserSession, capabilitiesLoaded = false): Observable<void> {
+    return (capabilitiesLoaded ? of(session) : this.capabilities.refresh$(session.userId)).pipe(
+      switchMap(() => this.userFacade.getMe$()),
+      tap(() => this.setAuthenticatedSession({userId: session.userId, username: session.username})),
       map(() => void 0)
     );
   }
@@ -74,8 +77,8 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
 
     this.setLoading();
 
-    return this.api.refreshSession().pipe(
-      switchMap((session: UserSession) => this.hydrateSession$(session)),
+    return this.capabilities.refresh$().pipe(
+      switchMap((session: UserSession) => this.hydrateSession$(session, true)),
       catchError(error => {
         if (this.isExpiredSessionResponse(error)) {
           if (this.isPasswordRecoveryLocation()) {
@@ -88,7 +91,7 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
           this.session.resetAll();
         }
         return EMPTY;
-      })
+      }), takeUntil(this.capabilities.store.reset$)
     );
   }
 
@@ -108,13 +111,15 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     // the previous identity before accepting profile/session data for the next one.
     this.session.resetAll();
     this.setLoading();
+    const generation = this.capabilities.store.generation();
 
     return this.api.login(request).pipe(
+      filter(() => this.capabilities.store.generation() === generation),
       switchMap((session: UserSession) => this.hydrateSession$(session)),
       catchError(err => {
         this.store.setError(this.toLoginMessage(err));
         return EMPTY;
-      })
+      }), takeUntil(this.capabilities.store.reset$)
     );
   }
 
@@ -164,13 +169,15 @@ export class AuthFacade extends AbstractLoadFacade<UserSession | null, AuthStore
     }
     this.session.resetAll();
     this.setLoading();
+    const generation = this.capabilities.store.generation();
 
     return this.api.signUp(user).pipe(
+      filter(() => this.capabilities.store.generation() === generation),
       switchMap((session: UserSession) => this.hydrateSession$(session)),
       catchError(err => {
         this.store.setError(this.toUserMessage(err));
         return EMPTY;
-      })
+      }), takeUntil(this.capabilities.store.reset$)
     );
   }
 

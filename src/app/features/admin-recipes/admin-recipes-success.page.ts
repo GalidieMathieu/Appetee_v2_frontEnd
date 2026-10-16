@@ -11,6 +11,8 @@ import {
   RecipeSummary,
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CatalogueStateStore } from '@app/core/shared/data-access/catalogue/catalogue-state.store';
 
 function isRecipeSummary(value: unknown): value is RecipeSummary {
   if (!value || typeof value !== 'object') {
@@ -54,6 +56,8 @@ function toRecipeSummary(detail: RecipeDetailDto): RecipeSummary {
   styleUrl: './admin-recipes-success.page.scss',
 })
 export class AdminRecipesSuccessPageComponent implements OnInit {
+  protected readonly permissions = inject(CapabilitiesStore);
+  private readonly catalogue = inject(CatalogueStateStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -117,6 +121,7 @@ export class AdminRecipesSuccessPageComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    this.catalogue.reset$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => { this.recipeSummary.set(null); void this.router.navigateByUrl('/home', { replaceUrl: true }); });
     const routeRecipeId = this.getRouteRecipeId();
     if (routeRecipeId === null) {
       this.redirectToCreate();

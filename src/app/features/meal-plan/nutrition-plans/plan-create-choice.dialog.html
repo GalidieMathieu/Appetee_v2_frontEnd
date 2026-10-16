@@ -1,0 +1,17 @@
+<div class="choice-dialog">
+  <button class="choice-dialog__close btn-selection" type="button" aria-label="Close plan type selection" (click)="dialog.close()"><mat-icon aria-hidden="true">close</mat-icon></button>
+  <h2 id="plan-choice-title" class="text-heading">What would you like Appetee to help with?</h2>
+  <p id="plan-choice-help" class="text-body-secondary">Choose a simple starting point. You can create more plans for different seasons.</p>
+  <div class="choice-dialog__options">
+    <button type="button" class="choice-dialog__option" (click)="dialog.close('easy')">
+      <span class="choice-dialog__icon" aria-hidden="true"><mat-icon>restaurant</mat-icon></span>
+      <strong class="text-heading">Easy</strong><span class="text-body">Help me plan what to eat</span>
+      <span class="text-body-secondary">Choose meals, organize your week and prepare food without having to track calories or macros.</span>
+    </button>
+    <button type="button" class="choice-dialog__option" (click)="dialog.close('intermediate')">
+      <span class="choice-dialog__icon" aria-hidden="true"><mat-icon>fitness_center</mat-icon></span>
+      <strong class="text-heading">Intermediate</strong><span class="text-body">Calculate what I need</span>
+      <span class="text-body-secondary">Appetee estimates your nutrition needs from your profile, activity and goal.</span>
+    </button>
+  </div>
+</div>

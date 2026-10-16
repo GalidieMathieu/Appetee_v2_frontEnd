@@ -2,10 +2,23 @@
 .btn-link--primary {
     background: hsl(var(--color-primary-hsl));
     color: var(--color-surface);
-  
+
     box-shadow:
       0 10px 15px -3px rgba(0, 0, 0, 0.12),
       0 4px 6px -4px rgba(0, 0, 0, 0.12);
+  }
+
+  // Shared shape for explicit primary actions without a component-specific button style.
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    border: 1px solid transparent;
+    border-radius: .75rem;
+    padding: .65rem 1rem;
+    white-space: normal;
+    cursor: pointer;
   }
 
   .btn-link--primary:hover {
@@ -13,6 +26,13 @@
     box-shadow:
       0 20px 25px -5px rgba(0, 0, 0, 0.14),
       0 8px 10px -6px rgba(0, 0, 0, 0.14);
+  }
+
+  // Explicit form/dialog actions need readable white text; retain the brighter
+  // brand color for navigation and decorative accents.
+  .btn-action.btn-link--primary,
+  .btn-action.btn-link--primary:hover {
+    background: hsl(var(--color-accessible-orange-hsl));
   }
 
   .btn-link-secondary{

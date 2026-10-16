@@ -13,6 +13,7 @@ import {
   RecipeDetailDto,
   RecipeDiscoveryCriteria,
   RecipeDiscoveryPageDto,
+  RecipeMealPlanPageDto,
   RecipePreviewDto,
 } from './recipe.model';
 
@@ -25,38 +26,22 @@ export class RecipesApi {
 
   /** Serializes applied criteria and forwards the opaque server cursor without interpreting it. */
   discover(
-    criteria: RecipeDiscoveryCriteria = {
-      search: '',
-      ingredientIds: [],
-      requireAllIngredients: true,
-      badges: [],
-      maxTotalMinutes: null,
-      maxDifficulty: null,
-      savedOnly: false,
-    },
+    criteria: RecipeDiscoveryCriteria = DEFAULT_DISCOVERY_CRITERIA,
     cursor: string | null = null,
     limit?: number
   ): Observable<RecipeDiscoveryPageDto> {
-    let params = new HttpParams();
-    if (criteria.search) params = params.set('search', criteria.search);
-    for (const ingredientId of criteria.ingredientIds) {
-      params = params.append('ingredientIds', ingredientId);
-    }
-    if (criteria.ingredientIds.length > 0 && !criteria.requireAllIngredients) {
-      params = params.set('requireAllIngredients', false);
-    }
-    for (const badge of criteria.badges) params = params.append('badges', badge);
-    if (criteria.maxTotalMinutes !== null) {
-      params = params.set('maxTotalMinutes', criteria.maxTotalMinutes);
-    }
-    if (criteria.maxDifficulty !== null) {
-      params = params.set('maxDifficulty', criteria.maxDifficulty);
-    }
-    if (criteria.savedOnly) params = params.set('savedOnly', true);
-    if (cursor !== null) params = params.set('cursor', cursor);
-    if (limit !== undefined) params = params.set('limit', limit);
-
+    const params = buildDiscoveryParams(criteria, cursor, limit);
     return this.http.get<RecipeDiscoveryPageDto>(`${this.apiUrl}/recipes`, { params });
+  }
+
+  /** Uses the same bounded discovery contract with the Meal Plan picker projection. */
+  discoverForMealPlan(
+    criteria: RecipeDiscoveryCriteria = DEFAULT_DISCOVERY_CRITERIA,
+    cursor: string | null = null,
+    limit?: number
+  ): Observable<RecipeMealPlanPageDto> {
+    const params = buildDiscoveryParams(criteria, cursor, limit);
+    return this.http.get<RecipeMealPlanPageDto>(`${this.apiUrl}/recipes/meal-plan`, { params });
   }
 
   saveFavorite(id: number): Observable<void> {
@@ -92,4 +77,40 @@ export class RecipesApi {
   getRecipeWithDetails(id: number): Observable<RecipeDetailDto> {
     return this.http.get<RecipeDetailDto>(`${this.apiUrl}/recipes/${id}`);
   }
+}
+
+const DEFAULT_DISCOVERY_CRITERIA: RecipeDiscoveryCriteria = {
+  search: '',
+  ingredientIds: [],
+  requireAllIngredients: true,
+  badges: [],
+  maxTotalMinutes: null,
+  maxDifficulty: null,
+  savedOnly: false,
+};
+
+function buildDiscoveryParams(
+  criteria: RecipeDiscoveryCriteria,
+  cursor: string | null,
+  limit?: number
+): HttpParams {
+  let params = new HttpParams();
+  if (criteria.search) params = params.set('search', criteria.search);
+  for (const ingredientId of criteria.ingredientIds) {
+    params = params.append('ingredientIds', ingredientId);
+  }
+  if (criteria.ingredientIds.length > 0 && !criteria.requireAllIngredients) {
+    params = params.set('requireAllIngredients', false);
+  }
+  for (const badge of criteria.badges) params = params.append('badges', badge);
+  if (criteria.maxTotalMinutes !== null) {
+    params = params.set('maxTotalMinutes', criteria.maxTotalMinutes);
+  }
+  if (criteria.maxDifficulty !== null) {
+    params = params.set('maxDifficulty', criteria.maxDifficulty);
+  }
+  if (criteria.savedOnly) params = params.set('savedOnly', true);
+  if (cursor !== null) params = params.set('cursor', cursor);
+  if (limit !== undefined) params = params.set('limit', limit);
+  return params;
 }

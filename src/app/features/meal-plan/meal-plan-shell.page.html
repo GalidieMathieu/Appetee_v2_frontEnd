@@ -1,0 +1,16 @@
+<main class="meal-plan-shell" aria-label="Meal Plan">
+  @if (entry.showHeader()) {
+    <header class="meal-plan-header">
+      <p class="text-eyebrow">Your fueling, made simple</p>
+      <div class="meal-plan-header__row">
+        <nav aria-label="Meal Plan sections">
+          <a class="text-button" routerLink="/meal-plan/planner" routerLinkActive="is-active" ariaCurrentWhenActive="page">Meal Planner</a>
+          <a class="text-button" routerLink="/meal-plan/nutrition-plans" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">Nutrition Plans</a>
+        </nav>
+        <button id="meal-plan-create" type="button" class="btn-link--primary text-button-white" [disabled]="entry.atCap()" [attr.aria-describedby]="entry.atCap() ? 'meal-plan-cap' : null" (click)="entry.openCreate()"><span aria-hidden="true">＋</span> Create Nutrition Plan</button>
+      </div>
+      @if (entry.atCap()) { <p id="meal-plan-cap" class="text-small">You have reached the limit of 50 plans. Delete a plan before creating another.</p> }
+    </header>
+  }
+  <router-outlet />
+</main>

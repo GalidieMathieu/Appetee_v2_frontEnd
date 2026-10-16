@@ -1,0 +1,4 @@
+import { TestBed } from '@angular/core/testing';
+import { MealStructureStepComponent } from './meal-structure-step.component';
+import { createNutritionPlanForm } from '../../forms/nutrition-plan-form.factory';
+describe('MealStructureStepComponent', () => { it('offers 1–8 without an invented default and does not add meals', () => { const fixture = TestBed.createComponent(MealStructureStepComponent); const form = createNutritionPlanForm(); fixture.componentRef.setInput('form', form); fixture.detectChanges(); const radios = fixture.nativeElement.querySelectorAll('input[type="radio"]'); expect(radios).toHaveLength(8); expect(form.controls.defaultMealsPerDay.value).toBeNull(); radios[7].click(); expect(form.controls.defaultMealsPerDay.value).toBe(8); expect(Object.keys(form.controls)).toEqual(['name', 'defaultMealsPerDay']); }); });

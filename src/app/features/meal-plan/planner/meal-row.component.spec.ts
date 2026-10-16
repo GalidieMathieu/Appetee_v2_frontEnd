@@ -1,0 +1,4 @@
+import { TestBed } from '@angular/core/testing';
+import { MealRowComponent } from './meal-row.component';
+import { plannerRange } from '@app/core/shared/data-access/meal-plan/testing/meal-plan.fixtures';
+describe('MealRowComponent', () => { it('keeps unknown nutrients visible and emits a read-only meal intent', () => { const fixture = TestBed.createComponent(MealRowComponent); const meal = plannerRange('2026-10-12').days[0]!.meals[0]!; fixture.componentRef.setInput('meal', meal); fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Unknown'); expect(fixture.nativeElement.textContent).toContain('Recipe with unknown fat'); let selected: unknown; fixture.componentInstance.openMeal.subscribe(value => selected = value); fixture.nativeElement.querySelector('button').click(); expect(selected).toBe(meal); }); });

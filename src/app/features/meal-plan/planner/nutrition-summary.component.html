@@ -1,0 +1,19 @@
+<dl class="metrics" [class.inline]="presentation() === 'inline'" [class.total]="presentation() === 'total'">
+  @for(metric of metrics();track metric.key) {
+    <div [class]="'metric ' + metric.tone">
+      <span class="metric-icon" aria-hidden="true"><mat-icon>{{ metric.icon }}</mat-icon></span>
+      <div class="metric-content">
+        <dt class="text-small">{{ metric.label }}</dt>
+        <dd class="text-body-strong">
+          @if(metric.total !== null) { {{ metric.total | number:'1.0-2' }} } @else { <span [attr.aria-label]="'Unknown ' + metric.label">Unknown</span> }
+          @if(!targets() || presentation() !== 'daily') { <span>{{ metric.unit }}@if(presentation() === 'inline' && metric.key !== 'caloriesKcal') { {{ metric.label.charAt(0) }} }@if(presentation() === 'total' && metric.key !== 'caloriesKcal') { <span class="target"> {{ metric.label.toLowerCase() }}</span> }</span> }
+          @if(targets()) { <span class="target"> / {{ metric.target === null ? 'Unknown' : (metric.target | number:'1.0-2') }}@if(metric.key !== 'caloriesKcal') { {{ metric.unit }} }</span> }
+          @if(targets() && presentation() === 'daily') { <span class="metric-remaining"> · Target {{ metric.target ?? 'Unknown' }} {{ metric.unit }} · Remaining {{ metric.remaining ?? 'Unknown' }} {{ metric.unit }}@if(metric.remaining !== null && metric.remaining < 0) { (over target) }</span> }
+        </dd>
+        @if(metric.progress !== null && presentation() === 'daily') { <span class="metric-track" aria-hidden="true"><span [style.width.%]="metric.progress"></span></span> }
+      </div>
+    </div>
+  }
+</dl>
+@if(!targets() && showNoTargetsNotice()) { <p class="text-body-secondary no-targets">No nutrition targets for this day.</p> }
+

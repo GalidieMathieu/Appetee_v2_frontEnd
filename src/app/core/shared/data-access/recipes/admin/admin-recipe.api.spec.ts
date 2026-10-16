@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 
 import { API_URL } from '@app/core/api/api.config';
+import { CatalogueRecord } from '../../catalogue/catalogue-resource.model';
 import { RecipeSummaryDto } from '../recipe.model';
 import { AdminRecipeApi } from './admin-recipe.api';
 
@@ -28,17 +29,21 @@ describe('AdminRecipeApi', () => {
 
   it.each([
     ['create', 'POST', '/api/admin/recipe-details', (body: FormData) => api.create(body)],
-    ['update', 'PUT', '/api/admin/recipe-details/42', (body: FormData) => api.update(42, body)],
+    ['update', 'PUT', '/api/admin/recipe-details/42', (body: FormData) => api.update(42, body, '"catalog-recipe-42-v1"')],
   ])('uses previewImageUrl in the %s response contract', (_, method, url, request) => {
     const summary = createSummary();
-    let response: RecipeSummaryDto | undefined;
+    let response: CatalogueRecord<RecipeSummaryDto> | undefined;
 
     request(new FormData()).subscribe(value => response = value);
 
     const httpRequest = http.expectOne(url);
     expect(httpRequest.request.method).toBe(method);
-    httpRequest.flush(summary);
-    expect(response?.previewImageUrl).toBe('https://cdn.example.com/previews/soup.jpg');
+    expect(httpRequest.request.body).toBeInstanceOf(FormData);
+    expect(httpRequest.request.headers.has('X-Meal-Plan-Revision')).toBe(false);
+    httpRequest.flush({ resource: summary, resourceVersion: '2', createdByUserId: null, updatedByUserId: null }, { headers: { ETag: '"catalog-recipe-42-v2"' } });
+    if (method === 'PUT') expect(httpRequest.request.headers.get('If-Match')).toBe('"catalog-recipe-42-v1"');
+    else expect(httpRequest.request.headers.has('If-Match')).toBe(false);
+    expect(response?.resource.previewImageUrl).toBe('https://cdn.example.com/previews/soup.jpg');
     expect(response).not.toHaveProperty('imageUrl');
   });
 });

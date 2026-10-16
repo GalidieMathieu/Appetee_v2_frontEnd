@@ -1,0 +1,19 @@
+<form [formGroup]="form()" novalidate><fieldset>
+  <legend [class.text-title]="!compact()" [class.text-label]="compact()">{{ compact() ? 'Primary goal' : 'What’s your goal?' }}</legend>
+  @if (compact()) {
+    <select id="goal-performance" class="input--primary" formControlName="goal" aria-label="Primary goal" aria-describedby="goal-feedback" [attr.aria-invalid]="form().controls.goal.touched && form().controls.goal.invalid || !!error()">
+      <option [ngValue]="null" disabled>Choose a goal</option>
+      @for(option of options; track option.code) { <option [value]="option.code">{{ option.label }}</option> }
+    </select>
+  } @else {
+    <p class="step-help text-body-secondary">Choose the option that best describes what you want to achieve.</p>
+    @for (option of options; track option.code) {
+      <label class="choice-card" [class.is-selected]="form().controls.goal.value === option.code">
+        <span class="choice-card__icon" aria-hidden="true"><mat-icon>{{ presentation[option.code].icon }}</mat-icon></span>
+        <span class="choice-card__copy"><strong class="text-body-strong">{{ option.label }}</strong><span class="text-body-secondary">{{ presentation[option.code].description }}</span></span>
+        <input type="radio" [id]="'goal-' + option.code" formControlName="goal" [value]="option.code" [attr.aria-invalid]="form().controls.goal.touched && form().controls.goal.invalid || !!error()" aria-describedby="goal-feedback"/>
+      </label>
+    }
+  }
+  <p id="goal-feedback" class="text-error" [hidden]="!error() && !(form().controls.goal.touched && form().controls.goal.invalid)">@if(error()) { {{ error() }} } @else if(form().controls.goal.touched && form().controls.goal.invalid) { Choose a goal. }</p>
+</fieldset></form>

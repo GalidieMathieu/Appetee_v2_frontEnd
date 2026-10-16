@@ -1,0 +1,19 @@
+<form [formGroup]="form()" novalidate><fieldset>
+  <legend [class.text-title]="!compact()" [class.text-label]="compact()">{{ compact() ? 'Meals per day' : 'How many times do you usually want to eat each day?' }}</legend>
+  @if(compact()) {
+    <select id="meal-count-1" class="input--primary" aria-label="Meals per day" formControlName="defaultMealsPerDay" aria-describedby="meal-count-feedback" [attr.aria-invalid]="!!error() || form().controls.defaultMealsPerDay.touched && form().controls.defaultMealsPerDay.invalid">
+      <option [ngValue]="null" disabled>Choose meal count</option>
+      @for(count of counts; track count) { <option [ngValue]="count">{{ count }} {{ count === 1 ? 'meal' : 'meals' }}</option> }
+    </select>
+  } @else {
+    <p class="step-help text-body-secondary">You can add or remove meals on individual days later.</p>
+    <div class="counts">@for(count of counts; track count) {
+      <label class="meal-choice" [class.is-selected]="form().controls.defaultMealsPerDay.value === count">
+        <input type="radio" [id]="'meal-count-' + count" aria-describedby="meal-count-feedback" [attr.aria-invalid]="!!error() || form().controls.defaultMealsPerDay.touched && form().controls.defaultMealsPerDay.invalid" formControlName="defaultMealsPerDay" [value]="count"/>
+        <span class="meal-choice__dots" aria-hidden="true">@for(dot of counts.slice(0, count); track dot) { <span></span> }</span>
+        <strong class="text-title">{{ count }}</strong><span class="text-body-secondary">{{ count === 1 ? 'meal/day' : 'meals/day' }}</span>
+      </label>
+    }</div>
+  }
+  <p id="meal-count-feedback" class="text-error" [hidden]="!error() && !(form().controls.defaultMealsPerDay.touched && form().controls.defaultMealsPerDay.invalid)">{{ error() }} @if(form().controls.defaultMealsPerDay.touched && form().controls.defaultMealsPerDay.invalid) { Choose a whole-number count from 1 to 8. }</p>
+</fieldset></form>

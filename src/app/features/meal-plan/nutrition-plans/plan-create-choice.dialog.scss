@@ -1,0 +1,9 @@
+.choice-dialog { padding: 1.5rem; position: relative; background: var(--color-surface); color: var(--color-text); }
+h2 { padding-inline-end: 2rem; margin-bottom: .5rem; }
+.choice-dialog__close { position: absolute; top: .6rem; right: .6rem; min-height: 2.5rem; padding: .4rem; border: 0; background: transparent; }
+.choice-dialog__options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.choice-dialog__option { display: grid; gap: .65rem; align-content: start; text-align: left; padding: 1.1rem; border: 1px solid var(--color-border); border-radius: calc(var(--radius) * 1.5); background: var(--color-surface); cursor: pointer; }
+.choice-dialog__icon { width: 2.5rem; height: 2.5rem; display: grid; place-items: center; border-radius: var(--radius); color: var(--color-primary); background: var(--color-bg-secondary); margin-bottom: .25rem; }
+.choice-dialog__option:hover { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 4%, var(--color-surface)); }
+button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+@media (max-width: 34rem) { .choice-dialog { padding: 1.25rem; } .choice-dialog__options { grid-template-columns: 1fr; } }

@@ -14,6 +14,8 @@ import {
 } from '@app/core/shared/data-access/recipes/recipe.model';
 import { RecipesFacade } from '@app/core/shared/data-access/recipes/recipe.facade';
 
+import { CapabilitiesStore } from '@app/core/auth/data-access/capabilities.store';
+import { CapabilitiesFacade } from '@app/core/auth/data-access/capabilities.facade';
 import { AdminRecipesPageComponent } from './admin-recipes.page';
 
 describe('AdminRecipesPageComponent authoring', () => {
@@ -33,7 +35,7 @@ describe('AdminRecipesPageComponent authoring', () => {
 
     TestBed.configureTestingModule({
       imports: [AdminRecipesPageComponent],
-      providers: [
+      providers: [{ provide: CapabilitiesFacade, useValue: { refresh$: () => of({userId:1,username:'author',permissions:['Catalog.ReadAdmin','Catalog.Write']}) } },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: routeParamMap.asObservable(), snapshot: { paramMap } },
@@ -54,6 +56,8 @@ describe('AdminRecipesPageComponent authoring', () => {
           useValue: {
             error$: of(null),
             isLoading$: of(false),
+            loadDetail: vi.fn(() => of(createDetail())),
+            releaseEditor: vi.fn(),
             createRecipeWithDetails: vi.fn(),
             updateRecipeWithDetails,
           },
@@ -61,6 +65,7 @@ describe('AdminRecipesPageComponent authoring', () => {
       ],
     });
     TestBed.overrideProvider(MatDialog, { useValue: { open: dialogOpen } });
+    TestBed.inject(CapabilitiesStore).accept({userId:1,username:'author',permissions:['Catalog.ReadAdmin','Catalog.Write']});
     await TestBed.compileComponents();
   });
 

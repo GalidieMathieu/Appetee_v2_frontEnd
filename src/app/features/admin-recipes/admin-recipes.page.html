@@ -9,7 +9,9 @@
       </div>
     </header>
 
-    @if (isEditMode() && !isEditRecipeReady()) {
+    @if (!permissions.canWrite() || isEditMode() && !permissions.canEdit()) {
+      <p class="text-body" role="status">Administrative access is unavailable while current permissions are being checked.</p>
+    } @else if (isEditMode() && (!isEditRecipeReady() || savedRequest()?.httpStatus === 404)) {
       <section class="recipe-loading-card recipe-card">
         <mat-icon>{{ isEditRecipeLoading() ? 'hourglass_top' : 'error_outline' }}</mat-icon>
         <h2 class="text-subtitle">
@@ -19,12 +21,36 @@
           @if (isEditRecipeLoading()) {
             We are fetching the recipe and hydrating every ingredient detail before opening edit mode.
           } @else {
-            {{ editRecipeLoadError() || 'Please try again in a moment.' }}
+            {{ savedRequest()?.error || editRecipeLoadError() || 'Please try again in a moment.' }}
           }
         </p>
       </section>
     } @else {
       <form class="recipe-page__content" [formGroup]="form" (ngSubmit)="saveRecipe()" novalidate>
+        @if (!needsReview() && (savedRequest()?.status === 'error' || isEditMode() && savedRequest()?.status === 'idle')) {
+          <section class="recipe-card text-body" role="alert"><p>{{ savedRequest()?.error ?? 'Reload the protected saved recipe before another update.' }}</p><button type="button" class="btn-selection text-label" (click)="refreshSavedRecipe()">Reload protected saved recipe</button></section>
+        }
+        @if (needsReview()) {
+          <section class="recipe-card text-body" role="alert"><p>{{ errorMessage() }}</p>
+            <button type="button" class="btn-selection text-label" [disabled]="savedRequest()?.status === 'loading'" (click)="refreshSavedRecipe()">Refresh saved recipe</button>
+            @if (savedRequest()?.error) { <p class="text-error">{{ savedRequest()?.error }}</p> }
+            @if (savedRecord(); as record) {
+              <p>Saved version {{ record.resourceVersion }}: {{ record.resource.name }} · {{ record.resource.servings }} servings.</p>
+              <details><summary>Inspect saved values before resubmitting your preserved draft</summary>
+                <p>{{ record.resource.description }}</p><p>Prep {{ record.resource.prepTimeMinutes }} · Cook {{ record.resource.cookTimeMinutes }} · Total {{ record.resource.totalTimeMinutes }} minutes · {{ record.resource.difficulty }}</p>
+                @for (step of record.resource.instructions; track $index) { <p>{{ step.title }}: {{ step.instruction }}</p> }
+                @for (item of record.resource.ingredients; track $index) { <p>{{ item.ingredient.name }} · {{ item.quantity ?? 'Unknown' }} {{ item.unit ?? '' }}</p> }
+              </details>
+              <button type="button" class="btn-selection text-label" [disabled]="savedRequest()?.status !== 'success'" (click)="confirmSavedReview()">I reviewed the saved version and my draft</button>
+            }
+          </section>
+        }
+        @if (catalogue.createOutcomeUnknown()) {
+          <section class="recipe-card text-body" role="alert"><p>The creation outcome is unknown. Inspect the recipe catalogue before deciding whether to submit again.</p>
+            <a href="/recipes" target="_blank" rel="noopener">Inspect recipe catalogue</a>
+            <button type="button" class="btn-selection text-label" (click)="confirmCreateReview()">I checked the catalogue and reviewed my draft</button>
+          </section>
+        }
         <div class="recipe-page__main">
           <section class="recipe-card">
             <div class="recipe-card__copy">
@@ -585,7 +611,7 @@
             </div>
           </div>
 
-          <button type="submit" class="btn-link--primary recipe-summary__save" [disabled]="isSaving()">
+          <button type="submit" class="btn-link--primary recipe-summary__save" [disabled]="isSaving() || needsReview() || catalogue.createOutcomeUnknown()">
             <mat-icon>save</mat-icon>
             <span>{{ saveButtonLabel() }}</span>
           </button>

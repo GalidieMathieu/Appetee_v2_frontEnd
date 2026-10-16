@@ -11,18 +11,18 @@
         </div>
 
         <div class="recipe-created-hero__actions">
-          <a class="btn-link-secondary recipe-created-hero__button" routerLink="/admin-recipes/create">
+          @if (permissions.canWrite()) { <a class="btn-link-secondary recipe-created-hero__button" routerLink="/admin-recipes/create">
             <mat-icon>add_circle</mat-icon>
             <span>{{ copy.actions.createAnother }}</span>
-          </a>
+          </a> }
 
-          <a
+          @if (permissions.canEdit()) { <a
             class="btn-link--primary recipe-created-hero__button"
             [routerLink]="['/admin-recipes', recipe.id, 'edit']"
           >
             <mat-icon>edit</mat-icon>
             <span>{{ copy.actions.modifyCurrent }}</span>
-          </a>
+          </a> }
         </div>
       </header>
 
