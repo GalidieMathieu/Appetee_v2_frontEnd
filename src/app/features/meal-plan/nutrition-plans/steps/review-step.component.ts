@@ -20,6 +20,6 @@ export class ReviewStepComponent {
     readonly showName = input(true);
     readonly allowChange = input(true);
     readonly summaryOnly = input(false);
-    readonly change = output<NutritionPlanStep>();
+    readonly stepRequested = output<NutritionPlanStep>();
     readonly changeSteps: readonly NutritionPlanStep[] = ['profile', 'goal', 'activity', 'meal-structure'];
 }

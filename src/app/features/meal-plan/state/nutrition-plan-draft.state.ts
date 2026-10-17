@@ -119,7 +119,8 @@ export class NutritionPlanDraftState {
         return 'review';
     }
     canVisit(step: NutritionPlanStep): boolean {
-        return WIZARD_STEPS.indexOf(step) <= WIZARD_STEPS.indexOf(this.firstIncomplete());
+        const index = WIZARD_STEPS.indexOf(step);
+        return index >= 0 && index <= WIZARD_STEPS.indexOf(this.firstIncomplete());
     }
     createRequest(): CreateNutritionPlanRequest | null {
         const metadata = this.request();
